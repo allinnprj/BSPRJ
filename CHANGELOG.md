@@ -1,5 +1,73 @@
 # CHANGELOG
 
+## 0.1.21-EXP+75 - 2026-05-12
+
+1. Switched Datacake into a more quota-safe mode by slowing the regular fast metrics from every 15 minutes to every 60 minutes.
+2. Slowed the Datacake slow metrics from every 30 minutes to every 6 hours and the text metrics from every 5 minutes to every 60 minutes.
+3. Kept the main MQTT/WQTT live feed unchanged so desktop clients stay responsive while Datacake becomes a lighter cloud dashboard.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.20-EXP+74 - 2026-05-12
+
+1. Enlarged the main OLED `H / M` and `T / H` rows using a bigger GFX font instead of the tiny default text, while keeping both rows on the main screen.
+2. Kept the top `Now + bar + WiFi` layout intact and only reworked the lower readability of the main page.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.19-EXP+73 - 2026-05-12
+
+1. Aligned the main OLED page to the requested compact layout by keeping `H / M` centered and placing `T / H` together on one centered line below it.
+2. Added `SHT31` temperature and humidity as first-class telemetry in both MQTT and Datacake.
+3. Documented the new environment entities for desktop MQTT clients and Datacake field setup.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.18-EXP+72 - 2026-05-12
+
+1. Restored a larger main OLED look by returning `H / M` to the bigger display style instead of the temporary compact line.
+2. Reworked the environment readout under the main stats into separate centered `T` and `H` lines for clearer reading on the 128x64 screen.
+3. Enlarged the `DEBUG` page title and shifted the large raw-value lines slightly lower for cleaner spacing.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.17-EXP+71 - 2026-05-12
+
+1. Enlarged the practical readability of the main OLED layout by aligning the bottom `T / H` row to the same text scale as the `H / M` row instead of leaving it as a tiny footer.
+2. Reworked the debug page toward large raw values by centering `raw min-max` and `P2P` in bigger text on their own lines.
+3. Started Wi-Fi earlier in boot and shortened blocking startup delays so the controller no longer spends as much visible time looking frozen before the network comes up.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.16-EXP+70 - 2026-05-12
+
+1. Added automatic OLED idle blanking after 60 seconds of no button activity so the display can rest without requiring a manual long press every time.
+2. Changed the short-press behavior while the screen is off: the first tap now wakes the display, and only later taps continue normal page switching.
+3. Kept the long press as an explicit display power toggle on top of the new idle-off behavior.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.15-EXP+69 - 2026-05-12
+
+1. Restored the default OLED page to the main sound layout with `Now + bar + WiFi`, `H / M`, and a bottom `T / H` environment line instead of the temporary dedicated `ENV` page.
+2. Reduced the page flow back to two screens only: the main everyday sound page and a separate debug page for raw microphone diagnostics.
+3. Kept the single-button behavior unchanged: short press switches pages, long press toggles the display off and back on.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.14-EXP+68 - 2026-05-11
+
+1. Split the OLED into three button-driven pages: a clean environment page with centered `T/H`, a sound page for `Now / H / M`, and a separate debug page for the raw microphone diagnostics.
+2. Moved the raw bottom-line data off the main sound screen and placed it on its own page, keeping the display clearer for everyday viewing.
+3. Wired the single button behavior so a short press cycles pages and a long press toggles the display fully off or back on.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.13-EXP+67 - 2026-05-11
+
+1. Corrected `SHT31` address handling so the service now tries both common I2C addresses, `0x44` and `0x45`, instead of pretending the sensor is always on `0x44`.
+2. Aligned the startup diagnostic with the real detected sensor address, making the `I2C` scan and the `SHT31` ready log consistent for this mixed breakout stage.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.12-EXP+66 - 2026-05-11
+
+1. Added a minimal `button_service` on `GPIO27` using `INPUT_PULLUP`, debounced short press, and long press events so future display switching and menu behavior can grow from one safe control pin.
+2. Added a modular `sht31_service` on the existing I2C bus at `0x44`, with periodic temperature/humidity reads and readable Serial diagnostics for the first environment-aware stage.
+3. Integrated both services into the ESP32 main loop without changing the current OLED contract or pretending the button/menu logic is already finished.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.11-EXP+65 - 2026-05-11
 
 1. Kept Datacake and internal diagnostics on the existing `LOW / OK / CLIP` signal-state logic, but changed the MQTT `sound/signal` topic to publish user-facing noise levels: `SILENT`, `NORMAL`, `LOUD`, and `PEAK`.

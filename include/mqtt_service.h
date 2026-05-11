@@ -23,6 +23,9 @@ struct MqttRuntimeState {
   uint8_t wifiSignalPercent = 0;
   int wifiRssiDbm = -127;
   String ipAddress;
+  bool environmentAvailable = false;
+  float temperatureC = NAN;
+  float humidityPct = NAN;
 };
 
 class MqttService {
@@ -49,12 +52,16 @@ class MqttService {
   void publishDatacakeTextMetrics(const MqttRuntimeState &state);
   bool publishWqttText(const char *topicSuffix, const String &payload, bool retained);
   bool publishWqttNumber(const char *topicSuffix, uint32_t value, bool retained);
+  bool publishWqttDecimal(const char *topicSuffix, float value, uint8_t decimals,
+                          bool retained);
   bool publishDatacakeField(const char *fieldIdentifier, const String &payload,
                             bool retained = false);
   bool publishDatacakeTextField(const char *fieldIdentifier, const String &payload,
                                 bool retained = false);
   bool publishDatacakeNumberField(const char *fieldIdentifier, uint32_t value,
                                   bool retained = false);
+  bool publishDatacakeDecimalField(const char *fieldIdentifier, float value, uint8_t decimals,
+                                   bool retained = false);
   String wqttTopic(const char *topicSuffix) const;
   void markAllPublishDue();
 

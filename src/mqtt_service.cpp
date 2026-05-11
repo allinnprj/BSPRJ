@@ -13,9 +13,9 @@ constexpr unsigned long kReconnectIntervalMs = 10000UL;
 constexpr unsigned long kWqttStatusPublishIntervalMs = 60000UL;
 constexpr unsigned long kWqttLivePublishIntervalMs = 10000UL;
 constexpr unsigned long kWqttPeriodPublishIntervalMs = 120000UL;
-constexpr unsigned long kFastPublishIntervalMs = 15UL * 60UL * 1000UL;
-constexpr unsigned long kSlowPublishIntervalMs = 30UL * 60UL * 1000UL;
-constexpr unsigned long kTextPublishIntervalMs = 5UL * 60UL * 1000UL;
+constexpr unsigned long kFastPublishIntervalMs = 60UL * 60UL * 1000UL;
+constexpr unsigned long kSlowPublishIntervalMs = 6UL * 60UL * 60UL * 1000UL;
+constexpr unsigned long kTextPublishIntervalMs = 60UL * 60UL * 1000UL;
 constexpr char kWqttTopicRoot[] = "bs/devices";
 constexpr char kDatacakeApiBaseUrl[] = "https://api.datacake.co/v1/devices/";
 constexpr char kFieldNowPct[] = "NOW_PCT";
@@ -33,6 +33,8 @@ constexpr char kFieldLastUpdateTs[] = "LAST_UPDATE_TS";
 constexpr char kFieldUptimeMin[] = "UPTIME_MIN";
 constexpr char kFieldUptimeHours[] = "UPTIME_HOURS";
 constexpr char kFieldUptimeDate[] = "UPTIME_DATE";
+constexpr char kFieldTemperatureC[] = "TEMPERATURE_C";
+constexpr char kFieldHumidityPct[] = "HUMIDITY_PCT";
 
 WiFiClient mqttWifiClient;
 WiFiClient wqttWifiClient;
@@ -243,6 +245,12 @@ void MqttService::publishWqttStatus(const MqttRuntimeState &state) {
   payload += String(state.wifiRssiDbm);
   payload += ",\"ip\":\"";
   payload += ipPayload;
+  payload += "\",\"environment_available\":";
+  payload += state.environmentAvailable ? "true" : "false";
+  payload += ",\"temperature_c\":";
+  payload += state.environmentAvailable ? String(state.temperatureC, 1) : String("null");
+  payload += ",\"humidity_pct\":";
+  payload += state.environmentAvailable ? String(state.humidityPct, 2) : String("null");
   payload += "\",\"timestamp\":\"";
   payload += state.timestamp;
   payload += "\"}";
@@ -256,6 +264,10 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
   publishWqttText("sound/signal", state.mqttSignalText, true);
   publishWqttText("period/current", state.currentPeriod, true);
   publishWqttNumber("period/current_pct", state.currentPeriodPercent, true);
+  if (state.environmentAvailable) {
+    publishWqttDecimal("environment/temperature_c", state.temperatureC, 1, true);
+    publishWqttDecimal("environment/humidity_pct", state.humidityPct, 2, true);
+  }
 
   String payload = "{";
   payload += "\"now_pct\":";
@@ -270,10 +282,28 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
   payload += state.currentPeriod;
   payload += "\",\"current_period_pct\":";
   payload += String(state.currentPeriodPercent);
+  payload += ",\"environment_available\":";
+  payload += state.environmentAvailable ? "true" : "false";
+  payload += ",\"temperature_c\":";
+  payload += state.environmentAvailable ? String(state.temperatureC, 1) : String("null");
+  payload += ",\"humidity_pct\":";
+  payload += state.environmentAvailable ? String(state.humidityPct, 2) : String("null");
   payload += ",\"timestamp\":\"";
   payload += state.timestamp;
   payload += "\"}";
   publishWqttText("sound/json", payload, true);
+
+  if (state.environmentAvailable) {
+    String environmentPayload = "{";
+    environmentPayload += "\"temperature_c\":";
+    environmentPayload += String(state.temperatureC, 1);
+    environmentPayload += ",\"humidity_pct\":";
+    environmentPayload += String(state.humidityPct, 2);
+    environmentPayload += ",\"timestamp\":\"";
+    environmentPayload += state.timestamp;
+    environmentPayload += "\"}";
+    publishWqttText("environment/json", environmentPayload, true);
+  }
 }
 
 void MqttService::publishWqttPeriodMetrics(const MqttRuntimeState &state) {
@@ -316,6 +346,10 @@ void MqttService::publishDatacakeFastMetrics(const MqttRuntimeState &state) {
   publishDatacakeNumberField(kFieldCurrentPeriodPct, state.currentPeriodPercent);
   publishDatacakeNumberField(kFieldUptimeMin, state.uptimeMinutes);
   publishDatacakeNumberField(kFieldUptimeHours, state.uptimeHours);
+  if (state.environmentAvailable) {
+    publishDatacakeDecimalField(kFieldTemperatureC, state.temperatureC, 1);
+    publishDatacakeDecimalField(kFieldHumidityPct, state.humidityPct, 2);
+  }
 }
 
 void MqttService::publishDatacakeSlowMetrics(const MqttRuntimeState &state) {
@@ -338,6 +372,14 @@ bool MqttService::publishWqttText(const char *topicSuffix, const String &payload
 
 bool MqttService::publishWqttNumber(const char *topicSuffix, uint32_t value, bool retained) {
   return publishWqttText(topicSuffix, String(value), retained);
+}
+
+bool MqttService::publishWqttDecimal(const char *topicSuffix, float value, uint8_t decimals,
+                                     bool retained) {
+  return publishWqttText(topicSuffix,
+                         String(static_cast<double>(value),
+                                static_cast<unsigned int>(decimals)),
+                         retained);
 }
 
 bool MqttService::publishDatacakeField(const char *fieldIdentifier, const String &payload,
@@ -396,6 +438,14 @@ bool MqttService::publishDatacakeTextField(const char *fieldIdentifier, const St
 bool MqttService::publishDatacakeNumberField(const char *fieldIdentifier, uint32_t value,
                                              bool retained) {
   return publishDatacakeField(fieldIdentifier, String(value), retained);
+}
+
+bool MqttService::publishDatacakeDecimalField(const char *fieldIdentifier, float value,
+                                              uint8_t decimals, bool retained) {
+  return publishDatacakeField(
+      fieldIdentifier,
+      String(static_cast<double>(value), static_cast<unsigned int>(decimals)),
+      retained);
 }
 
 String MqttService::wqttTopic(const char *topicSuffix) const {

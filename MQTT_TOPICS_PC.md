@@ -115,6 +115,9 @@ Example JSON fields:
 - `wifi_pct`
 - `rssi_dbm`
 - `ip`
+- `environment_available`
+- `temperature_c`
+- `humidity_pct`
 - `timestamp`
 
 ## Sound Topics
@@ -189,6 +192,40 @@ Example JSON fields:
 - `signal`
 - `current_period`
 - `current_period_pct`
+- `environment_available`
+- `temperature_c`
+- `humidity_pct`
+- `timestamp`
+
+## Environment Topics
+
+### `bs/devices/bs-esp32-01/environment/temperature_c`
+
+- Payload: number
+- Unit: `C`
+- Min: project/environment dependent
+- Max: project/environment dependent
+- Meaning: current temperature from `SHT31`
+
+### `bs/devices/bs-esp32-01/environment/humidity_pct`
+
+- Payload: number
+- Unit: `%`
+- Min: `0`
+- Max: `100`
+- Meaning: current relative humidity from `SHT31`
+
+### `bs/devices/bs-esp32-01/environment/json`
+
+- Payload: JSON
+- Min: not applicable
+- Max: not applicable
+- Meaning: compact environment snapshot
+
+Example JSON fields:
+
+- `temperature_c`
+- `humidity_pct`
 - `timestamp`
 
 ## Day-Part Topics
@@ -275,6 +312,8 @@ If you want a minimal live setup on PC, start with:
 - `bs/devices/bs-esp32-01/sound/hour_pct`
 - `bs/devices/bs-esp32-01/sound/mean_pct`
 - `bs/devices/bs-esp32-01/sound/signal`
+- `bs/devices/bs-esp32-01/environment/temperature_c`
+- `bs/devices/bs-esp32-01/environment/humidity_pct`
 - `bs/devices/bs-esp32-01/status/online`
 - `bs/devices/bs-esp32-01/status/wifi_pct`
 - `bs/devices/bs-esp32-01/period/current`
@@ -284,6 +323,7 @@ If you want one compact feed instead, start with:
 
 - `bs/devices/bs-esp32-01/status/json`
 - `bs/devices/bs-esp32-01/sound/json`
+- `bs/devices/bs-esp32-01/environment/json`
 - `bs/devices/bs-esp32-01/period/json`
 
 ## Topic Wildcards

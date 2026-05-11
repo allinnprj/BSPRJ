@@ -2,22 +2,28 @@
 #include <Wire.h>
 
 #include "audio_sampler.h"
+#include "button_service.h"
 #include "display_view.h"
 #include "google_sheets_service.h"
 #include "log_service.h"
 #include "mqtt_service.h"
 #include "project_version.h"
+#include "sht31_service.h"
 #include "time_service.h"
 #include "wifi_service.h"
 
 static constexpr uint8_t SDA_PIN = 21;
 static constexpr uint8_t SCL_PIN = 22;
 static constexpr uint8_t MIC_PIN = 34;
+static constexpr uint8_t BUTTON_PIN = 27;
 static constexpr uint8_t OLED_ADDRESS = 0x3C;
 static constexpr uint16_t DISPLAY_REFRESH_MS = 500;
 static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 5000;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
+static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 60000UL;
+static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 300UL;
+static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 600UL;
 
 enum class DayPart : uint8_t {
   Night,
@@ -53,16 +59,20 @@ struct GoogleSheetsAccumulator {
 };
 
 AudioSampler audioSampler;
+ButtonService buttonService;
 DisplayView displayView;
 GoogleSheetsService googleSheetsService;
 LogService logService;
 MqttService mqttService;
+Sht31Service sht31Service;
 TimeService timeService;
 WifiService wifiService;
 AudioSnapshot latestSnapshot;
+Sht31Reading latestSht31Reading;
 unsigned long lastDisplayAt = 0;
 unsigned long lastSerialLogAt = 0;
 unsigned long lastGoogleSheetsAttemptAt = 0;
+unsigned long lastDisplayInteractionAt = 0;
 DayPartStats dayPartStats[3];
 GoogleSheetsAccumulator activeSheetsWindow;
 GoogleSheetsWindowRecord pendingSheetsUpload;
@@ -370,6 +380,9 @@ void updateMqttState(const AudioSnapshot &snapshot) {
   state.wifiSignalPercent = wifiService.signalPercent();
   state.wifiRssiDbm = wifiService.rssiDbm();
   state.ipAddress = wifiService.ipAddressString();
+  state.environmentAvailable = latestSht31Reading.available;
+  state.temperatureC = latestSht31Reading.temperatureC;
+  state.humidityPct = latestSht31Reading.humidityPct;
   state.uptimeMinutes = uptimeMinutes;
   state.uptimeHours = uptimeMinutes / 60UL;
   state.uptimeDateText = uptimeDateText(uptimeMs);
@@ -414,7 +427,7 @@ void scanI2cBus(TwoWire *wire) {
 
 void setup() {
   Serial.begin(115200);
-  delay(1200);
+  delay(STARTUP_SERIAL_DELAY_MS);
 
   Serial.println();
   Serial.println(F("ESP32 sound statistics clean restart"));
@@ -424,18 +437,29 @@ void setup() {
   Serial.println(PROJECT_BUILD);
   Serial.println(F("Display contract: Now / H / M"));
   Serial.println(F("Time and WiFi will activate when the network is available."));
+  Serial.print(F("[BTN] pin="));
+  Serial.println(BUTTON_PIN);
   Serial.print(F("[I2C] pins SDA="));
   Serial.print(SDA_PIN);
   Serial.print(F(" SCL="));
   Serial.println(SCL_PIN);
 
   audioSampler.begin(MIC_PIN);
+  buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
   mqttService.begin();
   timeService.begin();
+  wifiService.begin();
   Wire.begin(SDA_PIN, SCL_PIN);
   scanI2cBus(&Wire);
+  sht31Service.begin(&Wire);
+  if (sht31Service.isAvailable()) {
+    Serial.print(F("[SHT31] ready -> 0x"));
+    Serial.println(sht31Service.address(), HEX);
+  } else {
+    Serial.println(F("[SHT31] not found at 0x44"));
+  }
   if (!displayView.begin(&Wire, SDA_PIN, SCL_PIN, OLED_ADDRESS)) {
     Serial.println(F("SSD1306 init failed."));
     while (true) {
@@ -445,25 +469,53 @@ void setup() {
   char bootLine1[32];
   snprintf(bootLine1, sizeof(bootLine1), "%s b%u", PROJECT_VERSION, PROJECT_BUILD);
   displayView.showBootMessage(bootLine1, "Addr 0x3C  Pins 21/22");
-  delay(1200);
-  wifiService.begin();
+  delay(BOOT_SCREEN_DELAY_MS);
+  lastDisplayInteractionAt = millis();
 }
 
 void loop() {
+  unsigned long nowMs = millis();
+  ButtonEvent buttonEvent = buttonService.update();
+  if (buttonEvent == ButtonEvent::ShortPress) {
+    if (displayView.isEnabled()) {
+      displayView.nextPage();
+      lastDisplayInteractionAt = nowMs;
+      Serial.print(F("[BTN] short press -> page "));
+      Serial.println(displayView.currentPage());
+    } else {
+      displayView.setEnabled(true);
+      lastDisplayInteractionAt = nowMs;
+      Serial.println(F("[BTN] short press -> display ON"));
+    }
+  } else if (buttonEvent == ButtonEvent::LongPress) {
+    displayView.toggleEnabled();
+    if (displayView.isEnabled()) {
+      lastDisplayInteractionAt = nowMs;
+    }
+    Serial.print(F("[BTN] long press -> display "));
+    Serial.println(displayView.isEnabled() ? F("ON") : F("OFF"));
+  }
+
   wifiService.update();
   logService.update(wifiService.isConnected(), wifiService.ipAddressString());
   timeService.update(wifiService.isConnected());
+  latestSht31Reading = sht31Service.update();
   latestSnapshot = audioSampler.sample();
   updateDayPartStats(latestSnapshot, timeService);
   updateGoogleSheetsWindow(latestSnapshot, timeService);
   appendLogSample(latestSnapshot, timeService);
   uploadPendingGoogleSheetsWindow();
   updateMqttState(latestSnapshot);
-  unsigned long nowMs = millis();
+
+  if (displayView.isEnabled() &&
+      nowMs - lastDisplayInteractionAt >= DISPLAY_IDLE_TIMEOUT_MS) {
+    displayView.setEnabled(false);
+    Serial.println(F("[DSP] idle timeout -> display OFF"));
+  }
 
   if (nowMs - lastDisplayAt >= DISPLAY_REFRESH_MS) {
     lastDisplayAt = nowMs;
-    displayView.render(latestSnapshot, PROJECT_VERSION, PROJECT_BUILD,
+    displayView.render(latestSnapshot, latestSht31Reading, PROJECT_VERSION, PROJECT_BUILD,
                        wifiService.isConnected(), wifiService.signalPercent());
   }
 
@@ -513,6 +565,13 @@ void loop() {
       Serial.print(F("%("));
       Serial.print(wifiService.rssiDbm());
       Serial.print(F("dBm)"));
+    }
+    if (latestSht31Reading.available) {
+      Serial.print(F(" env="));
+      Serial.print(latestSht31Reading.temperatureC, 1);
+      Serial.print(F("C/"));
+      Serial.print(latestSht31Reading.humidityPct, 1);
+      Serial.print(F("%"));
     }
     Serial.println();
   }
