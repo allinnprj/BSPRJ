@@ -1,5 +1,59 @@
 # CHANGELOG
 
+## 0.1.10-EXP+64 - 2026-05-11
+
+1. Reformatted `UPTIME_DATE` for the Datacake panel into a clearer one-line style like `0d, 3h, 42m` so battery/runtime checks read naturally at a glance.
+2. Kept the uptime telemetry meaning unchanged while aligning the display format with the intended single-line panel widget.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.9-EXP+63 - 2026-05-11
+
+1. Decoupled the new Datacake text telemetry (`SIGNAL_STATE`, `LAST_UPDATE_TS`, `UPTIME_DATE`) from the 30-minute slow cycle so those fields appear shortly after boot and Wi-Fi recovery.
+2. Kept the day-part aggregate cadence unchanged while moving text-field refreshes to their own lightweight 5-minute cadence for faster panel visibility without flooding the free plan.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.8-EXP+62 - 2026-05-11
+
+1. Added the agreed Datacake telemetry fields for stable runtime visibility: `SIGNAL_STATE`, `LAST_UPDATE_TS`, `UPTIME_MIN`, `UPTIME_HOURS`, and `UPTIME_DATE`.
+2. Kept the new uptime reporting truthful for this temporary project by sending a human-readable uptime string until wall-clock time is synced, then switching `LAST_UPDATE_TS` to the real NTP timestamp.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.7-EXP+61 - 2026-05-10
+
+1. Corrected the Datacake HTTP target from the device serial-like identifier to the actual device-id taken from the Datacake device URL, fixing the `404 No Device matches the given query` response.
+2. Kept the WQTT path unchanged and preserved the new Datacake HTTP diagnostics so field writes can be verified directly from Serial after the ID fix.
+3. Validation: pending.
+
+## 0.1.6-EXP+60 - 2026-05-10
+
+1. Replaced the failing Datacake MQTT ingestion path with direct Datacake HTTP field writes while keeping WQTT publishing untouched for existing client apps.
+2. Added explicit Datacake HTTP result logging per field and guarded the HTTP branch from repeatedly resetting its own publish schedule after Wi-Fi comes up.
+3. Validation: pending.
+
+## 0.1.5-EXP+59 - 2026-05-10
+
+1. Added explicit Datacake publish diagnostics in Serial so each field write now reports `OK/FAIL` and the exact field identifier being attempted.
+2. Kept the dual-broker runtime intact while making Datacake ingestion issues easier to isolate without guessing from the cloud UI alone.
+3. Validation: pending.
+
+## 0.1.4-EXP+58 - 2026-05-10
+
+1. Restored the original WQTT topic publishing for existing MQTT apps while keeping the new Datacake MQTT path active in parallel for the hosted dashboard.
+2. Split the MQTT runtime into dual broker clients so WQTT keeps the faster live feed and Datacake stays on a slower free-plan-safe cadence.
+3. Validation: pending.
+
+## 0.1.3-EXP+57 - 2026-05-10
+
+1. Switched the MQTT service from the temporary WQTT topic tree to direct Datacake field publishing using the product slug and device UUID of the new hosted dashboard target.
+2. Reduced the publish cadence for the Datacake free plan so `NOW/HOUR/MEAN/current-period` update on a lighter schedule and day-part plus Wi-Fi fields publish even more conservatively.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.2-EXP+56 - 2026-05-10
+
+1. Added a separate `mqtt_service` for ESP32 so the project can publish live sound percentages, retained status, and three day-part aggregates (`day`, `evening`, `night`) without mixing MQTT logic into `main.cpp`.
+2. Kept Google Sheets as the original developer channel and introduced MQTT as a second independent channel with `Last Will`, retained online state, and ready-to-watch topics for generic MQTT apps.
+3. Validation: pending.
+
 ## 0.1.1-EXP+55 - 2026-05-10
 
 1. Refined the OLED top layout again: added one more pixel of separation between the Wi-Fi percent and the bar, and moved the `M` block closer to `H` using pixel positioning instead of coarse text spacing.

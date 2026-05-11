@@ -5,6 +5,7 @@
 #include "display_view.h"
 #include "google_sheets_service.h"
 #include "log_service.h"
+#include "mqtt_service.h"
 #include "project_version.h"
 #include "time_service.h"
 #include "wifi_service.h"
@@ -25,7 +26,8 @@ enum class DayPart : uint8_t {
 };
 
 struct DayPartStats {
-  uint64_t sum = 0;
+  uint64_t levelSum = 0;
+  uint64_t percentSum = 0;
   uint32_t count = 0;
   uint8_t quietCount = 0;
   uint8_t loudCount = 0;
@@ -54,6 +56,7 @@ AudioSampler audioSampler;
 DisplayView displayView;
 GoogleSheetsService googleSheetsService;
 LogService logService;
+MqttService mqttService;
 TimeService timeService;
 WifiService wifiService;
 AudioSnapshot latestSnapshot;
@@ -123,10 +126,47 @@ const char *dayPartText(DayPart dayPart) {
   }
 }
 
+const char *dayPartMqttText(DayPart dayPart) {
+  switch (dayPart) {
+    case DayPart::Day:
+      return "day";
+    case DayPart::Evening:
+      return "evening";
+    case DayPart::Night:
+    default:
+      return "night";
+  }
+}
+
+uint32_t dayPartAverageLevel(const DayPartStats &stats) {
+  return stats.count == 0 ? 0 : static_cast<uint32_t>(stats.levelSum / stats.count);
+}
+
+uint32_t dayPartAveragePercent(const DayPartStats &stats) {
+  return stats.count == 0 ? 0 : static_cast<uint32_t>(stats.percentSum / stats.count);
+}
+
 String twoDigitText(uint8_t value) {
   char buffer[4];
   snprintf(buffer, sizeof(buffer), "%02u", value);
   return String(buffer);
+}
+
+String uptimeDateText(unsigned long uptimeMs) {
+  uint32_t totalSeconds = static_cast<uint32_t>(uptimeMs / 1000UL);
+  uint32_t totalMinutes = totalSeconds / 60UL;
+  uint32_t totalHours = totalMinutes / 60UL;
+  uint32_t days = totalHours / 24UL;
+  uint32_t hours = totalHours % 24UL;
+  uint32_t minutes = totalMinutes % 60UL;
+
+  String text = String(days);
+  text += "d, ";
+  text += String(hours);
+  text += "h, ";
+  text += String(minutes);
+  text += "m";
+  return text;
 }
 
 String googleSheetsWindowKey(const TimeService &timeService) {
@@ -280,7 +320,8 @@ void updateDayPartStats(const AudioSnapshot &snapshot, const TimeService &timeSe
 
   DayPart dayPart = dayPartFromHour(timeService.hour());
   DayPartStats &stats = dayPartStats[dayPartIndex(dayPart)];
-  stats.sum += snapshot.statsLevel;
+  stats.levelSum += snapshot.statsLevel;
+  stats.percentSum += snapshot.currentPercent;
   stats.count++;
   if (snapshot.currentPercent <= 10) {
     stats.quietCount++;
@@ -297,11 +338,44 @@ void appendLogSample(const AudioSnapshot &snapshot, const TimeService &timeServi
 
   DayPart currentDayPart = dayPartFromHour(timeService.hour());
   DayPartStats &stats = dayPartStats[dayPartIndex(currentDayPart)];
-  uint32_t partAverage = stats.count == 0 ? 0 : static_cast<uint32_t>(stats.sum / stats.count);
+  uint32_t partAverage = dayPartAverageLevel(stats);
   String minuteKey = timeService.dateString() + " " + timeService.timeString().substring(0, 5);
   logService.appendMinuteSample(minuteKey, timeService.dateString(), timeService.timeString(),
                                 dayPartText(currentDayPart), snapshot, partAverage,
                                 stats.quietCount, stats.loudCount);
+}
+
+void updateMqttState(const AudioSnapshot &snapshot) {
+  MqttRuntimeState state{};
+  unsigned long uptimeMs = millis();
+  uint32_t uptimeMinutes = static_cast<uint32_t>(uptimeMs / 60000UL);
+  state.snapshot = snapshot;
+  state.signalText = signalStateText(snapshot.signalState);
+  state.timeSynced = timeService.isSynced();
+  state.wifiStatus = wifiService.statusTextCStr();
+  state.wifiSignalPercent = wifiService.signalPercent();
+  state.wifiRssiDbm = wifiService.rssiDbm();
+  state.ipAddress = wifiService.ipAddressString();
+  state.uptimeMinutes = uptimeMinutes;
+  state.uptimeHours = uptimeMinutes / 60UL;
+  state.uptimeDateText = uptimeDateText(uptimeMs);
+  state.lastUpdateText = state.uptimeDateText;
+
+  if (state.timeSynced) {
+    DayPart currentDayPart = dayPartFromHour(timeService.hour());
+    state.timestamp = timeService.dateTimeString();
+    state.lastUpdateText = state.timestamp;
+    state.currentPeriod = dayPartMqttText(currentDayPart);
+    state.currentPeriodPercent =
+        dayPartAveragePercent(dayPartStats[dayPartIndex(currentDayPart)]);
+  }
+
+  state.dayPercent = dayPartAveragePercent(dayPartStats[dayPartIndex(DayPart::Day)]);
+  state.eveningPercent =
+      dayPartAveragePercent(dayPartStats[dayPartIndex(DayPart::Evening)]);
+  state.nightPercent = dayPartAveragePercent(dayPartStats[dayPartIndex(DayPart::Night)]);
+
+  mqttService.update(wifiService.isConnected(), state);
 }
 
 void scanI2cBus(TwoWire *wire) {
@@ -344,6 +418,7 @@ void setup() {
   audioSampler.begin(MIC_PIN);
   googleSheetsService.begin();
   logService.begin();
+  mqttService.begin();
   timeService.begin();
   Wire.begin(SDA_PIN, SCL_PIN);
   scanI2cBus(&Wire);
@@ -369,6 +444,7 @@ void loop() {
   updateGoogleSheetsWindow(latestSnapshot, timeService);
   appendLogSample(latestSnapshot, timeService);
   uploadPendingGoogleSheetsWindow();
+  updateMqttState(latestSnapshot);
   unsigned long nowMs = millis();
 
   if (nowMs - lastDisplayAt >= DISPLAY_REFRESH_MS) {
@@ -411,7 +487,7 @@ void loop() {
       Serial.print(F(" part="));
       Serial.print(dayPartText(currentDayPart));
       Serial.print(F(" avg="));
-      Serial.print(stats.count == 0 ? 0 : stats.sum / stats.count);
+      Serial.print(dayPartAverageLevel(stats));
       Serial.print(F(" quiet="));
       Serial.print(stats.quietCount);
       Serial.print(F(" loud="));
