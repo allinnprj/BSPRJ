@@ -80,6 +80,19 @@ const char *signalStateText(SignalState state) {
   }
 }
 
+const char *mqttNoiseLevelText(uint8_t percent) {
+  if (percent <= 20) {
+    return "SILENT";
+  }
+  if (percent <= 40) {
+    return "NORMAL";
+  }
+  if (percent <= 60) {
+    return "LOUD";
+  }
+  return "PEAK";
+}
+
 uint8_t signalStateSeverity(SignalState state) {
   switch (state) {
     case SignalState::Clip:
@@ -351,6 +364,7 @@ void updateMqttState(const AudioSnapshot &snapshot) {
   uint32_t uptimeMinutes = static_cast<uint32_t>(uptimeMs / 60000UL);
   state.snapshot = snapshot;
   state.signalText = signalStateText(snapshot.signalState);
+  state.mqttSignalText = mqttNoiseLevelText(snapshot.currentPercent);
   state.timeSynced = timeService.isSynced();
   state.wifiStatus = wifiService.statusTextCStr();
   state.wifiSignalPercent = wifiService.signalPercent();

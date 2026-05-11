@@ -16,37 +16,94 @@ Current topic root:
 
 - `bs/devices/bs-esp32-01`
 
+## Shared Percent Scale
+
+Use this shared 4-step scale for all `%` topics in this project:
+
+- Min payload: `0`
+- Max payload: `100`
+- Unit: `%`
+
+Recommended practical preset:
+
+- Zone borders:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
+
+Recommended `MqttDesk` fields:
+
+- `From`: `20`
+- `To`: `40`
+- `To`: `60`
+- `Till`: `100`
+
+Recommended colors:
+
+- Start color: red
+- Mid color: yellow
+- End color: green
+
+Percent topics that use this scale:
+
+- `bs/devices/bs-esp32-01/status/wifi_pct`
+- `bs/devices/bs-esp32-01/sound/now_pct`
+- `bs/devices/bs-esp32-01/sound/hour_pct`
+- `bs/devices/bs-esp32-01/sound/mean_pct`
+- `bs/devices/bs-esp32-01/period/current_pct`
+- `bs/devices/bs-esp32-01/period/day_pct`
+- `bs/devices/bs-esp32-01/period/evening_pct`
+- `bs/devices/bs-esp32-01/period/night_pct`
+
 ## Status Topics
 
 ### `bs/devices/bs-esp32-01/status/online`
 
 - Payload: `true` or `false`
+- Min: `false`
+- Max: `true`
 - Meaning: device online state
 
 ### `bs/devices/bs-esp32-01/status/time_synced`
 
 - Payload: `true` or `false`
+- Min: `false`
+- Max: `true`
 - Meaning: whether NTP time is already synced
 
 ### `bs/devices/bs-esp32-01/status/wifi`
 
 - Payload: text
+- Min: not applicable
+- Max: not applicable
 - Meaning: Wi-Fi status text from firmware
 
 ### `bs/devices/bs-esp32-01/status/wifi_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: Wi-Fi signal percent
 
 ### `bs/devices/bs-esp32-01/status/ip`
 
 - Payload: text
+- Min: not applicable
+- Max: not applicable
 - Meaning: current device IP address
 
 ### `bs/devices/bs-esp32-01/status/json`
 
 - Payload: JSON
+- Min: not applicable
+- Max: not applicable
 - Meaning: compact status snapshot
 
 Example JSON fields:
@@ -66,36 +123,62 @@ Example JSON fields:
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: current relative sound level
 
 ### `bs/devices/bs-esp32-01/sound/hour_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: last-hour rolling average
 
 ### `bs/devices/bs-esp32-01/sound/mean_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: all-time mean since boot
 
 ### `bs/devices/bs-esp32-01/sound/signal`
 
 - Payload: text
-- Current values: `LOW`, `OK`, `CLIP`
+- Min: `SILENT`
+- Max: `PEAK`
+- Current values: `SILENT`, `NORMAL`, `LOUD`, `PEAK`
 - Meaning:
-  - `LOW` = signal too weak
-  - `OK` = normal working range
-  - `CLIP` = overload or ADC limit reached
+  - `SILENT` = `0..20`
+  - `NORMAL` = `21..40`
+  - `LOUD` = `41..60`
+  - `PEAK` = `61..100`
 
 Note:
 
-- If later you decide to rename these UI labels to something friendlier like `Silent`, `Normal`, `High`, this topic is the place to update in firmware and desktop clients.
+- This MQTT topic is intentionally more user-facing than the internal diagnostic `LOW / OK / CLIP` logic used elsewhere.
 
 ### `bs/devices/bs-esp32-01/sound/json`
 
 - Payload: JSON
+- Min: not applicable
+- Max: not applicable
 - Meaning: compact sound snapshot
 
 Example JSON fields:
@@ -113,35 +196,67 @@ Example JSON fields:
 ### `bs/devices/bs-esp32-01/period/current`
 
 - Payload: `day`, `evening`, or `night`
+- Min: `day`
+- Max: `night`
 - Meaning: current day-part
 
 ### `bs/devices/bs-esp32-01/period/current_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: mean for the current day-part
 
 ### `bs/devices/bs-esp32-01/period/day_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: mean for daytime
 
 ### `bs/devices/bs-esp32-01/period/evening_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: mean for evening
 
 ### `bs/devices/bs-esp32-01/period/night_pct`
 
 - Payload: number
 - Unit: `%`
+- Min: `0`
+- Max: `100`
+- 4-step scale:
+  - `0..20` = Very Low
+  - `21..40` = Low
+  - `41..60` = Medium
+  - `61..100` = High / Very High
 - Meaning: mean for night
 
 ### `bs/devices/bs-esp32-01/period/json`
 
 - Payload: JSON
+- Min: not applicable
+- Max: not applicable
 - Meaning: compact day-part snapshot
 
 Example JSON fields:

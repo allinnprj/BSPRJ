@@ -253,7 +253,7 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
   publishWqttNumber("sound/now_pct", state.snapshot.currentPercent, true);
   publishWqttNumber("sound/hour_pct", state.snapshot.hourPercent, true);
   publishWqttNumber("sound/mean_pct", state.snapshot.totalPercent, true);
-  publishWqttText("sound/signal", state.signalText, true);
+  publishWqttText("sound/signal", state.mqttSignalText, true);
   publishWqttText("period/current", state.currentPeriod, true);
   publishWqttNumber("period/current_pct", state.currentPeriodPercent, true);
 
@@ -265,7 +265,7 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
   payload += ",\"mean_pct\":";
   payload += String(state.snapshot.totalPercent);
   payload += ",\"signal\":\"";
-  payload += state.signalText;
+  payload += state.mqttSignalText;
   payload += "\",\"current_period\":\"";
   payload += state.currentPeriod;
   payload += "\",\"current_period_pct\":";

@@ -7,6 +7,7 @@
 struct MqttRuntimeState {
   AudioSnapshot snapshot;
   const char *signalText = "LOW";
+  const char *mqttSignalText = "SILENT";
   bool timeSynced = false;
   String timestamp;
   String lastUpdateText;

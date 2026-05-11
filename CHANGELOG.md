@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.1.11-EXP+65 - 2026-05-11
+
+1. Kept Datacake and internal diagnostics on the existing `LOW / OK / CLIP` signal-state logic, but changed the MQTT `sound/signal` topic to publish user-facing noise levels: `SILENT`, `NORMAL`, `LOUD`, and `PEAK`.
+2. Documented the new MQTT-only sound labels and their `0..100` percent ranges in the PC topics cheat sheet so desktop dashboards can use one consistent 4-step vocabulary.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.10-EXP+64 - 2026-05-11
 
 1. Reformatted `UPTIME_DATE` for the Datacake panel into a clearer one-line style like `0d, 3h, 42m` so battery/runtime checks read naturally at a glance.
