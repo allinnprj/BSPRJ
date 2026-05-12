@@ -22,17 +22,12 @@ constexpr char kFieldNowPct[] = "NOW_PCT";
 constexpr char kFieldHourPct[] = "HOUR_PCT";
 constexpr char kFieldMeanPct[] = "MEAN_PCT";
 constexpr char kFieldCurrentPeriod[] = "CURRENT_PERIOD";
-constexpr char kFieldCurrentPeriodPct[] = "CURRENT_PERIOD_PCT";
 constexpr char kFieldDayPct[] = "DAY_PCT";
 constexpr char kFieldEveningPct[] = "EVENING_PCT";
 constexpr char kFieldNightPct[] = "NIGHT_PCT";
 constexpr char kFieldOnline[] = "ONLINE";
 constexpr char kFieldWifiPct[] = "WIFI_PCT";
 constexpr char kFieldSignalState[] = "SIGNAL_STATE";
-constexpr char kFieldLastUpdateTs[] = "LAST_UPDATE_TS";
-constexpr char kFieldUptimeMin[] = "UPTIME_MIN";
-constexpr char kFieldUptimeHours[] = "UPTIME_HOURS";
-constexpr char kFieldUptimeDate[] = "UPTIME_DATE";
 constexpr char kFieldTemperatureC[] = "TEMPERATURE_C";
 constexpr char kFieldHumidityPct[] = "HUMIDITY_PCT";
 
@@ -219,7 +214,12 @@ void MqttService::publishDatacakeOnlineStatus(bool online) {
     return;
   }
 
-  if (publishDatacakeField(kFieldOnline, online ? "true" : "false")) {
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(body, firstRecord, kFieldOnline, online ? "true" : "false");
+  body += ']';
+
+  if (publishDatacakePayload(body, String(kFieldOnline) + "=bool")) {
     datacakeAnnouncedOffline_ = !online;
   }
 }
@@ -339,30 +339,41 @@ void MqttService::publishDatacakeCurrentPeriodIfNeeded(const MqttRuntimeState &s
 }
 
 void MqttService::publishDatacakeFastMetrics(const MqttRuntimeState &state) {
-  publishDatacakeOnlineStatus(true);
-  publishDatacakeNumberField(kFieldNowPct, state.snapshot.currentPercent);
-  publishDatacakeNumberField(kFieldHourPct, state.snapshot.hourPercent);
-  publishDatacakeNumberField(kFieldMeanPct, state.snapshot.totalPercent);
-  publishDatacakeNumberField(kFieldCurrentPeriodPct, state.currentPeriodPercent);
-  publishDatacakeNumberField(kFieldUptimeMin, state.uptimeMinutes);
-  publishDatacakeNumberField(kFieldUptimeHours, state.uptimeHours);
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(body, firstRecord, kFieldOnline, "true");
+  appendDatacakeRecord(body, firstRecord, kFieldNowPct, String(state.snapshot.currentPercent));
+  appendDatacakeRecord(body, firstRecord, kFieldHourPct, String(state.snapshot.hourPercent));
+  appendDatacakeRecord(body, firstRecord, kFieldMeanPct, String(state.snapshot.totalPercent));
   if (state.environmentAvailable) {
-    publishDatacakeDecimalField(kFieldTemperatureC, state.temperatureC, 1);
-    publishDatacakeDecimalField(kFieldHumidityPct, state.humidityPct, 2);
+    appendDatacakeRecord(
+        body, firstRecord, kFieldTemperatureC,
+        String(static_cast<double>(state.temperatureC), static_cast<unsigned int>(1)));
+    appendDatacakeRecord(
+        body, firstRecord, kFieldHumidityPct,
+        String(static_cast<double>(state.humidityPct), static_cast<unsigned int>(2)));
   }
+  body += ']';
+  publishDatacakePayload(body, F("batch fast"));
 }
 
 void MqttService::publishDatacakeSlowMetrics(const MqttRuntimeState &state) {
-  publishDatacakeNumberField(kFieldDayPct, state.dayPercent);
-  publishDatacakeNumberField(kFieldEveningPct, state.eveningPercent);
-  publishDatacakeNumberField(kFieldNightPct, state.nightPercent);
-  publishDatacakeNumberField(kFieldWifiPct, state.wifiSignalPercent);
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(body, firstRecord, kFieldDayPct, String(state.dayPercent));
+  appendDatacakeRecord(body, firstRecord, kFieldEveningPct, String(state.eveningPercent));
+  appendDatacakeRecord(body, firstRecord, kFieldNightPct, String(state.nightPercent));
+  appendDatacakeRecord(body, firstRecord, kFieldWifiPct, String(state.wifiSignalPercent));
+  body += ']';
+  publishDatacakePayload(body, F("batch slow"));
 }
 
 void MqttService::publishDatacakeTextMetrics(const MqttRuntimeState &state) {
-  publishDatacakeTextField(kFieldSignalState, state.signalText);
-  publishDatacakeTextField(kFieldLastUpdateTs, state.lastUpdateText);
-  publishDatacakeTextField(kFieldUptimeDate, state.uptimeDateText);
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(body, firstRecord, kFieldSignalState, "\"" + String(state.signalText) + "\"");
+  body += ']';
+  publishDatacakePayload(body, F("batch text"));
 }
 
 bool MqttService::publishWqttText(const char *topicSuffix, const String &payload,
@@ -382,8 +393,7 @@ bool MqttService::publishWqttDecimal(const char *topicSuffix, float value, uint8
                          retained);
 }
 
-bool MqttService::publishDatacakeField(const char *fieldIdentifier, const String &payload,
-                                       bool retained) {
+bool MqttService::publishDatacakePayload(const String &body, const String &logLabel) {
   WiFiClientSecure client;
   client.setInsecure();
 
@@ -396,24 +406,10 @@ bool MqttService::publishDatacakeField(const char *fieldIdentifier, const String
   http.addHeader(F("Authorization"), String(F("Token ")) + DATACAKE_ACCESS_TOKEN);
   http.addHeader(F("Content-Type"), F("application/json"));
 
-  String body = "[{\"field\":\"";
-  body += fieldIdentifier;
-  body += F("\",\"value\":");
-  if (payload == "true") {
-    body += '1';
-  } else if (payload == "false") {
-    body += '0';
-  } else {
-    body += payload;
-  }
-  body += F("}]");
-
   int httpCode = http.POST(body);
   bool success = httpCode >= 200 && httpCode < 300;
   Serial.print(F("[MQTT] Datacake HTTP "));
-  Serial.print(fieldIdentifier);
-  Serial.print('=');
-  Serial.print(payload);
+  Serial.print(logLabel);
   Serial.print(F(" -> "));
   Serial.println(httpCode);
   if (!success && httpCode > 0) {
@@ -430,22 +426,53 @@ bool MqttService::publishDatacakeField(const char *fieldIdentifier, const String
   return success;
 }
 
+void MqttService::appendDatacakeRecord(String &body, bool &firstRecord,
+                                       const char *fieldIdentifier, const String &payload) {
+  if (!firstRecord) {
+    body += ',';
+  }
+  firstRecord = false;
+
+  body += F("{\"field\":\"");
+  body += fieldIdentifier;
+  body += F("\",\"value\":");
+  if (payload == "true") {
+    body += '1';
+  } else if (payload == "false") {
+    body += '0';
+  } else {
+    body += payload;
+  }
+  body += '}';
+}
+
 bool MqttService::publishDatacakeTextField(const char *fieldIdentifier, const String &payload,
                                            bool retained) {
-  return publishDatacakeField(fieldIdentifier, "\"" + payload + "\"", retained);
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(body, firstRecord, fieldIdentifier, "\"" + payload + "\"");
+  body += ']';
+  return publishDatacakePayload(body, String(fieldIdentifier) + "=text");
 }
 
 bool MqttService::publishDatacakeNumberField(const char *fieldIdentifier, uint32_t value,
                                              bool retained) {
-  return publishDatacakeField(fieldIdentifier, String(value), retained);
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(body, firstRecord, fieldIdentifier, String(value));
+  body += ']';
+  return publishDatacakePayload(body, String(fieldIdentifier) + "=number");
 }
 
 bool MqttService::publishDatacakeDecimalField(const char *fieldIdentifier, float value,
                                               uint8_t decimals, bool retained) {
-  return publishDatacakeField(
-      fieldIdentifier,
-      String(static_cast<double>(value), static_cast<unsigned int>(decimals)),
-      retained);
+  String body = "[";
+  bool firstRecord = true;
+  appendDatacakeRecord(
+      body, firstRecord, fieldIdentifier,
+      String(static_cast<double>(value), static_cast<unsigned int>(decimals)));
+  body += ']';
+  return publishDatacakePayload(body, String(fieldIdentifier) + "=decimal");
 }
 
 String MqttService::wqttTopic(const char *topicSuffix) const {

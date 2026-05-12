@@ -22,8 +22,8 @@ static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 5000;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
 static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 60000UL;
-static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 300UL;
-static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 600UL;
+static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
+static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
 
 enum class DayPart : uint8_t {
   Night,
@@ -175,23 +175,6 @@ String twoDigitText(uint8_t value) {
   return String(buffer);
 }
 
-String uptimeDateText(unsigned long uptimeMs) {
-  uint32_t totalSeconds = static_cast<uint32_t>(uptimeMs / 1000UL);
-  uint32_t totalMinutes = totalSeconds / 60UL;
-  uint32_t totalHours = totalMinutes / 60UL;
-  uint32_t days = totalHours / 24UL;
-  uint32_t hours = totalHours % 24UL;
-  uint32_t minutes = totalMinutes % 60UL;
-
-  String text = String(days);
-  text += "d, ";
-  text += String(hours);
-  text += "h, ";
-  text += String(minutes);
-  text += "m";
-  return text;
-}
-
 String googleSheetsWindowKey(const TimeService &timeService) {
   uint8_t startMinute = static_cast<uint8_t>((timeService.minute() / GOOGLE_SHEETS_WINDOW_MINUTES) *
                                              GOOGLE_SHEETS_WINDOW_MINUTES);
@@ -253,7 +236,7 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
-  record.signalText = signalStateText(window.worstSignalState);
+  record.signalText = mqttNoiseLevelText(record.averageNowPercent);
   record.quietCount = window.quietCount;
   record.loudCount = window.loudCount;
   record.sampleCount = window.sampleCount;
@@ -370,10 +353,8 @@ void appendLogSample(const AudioSnapshot &snapshot, const TimeService &timeServi
 
 void updateMqttState(const AudioSnapshot &snapshot) {
   MqttRuntimeState state{};
-  unsigned long uptimeMs = millis();
-  uint32_t uptimeMinutes = static_cast<uint32_t>(uptimeMs / 60000UL);
   state.snapshot = snapshot;
-  state.signalText = signalStateText(snapshot.signalState);
+  state.signalText = mqttNoiseLevelText(snapshot.currentPercent);
   state.mqttSignalText = mqttNoiseLevelText(snapshot.currentPercent);
   state.timeSynced = timeService.isSynced();
   state.wifiStatus = wifiService.statusTextCStr();
@@ -383,15 +364,10 @@ void updateMqttState(const AudioSnapshot &snapshot) {
   state.environmentAvailable = latestSht31Reading.available;
   state.temperatureC = latestSht31Reading.temperatureC;
   state.humidityPct = latestSht31Reading.humidityPct;
-  state.uptimeMinutes = uptimeMinutes;
-  state.uptimeHours = uptimeMinutes / 60UL;
-  state.uptimeDateText = uptimeDateText(uptimeMs);
-  state.lastUpdateText = state.uptimeDateText;
 
   if (state.timeSynced) {
     DayPart currentDayPart = dayPartFromHour(timeService.hour());
     state.timestamp = timeService.dateTimeString();
-    state.lastUpdateText = state.timestamp;
     state.currentPeriod = dayPartMqttText(currentDayPart);
     state.currentPeriodPercent =
         dayPartAveragePercent(dayPartStats[dayPartIndex(currentDayPart)]);
@@ -444,13 +420,13 @@ void setup() {
   Serial.print(F(" SCL="));
   Serial.println(SCL_PIN);
 
+  wifiService.begin();
   audioSampler.begin(MIC_PIN);
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
   mqttService.begin();
   timeService.begin();
-  wifiService.begin();
   Wire.begin(SDA_PIN, SCL_PIN);
   scanI2cBus(&Wire);
   sht31Service.begin(&Wire);

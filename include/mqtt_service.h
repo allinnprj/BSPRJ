@@ -6,19 +6,15 @@
 
 struct MqttRuntimeState {
   AudioSnapshot snapshot;
-  const char *signalText = "LOW";
+  const char *signalText = "SILENT";
   const char *mqttSignalText = "SILENT";
   bool timeSynced = false;
   String timestamp;
-  String lastUpdateText;
   const char *currentPeriod = "unknown";
   uint32_t currentPeriodPercent = 0;
   uint32_t dayPercent = 0;
   uint32_t eveningPercent = 0;
   uint32_t nightPercent = 0;
-  uint32_t uptimeMinutes = 0;
-  uint32_t uptimeHours = 0;
-  String uptimeDateText;
   const char *wifiStatus = "OFF";
   uint8_t wifiSignalPercent = 0;
   int wifiRssiDbm = -127;
@@ -54,8 +50,9 @@ class MqttService {
   bool publishWqttNumber(const char *topicSuffix, uint32_t value, bool retained);
   bool publishWqttDecimal(const char *topicSuffix, float value, uint8_t decimals,
                           bool retained);
-  bool publishDatacakeField(const char *fieldIdentifier, const String &payload,
-                            bool retained = false);
+  bool publishDatacakePayload(const String &body, const String &logLabel);
+  void appendDatacakeRecord(String &body, bool &firstRecord, const char *fieldIdentifier,
+                            const String &payload);
   bool publishDatacakeTextField(const char *fieldIdentifier, const String &payload,
                                 bool retained = false);
   bool publishDatacakeNumberField(const char *fieldIdentifier, uint32_t value,

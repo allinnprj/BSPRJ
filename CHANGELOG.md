@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## 0.1.26-EXP+80 - 2026-05-12
+
+1. Started Wi-Fi earlier during boot so the connection attempt can run in parallel with the remaining hardware and service initialization.
+2. Reduced the blocking startup delays for Serial and the OLED boot screen to make the pre-Wi-Fi phase feel lighter.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.25-EXP+79 - 2026-05-12
+
+1. Switched Datacake fast, slow, and text telemetry groups from multiple single-field HTTP posts to grouped batch posts.
+2. Kept the MQTT/WQTT topic structure and live desktop flow unchanged while reducing Datacake request count.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.24-EXP+78 - 2026-05-12
+
+1. Removed `CURRENT_PERIOD_PCT` from the active Datacake set so the cloud dashboard focuses on `DAY_PCT`, `EVENING_PCT`, and `NIGHT_PCT`.
+2. Kept `period/current_pct` in MQTT for desktop clients and future experiments without forcing it into the main Datacake dashboard.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.23-EXP+77 - 2026-05-12
+
+1. Removed the redundant Datacake uptime/update fields: `LAST_UPDATE_TS`, `UPTIME_DATE`, `UPTIME_MIN`, and `UPTIME_HOURS`.
+2. Kept the active telemetry focused on sound, period, status, and environment data without changing the main MQTT live flow.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.22-EXP+76 - 2026-05-12
+
+1. Unified `SIGNAL_STATE` across Datacake and MQTT so both now use the same human-readable levels: `SILENT`, `NORMAL`, `LOUD`, and `PEAK`.
+2. Switched the Google Sheets window aggregate signal label to the same level vocabulary so cloud and desktop telemetry are easier to compare.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.21-EXP+75 - 2026-05-12
 
 1. Switched Datacake into a more quota-safe mode by slowing the regular fast metrics from every 15 minutes to every 60 minutes.
