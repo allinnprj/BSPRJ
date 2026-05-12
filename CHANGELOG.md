@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.1.27-EXP+81 - 2026-05-13
+
+1. Removed the MQTT JSON snapshot topics (`status/json`, `sound/json`, `environment/json`, `period/json`) to keep the live broker surface focused on the topics actually used by `MqttDesk`.
+2. Kept the regular MQTT topics unchanged, including `period/current_pct`, so the desktop dashboard does not lose any working widgets.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.26-EXP+80 - 2026-05-12
 
 1. Started Wi-Fi earlier during boot so the connection attempt can run in parallel with the remaining hardware and service initialization.

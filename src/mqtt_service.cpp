@@ -231,30 +231,6 @@ void MqttService::publishWqttStatus(const MqttRuntimeState &state) {
 
   String ipPayload = state.ipAddress.isEmpty() ? String("0.0.0.0") : state.ipAddress;
   publishWqttText("status/ip", ipPayload, true);
-
-  String payload = "{";
-  payload += "\"device\":\"";
-  payload += DEVICE_ID;
-  payload += "\",\"online\":true,\"time_synced\":";
-  payload += state.timeSynced ? "true" : "false";
-  payload += ",\"wifi\":\"";
-  payload += state.wifiStatus;
-  payload += "\",\"wifi_pct\":";
-  payload += String(state.wifiSignalPercent);
-  payload += ",\"rssi_dbm\":";
-  payload += String(state.wifiRssiDbm);
-  payload += ",\"ip\":\"";
-  payload += ipPayload;
-  payload += "\",\"environment_available\":";
-  payload += state.environmentAvailable ? "true" : "false";
-  payload += ",\"temperature_c\":";
-  payload += state.environmentAvailable ? String(state.temperatureC, 1) : String("null");
-  payload += ",\"humidity_pct\":";
-  payload += state.environmentAvailable ? String(state.humidityPct, 2) : String("null");
-  payload += "\",\"timestamp\":\"";
-  payload += state.timestamp;
-  payload += "\"}";
-  publishWqttText("status/json", payload, true);
 }
 
 void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
@@ -268,62 +244,12 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
     publishWqttDecimal("environment/temperature_c", state.temperatureC, 1, true);
     publishWqttDecimal("environment/humidity_pct", state.humidityPct, 2, true);
   }
-
-  String payload = "{";
-  payload += "\"now_pct\":";
-  payload += String(state.snapshot.currentPercent);
-  payload += ",\"hour_pct\":";
-  payload += String(state.snapshot.hourPercent);
-  payload += ",\"mean_pct\":";
-  payload += String(state.snapshot.totalPercent);
-  payload += ",\"signal\":\"";
-  payload += state.mqttSignalText;
-  payload += "\",\"current_period\":\"";
-  payload += state.currentPeriod;
-  payload += "\",\"current_period_pct\":";
-  payload += String(state.currentPeriodPercent);
-  payload += ",\"environment_available\":";
-  payload += state.environmentAvailable ? "true" : "false";
-  payload += ",\"temperature_c\":";
-  payload += state.environmentAvailable ? String(state.temperatureC, 1) : String("null");
-  payload += ",\"humidity_pct\":";
-  payload += state.environmentAvailable ? String(state.humidityPct, 2) : String("null");
-  payload += ",\"timestamp\":\"";
-  payload += state.timestamp;
-  payload += "\"}";
-  publishWqttText("sound/json", payload, true);
-
-  if (state.environmentAvailable) {
-    String environmentPayload = "{";
-    environmentPayload += "\"temperature_c\":";
-    environmentPayload += String(state.temperatureC, 1);
-    environmentPayload += ",\"humidity_pct\":";
-    environmentPayload += String(state.humidityPct, 2);
-    environmentPayload += ",\"timestamp\":\"";
-    environmentPayload += state.timestamp;
-    environmentPayload += "\"}";
-    publishWqttText("environment/json", environmentPayload, true);
-  }
 }
 
 void MqttService::publishWqttPeriodMetrics(const MqttRuntimeState &state) {
   publishWqttNumber("period/day_pct", state.dayPercent, true);
   publishWqttNumber("period/evening_pct", state.eveningPercent, true);
   publishWqttNumber("period/night_pct", state.nightPercent, true);
-
-  String payload = "{";
-  payload += "\"day_pct\":";
-  payload += String(state.dayPercent);
-  payload += ",\"evening_pct\":";
-  payload += String(state.eveningPercent);
-  payload += ",\"night_pct\":";
-  payload += String(state.nightPercent);
-  payload += ",\"time_synced\":";
-  payload += state.timeSynced ? "true" : "false";
-  payload += ",\"timestamp\":\"";
-  payload += state.timestamp;
-  payload += "\"}";
-  publishWqttText("period/json", payload, true);
 }
 
 void MqttService::publishDatacakeCurrentPeriodIfNeeded(const MqttRuntimeState &state,

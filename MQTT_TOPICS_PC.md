@@ -99,27 +99,6 @@ Percent topics that use this scale:
 - Max: not applicable
 - Meaning: current device IP address
 
-### `bs/devices/bs-esp32-01/status/json`
-
-- Payload: JSON
-- Min: not applicable
-- Max: not applicable
-- Meaning: compact status snapshot
-
-Example JSON fields:
-
-- `device`
-- `online`
-- `time_synced`
-- `wifi`
-- `wifi_pct`
-- `rssi_dbm`
-- `ip`
-- `environment_available`
-- `temperature_c`
-- `humidity_pct`
-- `timestamp`
-
 ## Sound Topics
 
 ### `bs/devices/bs-esp32-01/sound/now_pct`
@@ -177,26 +156,6 @@ Note:
 
 - This MQTT topic is intentionally more user-facing than the internal diagnostic `LOW / OK / CLIP` logic used elsewhere.
 
-### `bs/devices/bs-esp32-01/sound/json`
-
-- Payload: JSON
-- Min: not applicable
-- Max: not applicable
-- Meaning: compact sound snapshot
-
-Example JSON fields:
-
-- `now_pct`
-- `hour_pct`
-- `mean_pct`
-- `signal`
-- `current_period`
-- `current_period_pct`
-- `environment_available`
-- `temperature_c`
-- `humidity_pct`
-- `timestamp`
-
 ## Environment Topics
 
 ### `bs/devices/bs-esp32-01/environment/temperature_c`
@@ -214,19 +173,6 @@ Example JSON fields:
 - Min: `0`
 - Max: `100`
 - Meaning: current relative humidity from `SHT31`
-
-### `bs/devices/bs-esp32-01/environment/json`
-
-- Payload: JSON
-- Min: not applicable
-- Max: not applicable
-- Meaning: compact environment snapshot
-
-Example JSON fields:
-
-- `temperature_c`
-- `humidity_pct`
-- `timestamp`
 
 ## Day-Part Topics
 
@@ -289,21 +235,6 @@ Example JSON fields:
   - `61..100` = High / Very High
 - Meaning: mean for night
 
-### `bs/devices/bs-esp32-01/period/json`
-
-- Payload: JSON
-- Min: not applicable
-- Max: not applicable
-- Meaning: compact day-part snapshot
-
-Example JSON fields:
-
-- `day_pct`
-- `evening_pct`
-- `night_pct`
-- `time_synced`
-- `timestamp`
-
 ## Good First Subscriptions
 
 If you want a minimal live setup on PC, start with:
@@ -318,13 +249,6 @@ If you want a minimal live setup on PC, start with:
 - `bs/devices/bs-esp32-01/status/wifi_pct`
 - `bs/devices/bs-esp32-01/period/current`
 - `bs/devices/bs-esp32-01/period/current_pct`
-
-If you want one compact feed instead, start with:
-
-- `bs/devices/bs-esp32-01/status/json`
-- `bs/devices/bs-esp32-01/sound/json`
-- `bs/devices/bs-esp32-01/environment/json`
-- `bs/devices/bs-esp32-01/period/json`
 
 ## Topic Wildcards
 

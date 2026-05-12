@@ -9,6 +9,18 @@
 - Framework target: `Arduino / ESP32`
 - Planned future microphone platform: `ESP32 + INMP441`
 
+## Main Project Goal
+
+- The core project goal is to understand when noise is high or low across the day.
+- `DAY / EVENING / NIGHT` are the main statistical time buckets.
+- `SILENT / NORMAL / LOUD / PEAK` are the human-readable noise-level labels.
+- The intended outcome is not just raw telemetry, but conclusions such as:
+  - what the average daytime noise level is
+  - what the average evening noise level is
+  - what the average night noise level is
+  - which level is most typical for each period
+- Future code, dashboard, display, MQTT, Datacake, and hardware decisions should support this analytical goal.
+
 ## Working Rules
 
 - Keep the project incremental: one hardware check or one behavior change per step.
