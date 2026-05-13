@@ -65,7 +65,15 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   payload += String(record.averagePeakToPeak);
   payload += F(",\"signal\":\"");
   payload += record.signalText;
-  payload += F("\",\"window_minutes\":");
+  if (record.environmentAvailable) {
+    payload += F("\",\"avg_temperature_c\":");
+    payload += String(static_cast<double>(record.averageTemperatureC), 1);
+    payload += F(",\"avg_humidity_pct\":");
+    payload += String(static_cast<double>(record.averageHumidityPct), 2);
+  } else {
+    payload += F("\",\"avg_temperature_c\":null,\"avg_humidity_pct\":null");
+  }
+  payload += F(",\"window_minutes\":");
   payload += String(record.windowMinutes);
   payload += F(",\"quiet_count\":");
   payload += String(record.quietCount);

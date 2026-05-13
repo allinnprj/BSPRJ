@@ -24,6 +24,7 @@ static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
 static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 60000UL;
 static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
 static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
+static constexpr bool STARTUP_I2C_SCAN_ENABLED = false;
 
 enum class DayPart : uint8_t {
   Night,
@@ -54,6 +55,9 @@ struct GoogleSheetsAccumulator {
   uint16_t maxRaw = 0;
   uint32_t quietCount = 0;
   uint32_t loudCount = 0;
+  float temperatureSum = 0.0f;
+  float humiditySum = 0.0f;
+  uint32_t environmentSampleCount = 0;
   uint32_t sampleCount = 0;
   SignalState worstSignalState = SignalState::Low;
 };
@@ -211,6 +215,9 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.maxRaw = 0;
   window.quietCount = 0;
   window.loudCount = 0;
+  window.temperatureSum = 0.0f;
+  window.humiditySum = 0.0f;
+  window.environmentSampleCount = 0;
   window.sampleCount = 0;
   window.worstSignalState = SignalState::Low;
 }
@@ -237,6 +244,13 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
   record.signalText = mqttNoiseLevelText(record.averageNowPercent);
+  if (window.environmentSampleCount > 0) {
+    record.averageTemperatureC =
+        window.temperatureSum / static_cast<float>(window.environmentSampleCount);
+    record.averageHumidityPct =
+        window.humiditySum / static_cast<float>(window.environmentSampleCount);
+    record.environmentAvailable = true;
+  }
   record.quietCount = window.quietCount;
   record.loudCount = window.loudCount;
   record.sampleCount = window.sampleCount;
@@ -286,6 +300,11 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   }
   if (snapshot.currentPercent >= 70) {
     activeSheetsWindow.loudCount++;
+  }
+  if (latestSht31Reading.available) {
+    activeSheetsWindow.temperatureSum += latestSht31Reading.temperatureC;
+    activeSheetsWindow.humiditySum += latestSht31Reading.humidityPct;
+    activeSheetsWindow.environmentSampleCount++;
   }
   if (signalStateSeverity(snapshot.signalState) >
       signalStateSeverity(activeSheetsWindow.worstSignalState)) {
@@ -428,13 +447,17 @@ void setup() {
   mqttService.begin();
   timeService.begin();
   Wire.begin(SDA_PIN, SCL_PIN);
-  scanI2cBus(&Wire);
+  if (STARTUP_I2C_SCAN_ENABLED) {
+    scanI2cBus(&Wire);
+  } else {
+    Serial.println(F("[I2C] startup scan skipped"));
+  }
   sht31Service.begin(&Wire);
   if (sht31Service.isAvailable()) {
     Serial.print(F("[SHT31] ready -> 0x"));
     Serial.println(sht31Service.address(), HEX);
   } else {
-    Serial.println(F("[SHT31] not found at 0x44"));
+    Serial.println(F("[SHT31] not found at 0x44/0x45"));
   }
   if (!displayView.begin(&Wire, SDA_PIN, SCL_PIN, OLED_ADDRESS)) {
     Serial.println(F("SSD1306 init failed."));

@@ -52,19 +52,18 @@ const HEADERS = [
   'RAW MAX',
   'AVG P2P',
   'SIG',
+  'TEMP C',
+  'HUM %',
   'WIN MIN',
   'QUIET',
   'LOUD',
   'SAMPLES'
 ];
 
-function ensureLogSheet_() {
-  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = spreadsheet.getSheetByName('log');
-  if (!sheet) {
-    sheet = spreadsheet.insertSheet('log');
-  }
+const ACTIVE_LOG_SHEET_NAME = 'log';
+const DAILY_SHEET_NAME_FORMAT = 'DD-MM-YY'; // 'DD-MM-YY' or 'YYYY-MM-DD'
 
+function ensureHeaderFormatting_(sheet) {
   const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
   const currentHeaders = headerRange.getValues()[0];
   const headersMatch = HEADERS.every((header, index) => currentHeaders[index] === header);
@@ -81,6 +80,7 @@ function ensureLogSheet_() {
       '#cfe2f3', '#cfe2f3', '#cfe2f3', '#cfe2f3',
       '#fff2cc', '#fff2cc', '#fff2cc',
       '#f4cccc', '#f4cccc', '#f4cccc', '#f4cccc',
+      '#d9ead3', '#d9ead3',
       '#ead1dc',
       '#d9d2e9', '#d9d2e9', '#d9d2e9'
     ]]);
@@ -90,6 +90,65 @@ function ensureLogSheet_() {
   if (sheet.getMaxRows() > 1) {
     sheet.getRange(2, 1, sheet.getMaxRows() - 1, HEADERS.length)
       .setHorizontalAlignment('center');
+  }
+}
+
+function formatSheetDate_(dateText) {
+  if (!dateText) {
+    return '';
+  }
+
+  const parsed = new Date(dateText);
+  if (isNaN(parsed.getTime())) {
+    return dateText;
+  }
+
+  const dd = Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'dd');
+  const mm = Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'MM');
+  const yy = Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'yy');
+  const yyyy = Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'yyyy');
+
+  if (DAILY_SHEET_NAME_FORMAT === 'YYYY-MM-DD') {
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  return `${dd}-${mm}-${yy}`;
+}
+
+function getLastDataDate_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return '';
+  }
+
+  return String(sheet.getRange(lastRow, 4).getValue() || '');
+}
+
+function ensureWritableLogSheet_(incomingDateText) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = spreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
+  if (!sheet) {
+    sheet = spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
+    ensureHeaderFormatting_(sheet);
+    return sheet;
+  }
+
+  ensureHeaderFormatting_(sheet);
+
+  const lastDataDate = getLastDataDate_(sheet);
+  if (lastDataDate && incomingDateText && lastDataDate !== incomingDateText) {
+    const archivedSheetName = formatSheetDate_(lastDataDate);
+    if (archivedSheetName && archivedSheetName !== ACTIVE_LOG_SHEET_NAME) {
+      const existingArchive = spreadsheet.getSheetByName(archivedSheetName);
+      if (!existingArchive) {
+        sheet.setName(archivedSheetName);
+      } else {
+        sheet.setName(`${archivedSheetName}_${Date.now()}`);
+      }
+    }
+
+    sheet = spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
+    ensureHeaderFormatting_(sheet);
   }
 
   return sheet;
@@ -102,9 +161,9 @@ function doGet() {
 }
 
 function doPost(e) {
-  const sheet = ensureLogSheet_();
   const data = JSON.parse(e.postData.contents);
   const valueOrBlank = (value) => value === undefined || value === null ? '' : value;
+  const sheet = ensureWritableLogSheet_(valueOrBlank(data.date));
 
   sheet.appendRow([
     valueOrBlank(data.device_id),
@@ -121,6 +180,8 @@ function doPost(e) {
     valueOrBlank(data.raw_max),
     valueOrBlank(data.avg_peak_to_peak),
     valueOrBlank(data.signal),
+    valueOrBlank(data.avg_temperature_c),
+    valueOrBlank(data.avg_humidity_pct),
     valueOrBlank(data.window_minutes),
     valueOrBlank(data.quiet_count),
     valueOrBlank(data.loud_count),
@@ -158,6 +219,8 @@ In [secrets.h](D:/DEV/BS%20Test%20WPM/include/secrets.h):
 - `RAW MAX`: максимальное сырое ADC-значение за окно
 - `AVG P2P`: среднее peak-to-peak значение за окно
 - `SIG`: худшее состояние сигнала за окно, например `OK` или `CLIP`
+- `TEMP C`: средняя температура за окно, если `SHT31` был доступен
+- `HUM %`: средняя влажность за окно, если `SHT31` был доступен
 - `WIN MIN`: длина окна в минутах
 - `QUIET`: сколько тихих сэмплов было за окно
 - `LOUD`: сколько громких сэмплов было за окно
@@ -168,3 +231,9 @@ In [secrets.h](D:/DEV/BS%20Test%20WPM/include/secrets.h):
 - Держи локальный `LittleFS` лог включенным как резерв.
 - Если `GOOGLE_SHEETS_SCRIPT_URL` пустой, отправка в `Google Sheets` остается выключенной.
 - Если позже мы меняем поведение `Apps Script`, этот файл тоже должен обновляться, чтобы ты всегда мог копировать код из одного места.
+- Активный лист для записи всегда называется `log`.
+- Когда приходит запись уже с новой датой, старый лист `log` переименовывается в дату предыдущего дня, а новый лист снова создаётся под именем `log`.
+- Формат даты листа можно менять в строке:
+  - `const DAILY_SHEET_NAME_FORMAT = 'DD-MM-YY';`
+  - или:
+  - `const DAILY_SHEET_NAME_FORMAT = 'YYYY-MM-DD';`

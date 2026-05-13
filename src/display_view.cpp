@@ -99,7 +99,7 @@ void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Read
   display_.setTextSize(1);
   char secondLine[24];
   if (snapshot.hourSamplesCollected < kHourWarmupCount) {
-    snprintf(secondLine, sizeof(secondLine), "HW %lu  M %u%%",
+    snprintf(secondLine, sizeof(secondLine), "H %lu  M %u%%",
              static_cast<unsigned long>(snapshot.hourSamplesCollected / 60),
              snapshot.totalPercent);
   } else {

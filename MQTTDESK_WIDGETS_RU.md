@@ -10,6 +10,28 @@
 - `Как использовать` — как его обычно настраивать в MQTT.
 - `Полезно нам` — нужен ли он для нашего проекта.
 
+## Что такое `Math expression`
+
+- Это поле для преобразования входящего MQTT payload перед показом.
+- `MqttDesk` подставляет реальное входное значение вместо `%value%`.
+- Если значение уже приходит в нужном виде, поле можно оставить пустым.
+
+Типичные примеры:
+
+- `%value%`
+  - показать значение как есть
+- `round(%value%, 1)`
+  - округлить до одного знака
+- `%value% * 100`
+  - перевести долю `0.68` в процент `68`
+- `(%value% - 32) / 1.8`
+  - перевести температуру из `F` в `C`
+
+Для нашего проекта:
+
+- для `wifi_pct`, `now_pct`, `hour_pct`, `mean_pct` обычно ничего писать не нужно
+- для будущих derived-метрик и нестандартных пересчётов это поле будет полезно
+
 ## Общий принцип для нашего проекта
 
 Для панели `BS Test WPM` в первую очередь полезны:
@@ -40,6 +62,163 @@
 - `Image`
 - `URI`
 - `Iframe`
+
+## Topic -> лучший widget
+
+Ниже не теория, а практический набор именно для `BS Test WPM`.
+
+### Status
+
+#### `bs/devices/bs-esp32-01/status/online`
+
+- Лучший widget: `LED Indicator`
+- Зачем: бинарный статус, устройство онлайн или офлайн
+- Как настраивать:
+  - `Payload ON`: `true`
+  - `Payload OFF`: `false`
+  - `ON color`: green
+  - `OFF color`: red
+
+#### `bs/devices/bs-esp32-01/status/time_synced`
+
+- Лучший widget: `LED Indicator`
+- Зачем: быстро видно, синхронизировалось ли время
+- Как настраивать:
+  - `Payload ON`: `true`
+  - `Payload OFF`: `false`
+
+#### `bs/devices/bs-esp32-01/status/wifi`
+
+- Лучший widget: `Text`
+- Зачем: показывать текстовое состояние Wi-Fi
+- Как настраивать:
+  - без `Math expression`
+  - просто как строку
+
+#### `bs/devices/bs-esp32-01/status/wifi_pct`
+
+- Лучший widget: `Gauge`
+- Зачем: это непрерывное число `0..100`, а не набор фиксированных состояний
+- Как настраивать:
+  - `Min`: `0`
+  - `Max`: `100`
+  - `Unit`: `%`
+  - зоны:
+    - `0..20`
+    - `21..40`
+    - `41..60`
+    - `61..100`
+  - `Math expression`: пусто или `%value%`
+
+Важно:
+
+- для `wifi_pct` не лучший выбор `Multi state Indicator`, потому что там обычно нужны точные совпадения payload
+
+#### `bs/devices/bs-esp32-01/status/ip`
+
+- Лучший widget: `Text`
+- Зачем: удобный служебный виджет
+- Как настраивать:
+  - как обычный строковый topic
+
+### Sound
+
+#### `bs/devices/bs-esp32-01/sound/now_pct`
+
+- Лучший widget: `Gauge`
+- Зачем: это главный текущий уровень шума
+- Как настраивать:
+  - `Min`: `0`
+  - `Max`: `100`
+  - `Unit`: `%`
+  - `Math expression`: пусто или `%value%`
+  - цветовые зоны по общей 4-ступенчатой шкале
+
+#### `bs/devices/bs-esp32-01/sound/hour_pct`
+
+- Лучший widget: `Value`
+- Зачем: это агрегированное значение, ему важнее читаемость, чем “стрелка”
+- Как настраивать:
+  - `Unit`: `%`
+  - `Math expression`: пусто или `%value%`
+
+#### `bs/devices/bs-esp32-01/sound/mean_pct`
+
+- Лучший widget: `Value`
+- Зачем: среднее с запуска лучше читается как число
+- Как настраивать:
+  - `Unit`: `%`
+  - `Math expression`: пусто или `%value%`
+
+#### `bs/devices/bs-esp32-01/sound/signal`
+
+- Лучший widget: `Multi state Indicator`
+- Зачем: это уже человекочитаемая категория шума
+- Как настраивать:
+  - `SILENT`
+  - `NORMAL`
+  - `LOUD`
+  - `PEAK`
+  - каждому состоянию задать свой цвет
+
+### Environment
+
+#### `bs/devices/bs-esp32-01/environment/temperature_c`
+
+- Лучший widget: `Value`
+- Зачем: температура удобнее читается как компактное число
+- Как настраивать:
+  - `Unit`: `C`
+  - при желании:
+    - `Math expression`: `round(%value%, 1)`
+
+#### `bs/devices/bs-esp32-01/environment/humidity_pct`
+
+- Лучший widget: `Value`
+- Зачем: влажность тоже лучше выглядит как простое число
+- Как настраивать:
+  - `Unit`: `%`
+  - при желании:
+    - `Math expression`: `round(%value%, 1)`
+
+### Period
+
+#### `bs/devices/bs-esp32-01/period/current`
+
+- Лучший widget: `Multi state Indicator`
+- Зачем: это дискретное состояние периода суток
+- Как настраивать:
+  - `day`
+  - `evening`
+  - `night`
+
+#### `bs/devices/bs-esp32-01/period/current_pct`
+
+- Лучший widget: `Value` или `Gauge`
+- Зачем: показывает среднее только для текущего периода
+- Как настраивать:
+  - `Min`: `0`
+  - `Max`: `100`
+  - `Unit`: `%`
+
+Примечание:
+
+- этот topic сейчас вспомогательный
+- основной акцент проекта всё равно на `day_pct / evening_pct / night_pct`
+
+#### `bs/devices/bs-esp32-01/period/day_pct`
+#### `bs/devices/bs-esp32-01/period/evening_pct`
+#### `bs/devices/bs-esp32-01/period/night_pct`
+
+- Лучший widget: `Bar Chart`
+- Зачем: это лучший способ сравнить части суток между собой
+- Как настраивать:
+  - три topic в одном виджете
+  - общая шкала `0..100`
+  - подписи:
+    - `Day`
+    - `Evening`
+    - `Night`
 
 ## Widget Checklist
 

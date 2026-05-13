@@ -225,6 +225,7 @@ void MqttService::publishDatacakeOnlineStatus(bool online) {
 }
 
 void MqttService::publishWqttStatus(const MqttRuntimeState &state) {
+  publishWqttOnlineStatus(true);
   publishWqttText("status/time_synced", state.timeSynced ? "true" : "false", true);
   publishWqttText("status/wifi", state.wifiStatus, true);
   publishWqttNumber("status/wifi_pct", state.wifiSignalPercent, true);

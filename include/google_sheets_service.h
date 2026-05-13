@@ -17,6 +17,9 @@ struct GoogleSheetsWindowRecord {
   uint16_t maxRaw = 0;
   uint16_t averagePeakToPeak = 0;
   String signalText;
+  float averageTemperatureC = 0.0f;
+  float averageHumidityPct = 0.0f;
+  bool environmentAvailable = false;
   uint32_t quietCount = 0;
   uint32_t loudCount = 0;
   uint32_t sampleCount = 0;

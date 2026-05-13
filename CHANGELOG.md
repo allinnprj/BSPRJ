@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## 0.1.29-EXP+83 - 2026-05-13
+
+1. Added averaged `SHT31` temperature and humidity to each 10-minute Google Sheets window instead of raw high-frequency environment spam.
+2. Updated the ready-to-paste Apps Script so the `log` sheet stores `TEMP C` and `HUM %` columns and keeps the daily sheet rotation behavior.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.28-EXP+82 - 2026-05-13
+
+1. Republished `status/online=true` during the regular WQTT status cycle so the retained online flag recovers cleanly after brief MQTT reconnects.
+2. Simplified the main OLED warmup label from `HW` to `H` and kept the `M` row unchanged.
+3. Disabled the full startup I2C bus scan by default so boot feels less stalled before Wi-Fi and MQTT settle, while keeping the scan helper available for targeted diagnostics.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.27-EXP+81 - 2026-05-13
 
 1. Removed the MQTT JSON snapshot topics (`status/json`, `sound/json`, `environment/json`, `period/json`) to keep the live broker surface focused on the topics actually used by `MqttDesk`.
