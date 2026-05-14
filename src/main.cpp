@@ -179,6 +179,15 @@ String twoDigitText(uint8_t value) {
   return String(buffer);
 }
 
+String formatCompactUptime(unsigned long uptimeMs) {
+  uint32_t totalMinutes = static_cast<uint32_t>(uptimeMs / 60000UL);
+  uint32_t days = totalMinutes / 1440UL;
+  uint32_t hours = (totalMinutes % 1440UL) / 60UL;
+  uint32_t minutes = totalMinutes % 60UL;
+
+  return String(days) + F(" d, ") + String(hours) + F(" h, ") + String(minutes) + F(" m");
+}
+
 String googleSheetsWindowKey(const TimeService &timeService) {
   uint8_t startMinute = static_cast<uint8_t>((timeService.minute() / GOOGLE_SHEETS_WINDOW_MINUTES) *
                                              GOOGLE_SHEETS_WINDOW_MINUTES);
@@ -255,6 +264,8 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.loudCount = window.loudCount;
   record.sampleCount = window.sampleCount;
   record.windowMinutes = GOOGLE_SHEETS_WINDOW_MINUTES;
+  record.uptimeMinutes = static_cast<uint32_t>(millis() / 60000UL);
+  record.uptimeText = formatCompactUptime(millis());
   return record;
 }
 

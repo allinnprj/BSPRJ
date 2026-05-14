@@ -150,6 +150,7 @@
 - `QUIET` = число тихих сэмплов
 - `LOUD` = число громких сэмплов
 - `SAMPLES` = сколько сэмплов вошло в окно
+- `UPTIME` = сколько устройство живёт с последней перезагрузки, в компактном виде `0 d, 3 h, 14 m`
 
 ### Технические колонки в `clean_summary_10m`
 
@@ -231,7 +232,8 @@
 
 - `Send latest Telegram status`
 - `Send daily Telegram summary`
-- `Show Telegram chat debug`
+- `Enable auto daily summary`
+- `Disable auto daily summary`
 
 Это пока ручной режим:
 
@@ -250,6 +252,7 @@
 - `BS_TELEGRAM_CHAT_ID`
 - `BS_TELEGRAM_ONLINE_RESTORE_ENABLED`
 - `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES`
+- `BS_TELEGRAM_AUTO_DAILY_ENABLED`
 
 ### Где это задавать
 
@@ -262,6 +265,7 @@
    - `BS_TELEGRAM_CHAT_ID` = chat id
    - `BS_TELEGRAM_ONLINE_RESTORE_ENABLED` = `true`
    - `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES` = `30`
+   - `BS_TELEGRAM_AUTO_DAILY_ENABLED` = `false`
 5. Сохрани
 
 ### Как это работает
@@ -272,10 +276,11 @@
 - `Send daily Telegram summary`
   - берёт последний доступный день из `summary_daypart`, `summary_levels`, `summary_health`
   - отправляет краткую дневную сводку
-- `Show Telegram chat debug`
-  - вызывает `getUpdates` у Telegram Bot API
-  - показывает последние чаты, которые реально видит именно этот бот
-  - помогает найти правильный `chat_id`, если появляется `chat not found`
+- `Enable auto daily summary`
+  - включает hourly background trigger
+  - сам шлёт сводку по последнему архивному дню только один раз
+- `Disable auto daily summary`
+  - удаляет этот trigger и выключает авто-режим
 
 ### Что дальше планируется
 
@@ -305,6 +310,18 @@
 - компьютер не нужен
 - браузер не нужен
 - важно только, чтобы `Apps Script` был развёрнут и ESP32 снова смог отправить данные
+
+### Как работает автоматический `daily summary`
+
+Авто-режим не шлёт текущий живой `log`.
+
+Он работает по последнему архивному дню:
+
+- ищет последний архивный лист
+- сам пересобирает аналитику
+- отправляет сводку только один раз на этот день
+
+Это сделано через hourly background trigger, а не через жёсткое время, чтобы сводка не ломалась, если архив нового дня появился не ровно в полночь.
 
 ## Как временно убрать аналитические листы
 

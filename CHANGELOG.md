@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.1.30-EXP+84 - 2026-05-15
+
+1. Added compact `UPTIME` telemetry to each Google Sheets 10-minute window as a single human-readable value like `0 d, 3 h, 14 m`, so log rows show how long the controller lived before each upload without cluttering the table with separate day/hour/minute columns.
+2. Hardened Telegram by adding emoji-friendly status formatting, reboot-aware `online restored` detection based on uptime reset plus gap fallback, and safe non-blocking delivery from `Apps Script`.
+3. Added `Enable auto daily summary` / `Disable auto daily summary` so Google Apps Script can run an hourly background check and send the completed-day summary once per archived day.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## Apps Script analytics - 2026-05-14
 
 1. Expanded the Google Sheets source-of-truth script so the same `Код.gs` can now rebuild `clean_summary_10m`, `summary_daypart`, `summary_levels`, `summary_health`, and a starter `charts` sheet on top of the fixed `log` plus daily-archive contract.
@@ -15,6 +22,7 @@
 11. Added the first manual Telegram layer in `Apps Script`: `Send latest Telegram status` and `Send daily Telegram summary` now send text reports from `clean_summary_10m` and `summary_*`, while secrets stay out of the code via `Script Properties`.
 12. Added an optional `online restored` Telegram notice in `doPost(...)` that sends a short recovery message after a configurable pause between successful posts, without blocking normal log writes if Telegram delivery fails.
 13. Added `Show Telegram chat debug` to the `BS Noise` menu so the bot can display the last chats returned by `getUpdates`, making `chat not found` troubleshooting much easier for private chats and groups.
+14. Removed the temporary `Show Telegram chat debug` helper after group delivery was confirmed, keeping the `BS Noise` menu focused on the permanent Telegram actions.
 
 ## 0.1.29-EXP+83 - 2026-05-13
 

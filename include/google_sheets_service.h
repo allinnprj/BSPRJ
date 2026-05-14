@@ -24,6 +24,8 @@ struct GoogleSheetsWindowRecord {
   uint32_t loudCount = 0;
   uint32_t sampleCount = 0;
   uint8_t windowMinutes = 0;
+  String uptimeText;
+  uint32_t uptimeMinutes = 0;
 };
 
 class GoogleSheetsService {

@@ -36,7 +36,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   http.addHeader(F("Content-Type"), F("application/json"));
 
   String payload;
-  payload.reserve(512);
+  payload.reserve(640);
   payload += F("{\"device_id\":\"");
   payload += DEVICE_ID;
   payload += F("\",\"fw_version\":\"");
@@ -81,6 +81,10 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   payload += String(record.loudCount);
   payload += F(",\"samples\":");
   payload += String(record.sampleCount);
+  payload += F(",\"uptime\":\"");
+  payload += record.uptimeText;
+  payload += F("\",\"uptime_min\":");
+  payload += String(record.uptimeMinutes);
   payload += '}';
 
   int httpCode = http.POST(payload);

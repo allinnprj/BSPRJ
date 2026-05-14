@@ -18,7 +18,8 @@ const HEADERS = [
   'WIN MIN',
   'QUIET',
   'LOUD',
-  'SAMPLES'
+  'SAMPLES',
+  'UPTIME'
 ];
 
 const ACTIVE_LOG_SHEET_NAME = 'log';
@@ -40,7 +41,10 @@ const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
 const TELEGRAM_CHAT_ID_PROPERTY = 'BS_TELEGRAM_CHAT_ID';
 const TELEGRAM_ONLINE_RESTORE_ENABLED_PROPERTY = 'BS_TELEGRAM_ONLINE_RESTORE_ENABLED';
 const TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY = 'BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES';
+const TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_ENABLED';
+const TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_LAST_SENT_DATE';
 const TELEGRAM_LAST_POST_MS_PROPERTY = 'BS_TELEGRAM_LAST_POST_MS';
+const TELEGRAM_LAST_UPTIME_MIN_PROPERTY = 'BS_TELEGRAM_LAST_UPTIME_MIN';
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -71,6 +75,7 @@ const CLEAN_SUMMARY_HEADERS = [
   'QUIET',
   'LOUD',
   'SAMPLES',
+  'UPTIME',
   'SOURCE SHEET',
   'DAY STATE',
   'RECORD KEY',
@@ -144,7 +149,7 @@ const SHEET_STYLE_PROFILES = {
       '#f9cb9c', '#f9cb9c', '#f9cb9c',
       '#d9b8f0',
       '#b7ead7', '#b7ead7',
-      '#d9d2e9', '#ead1dc', '#f4cccc', '#d9d9d9',
+      '#d9d2e9', '#ead1dc', '#f4cccc', '#d9d9d9', '#d9d9d9',
       '#e8eaed', '#e8eaed', '#e8eaed',
       '#d0e0e3', '#d0e0e3', '#d0e0e3',
       '#fce5cd', '#f4cccc'
@@ -153,7 +158,7 @@ const SHEET_STYLE_PROFILES = {
     bodyEven: '#f1f5f9',
     accentCols: [4, 7, 8, 18, 21, 27, 29],
     accentColor: '#eef4ff',
-    hideFromCol: 22,
+    hideFromCol: 23,
     hideCount: 8,
     freezeCols: 7
   },
@@ -224,7 +229,7 @@ const HEADER_COLORS = [
   '#d9b8f0',
   '#b7ead7', '#b7ead7',
   '#d9d2e9',
-  '#ead1dc', '#f4cccc', '#d9d9d9'
+  '#ead1dc', '#f4cccc', '#d9d9d9', '#d9d9d9'
 ];
 const DATA_COLORS_ODD = [
   '#eef7f1', '#eef7f1', '#eef7f1',
@@ -234,7 +239,7 @@ const DATA_COLORS_ODD = [
   '#f8f1fc',
   '#eefaf5', '#eefaf5',
   '#f5f3fb',
-  '#fbf3f7', '#fdf1f1', '#f5f5f5'
+  '#fbf3f7', '#fdf1f1', '#f5f5f5', '#f5f5f5'
 ];
 const DATA_COLORS_EVEN = [
   '#f7fbf8', '#f7fbf8', '#f7fbf8',
@@ -244,7 +249,7 @@ const DATA_COLORS_EVEN = [
   '#fbf7fe',
   '#f6fcf9', '#f6fcf9',
   '#faf8fd',
-  '#fdf8fb', '#fef7f7', '#fafafa'
+  '#fdf8fb', '#fef7f7', '#fafafa', '#fafafa'
 ];
 
 function buildDataBackgrounds_(rowCount) {
@@ -513,7 +518,8 @@ function onOpen() {
     .addSeparator()
     .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
     .addItem('Send daily Telegram summary', 'sendDailyTelegramSummary_')
-    .addItem('Show Telegram chat debug', 'showTelegramChatDebug_')
+    .addItem('Enable auto daily summary', 'enableAutomaticDailySummary_')
+    .addItem('Disable auto daily summary', 'disableAutomaticDailySummary_')
     .addSeparator()
     .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
     .addItem('Show analytics sheets', 'showAnalyticsSheets_')
@@ -555,6 +561,13 @@ function formatMaybeNumber_(value, suffix) {
     return 'no data';
   }
   return `${roundValue_(toNumber_(value), 1)}${suffix || ''}`;
+}
+
+function htmlEscape_(value) {
+  return String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function normalizePartText_(value) {
@@ -652,7 +665,8 @@ function getTelegramConfig_() {
     botToken: String(properties.getProperty(TELEGRAM_BOT_TOKEN_PROPERTY) || '').trim(),
     chatId: String(properties.getProperty(TELEGRAM_CHAT_ID_PROPERTY) || '').trim(),
     onlineRestoreEnabled: String(properties.getProperty(TELEGRAM_ONLINE_RESTORE_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true',
-    onlineRestoreGapMinutes: Math.max(1, toNumber_(properties.getProperty(TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY) || 30))
+    onlineRestoreGapMinutes: Math.max(1, toNumber_(properties.getProperty(TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY) || 30)),
+    autoDailyEnabled: String(properties.getProperty(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true'
   };
 }
 
@@ -690,55 +704,9 @@ function sendTelegramMessage_(text) {
   return response;
 }
 
-function getTelegramUpdates_() {
-  const config = ensureTelegramConfigured_();
-  const response = UrlFetchApp.fetch(`https://api.telegram.org/bot${config.botToken}/getUpdates`, {
-    method: 'get',
-    muteHttpExceptions: true
-  });
-
-  const statusCode = response.getResponseCode();
-  if (statusCode < 200 || statusCode >= 300) {
-    throw new Error(`Telegram getUpdates failed: HTTP ${statusCode} ${response.getContentText()}`);
-  }
-
-  const payload = JSON.parse(response.getContentText() || '{}');
-  if (!payload.ok) {
-    throw new Error(`Telegram getUpdates error: ${response.getContentText()}`);
-  }
-
-  return payload.result || [];
-}
-
-function showTelegramChatDebug_() {
-  const updates = getTelegramUpdates_();
-  const ui = SpreadsheetApp.getUi();
-  if (!updates.length) {
-    ui.alert(
-      'Telegram debug',
-      'No updates yet. Send a message to the bot in private or in the target group, then run this again.',
-      ui.ButtonSet.OK
-    );
-    return;
-  }
-
-  const lines = updates.slice(-5).reverse().map((update) => {
-    const message = update.message || update.edited_message || update.channel_post || update.edited_channel_post;
-    if (!message || !message.chat) {
-      return `update_id=${update.update_id} | no chat payload`;
-    }
-
-    const chat = message.chat;
-    const title = chat.title || `${chat.first_name || ''} ${chat.last_name || ''}`.trim() || 'n/a';
-    return [
-      `update_id=${update.update_id}`,
-      `chat_id=${chat.id}`,
-      `type=${chat.type}`,
-      `title=${title}`
-    ].join(' | ');
-  });
-
-  ui.alert('Telegram debug', lines.join('\n\n'), ui.ButtonSet.OK);
+function deviceScopedPropertyKey_(baseKey, deviceId) {
+  const safeDeviceId = String(deviceId || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
+  return `${baseKey}_${safeDeviceId}`;
 }
 
 function maybeSendOnlineRestoredTelegram_(payload) {
@@ -749,15 +717,22 @@ function maybeSendOnlineRestoredTelegram_(payload) {
 
   const properties = PropertiesService.getScriptProperties();
   const nowMs = Date.now();
-  const previousMs = toNumber_(properties.getProperty(TELEGRAM_LAST_POST_MS_PROPERTY) || 0);
-  properties.setProperty(TELEGRAM_LAST_POST_MS_PROPERTY, String(nowMs));
+  const deviceId = String(payload.device_id || 'default');
+  const lastPostKey = deviceScopedPropertyKey_(TELEGRAM_LAST_POST_MS_PROPERTY, deviceId);
+  const lastUptimeKey = deviceScopedPropertyKey_(TELEGRAM_LAST_UPTIME_MIN_PROPERTY, deviceId);
+  const previousMs = toNumber_(properties.getProperty(lastPostKey) || 0);
+  const previousUptimeMin = toNumber_(properties.getProperty(lastUptimeKey) || 0);
+  const currentUptimeMin = Math.max(0, toNumber_(payload.uptime_min || 0));
+  properties.setProperty(lastPostKey, String(nowMs));
+  properties.setProperty(lastUptimeKey, String(currentUptimeMin));
 
   if (!previousMs) {
     return;
   }
 
   const gapMinutes = Math.round((nowMs - previousMs) / 60000);
-  if (gapMinutes < config.onlineRestoreGapMinutes) {
+  const rebootDetected = currentUptimeMin > 0 && previousUptimeMin > 0 && currentUptimeMin + 2 < previousUptimeMin;
+  if (!rebootDetected && gapMinutes < config.onlineRestoreGapMinutes) {
     return;
   }
 
@@ -765,14 +740,15 @@ function maybeSendOnlineRestoredTelegram_(payload) {
   const normalizedTimeFrom = normalizeTimeText_(payload.time_from);
   const normalizedTimeTo = normalizeTimeText_(payload.time_to);
   const text = [
-    '<b>BS Noise Online</b>',
-    `Device: <code>${payload.device_id || 'n/a'}</code>`,
+    '🟢 <b>BS Noise Online</b>',
+    `Device: <code>${htmlEscape_(payload.device_id || 'n/a')}</code>`,
     `Status: <b>online restored</b>`,
-    `Gap: <b>${gapMinutes} min</b>`,
-    `Date: <b>${normalizedDate || 'n/a'}</b>`,
-    `Window: <b>${normalizedTimeFrom || 'n/a'}-${normalizedTimeTo || 'n/a'}</b>`,
-    `Part: <b>${normalizePartText_(payload.part || '')}</b>`,
-    `Version: <code>${payload.fw_version || 'n/a'}</code> build <code>${payload.build || 'n/a'}</code>`
+    rebootDetected ? `Reason: reboot detected` : `Gap: <b>${gapMinutes} min</b>`,
+    `Date: <b>${htmlEscape_(normalizedDate || 'n/a')}</b>`,
+    `Window: <b>${htmlEscape_(normalizedTimeFrom || 'n/a')}-${htmlEscape_(normalizedTimeTo || 'n/a')}</b>`,
+    `Part: <b>${htmlEscape_(normalizePartText_(payload.part || ''))}</b>`,
+    `Uptime: ${htmlEscape_(payload.uptime || 'n/a')}`,
+    `Version: <code>${htmlEscape_(payload.fw_version || 'n/a')}</code> build <code>${htmlEscape_(payload.build || 'n/a')}</code>`
   ].join('\n');
 
   sendTelegramMessage_(text);
@@ -786,7 +762,7 @@ function getLatestValidCleanRecord_() {
   }
 
   const values = sheet.getRange(2, 1, lastRow - 1, CLEAN_SUMMARY_HEADERS.length).getValues();
-  const validRows = values.filter((row) => toNumber_(row[26]) === 1);
+  const validRows = values.filter((row) => toNumber_(row[27]) === 1);
   const sourceRows = validRows.length ? validRows : values;
   if (!sourceRows.length) {
     return null;
@@ -814,8 +790,9 @@ function getLatestValidCleanRecord_() {
     temperatureC: row[15],
     humidityPct: row[16],
     samples: row[20],
-    qualityText: row[28],
-    isValid: toNumber_(row[26]) === 1
+    uptimeText: row[21],
+    qualityText: row[29],
+    isValid: toNumber_(row[27]) === 1
   };
 }
 
@@ -903,23 +880,24 @@ function buildLatestTelegramStatus_() {
 
   const qualityLabel = record.isValid ? 'valid' : String(record.qualityText || 'raw');
   return [
-    '<b>BS Noise Latest</b>',
-    `Device: <code>${record.deviceId || 'n/a'}</code>`,
-    `Version: <code>${record.version || 'n/a'}</code> build <code>${record.build || 'n/a'}</code>`,
+    '📟 <b>BS Noise Latest</b>',
+    `Device: <code>${htmlEscape_(record.deviceId || 'n/a')}</code>`,
+    `Version: <code>${htmlEscape_(record.version || 'n/a')}</code> build <code>${htmlEscape_(record.build || 'n/a')}</code>`,
     '',
-    `Date: <b>${record.dateText || 'n/a'}</b>`,
-    `Window: <b>${record.timeFrom || 'n/a'}-${record.timeTo || 'n/a'}</b>`,
-    `Part: <b>${record.partText || 'n/a'}</b>`,
+    `📅 Date: <b>${htmlEscape_(record.dateText || 'n/a')}</b>`,
+    `🕒 Window: <b>${htmlEscape_(record.timeFrom || 'n/a')}-${htmlEscape_(record.timeTo || 'n/a')}</b>`,
+    `🌗 Part: <b>${htmlEscape_(record.partText || 'n/a')}</b>`,
     '',
-    `Now: <b>${formatPct_(record.nowPct)}</b>`,
-    `H: ${formatPct_(record.hourPct)}`,
-    `M: ${formatPct_(record.totalPct)}`,
-    `Level: <b>${record.levelText || 'n/a'}</b>`,
+    `🔊 Now: <b>${formatPct_(record.nowPct)}</b>`,
+    `🟡 H: ${formatPct_(record.hourPct)}`,
+    `🔵 M: ${formatPct_(record.totalPct)}`,
+    `🏷️ Level: <b>${htmlEscape_(record.levelText || 'n/a')}</b>`,
     '',
-    `Temp: ${formatMaybeNumber_(record.temperatureC, ' C')}`,
-    `Hum: ${formatMaybeNumber_(record.humidityPct, ' %')}`,
-    `Samples: ${toNumber_(record.samples)}`,
-    `Quality: ${qualityLabel}`
+    `🌡️ Temp: ${formatMaybeNumber_(record.temperatureC, ' C')}`,
+    `💧 Hum: ${formatMaybeNumber_(record.humidityPct, ' %')}`,
+    `⏱️ Uptime: ${htmlEscape_(record.uptimeText || 'n/a')}`,
+    `📦 Samples: ${toNumber_(record.samples)}`,
+    `✅ Quality: ${htmlEscape_(qualityLabel)}`
   ].join('\n');
 }
 
@@ -933,7 +911,7 @@ function buildDailyTelegramSummary_(dateText) {
     const row = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, partText);
     if (!row) {
       return [
-        `<b>${partText}</b>`,
+        `🌗 <b>${partText}</b>`,
         'Avg: no data',
         'Main: no data',
         'Valid windows: 0/0'
@@ -943,7 +921,7 @@ function buildDailyTelegramSummary_(dateText) {
     const validWindows = toNumber_(row[4]);
     const expectedWindows = toNumber_(row[5]);
     return [
-      `<b>${partText}</b>`,
+      `🌗 <b>${partText}</b>`,
       `Avg: ${formatMaybePct_(row[7])}`,
       `Main: ${getMainLevelForPart_(targetDate, partText)}`,
       `Valid windows: ${validWindows}/${expectedWindows || 0}`
@@ -972,18 +950,18 @@ function buildDailyTelegramSummary_(dateText) {
   resultLines.push(`Data quality is ${qualityLabel}.`);
 
   return [
-    '<b>BS Noise Summary</b>',
-    `Date: <b>${targetDate}</b>`,
+    '📘 <b>BS Noise Summary</b>',
+    `📅 Date: <b>${htmlEscape_(targetDate)}</b>`,
     '',
     partLines.join('\n\n'),
     '',
-    '<b>Coverage</b>',
+    '📈 <b>Coverage</b>',
     `Valid total: ${validTotal}`,
     `Missing windows: ${missingWindows}`,
     `Coverage: ${formatPct_(coveragePct)}`,
-    `Quality: ${qualityLabel}`,
+    `Quality: ${htmlEscape_(qualityLabel)}`,
     '',
-    '<b>Result</b>',
+    '🧾 <b>Result</b>',
     resultLines.join('\n')
   ].join('\n');
 }
@@ -998,6 +976,66 @@ function sendDailyTelegramSummary_() {
   const text = buildDailyTelegramSummary_('');
   sendTelegramMessage_(text);
   SpreadsheetApp.getActiveSpreadsheet().toast('Daily Telegram summary sent.', 'BS Noise', 5);
+}
+
+function getLatestArchivedDateText_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const dates = listRawDataSheets_(spreadsheet)
+    .map((sheet) => sheet.getName())
+    .filter((name) => name !== ACTIVE_LOG_SHEET_NAME)
+    .map((name) => normalizeDateText_(name))
+    .filter((value) => value);
+  if (!dates.length) {
+    return '';
+  }
+  dates.sort();
+  return dates[dates.length - 1];
+}
+
+function removeAutomaticDailySummaryTriggers_() {
+  ScriptApp.getProjectTriggers().forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'runAutomaticDailyTelegramSummary_') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+}
+
+function enableAutomaticDailySummary_() {
+  const properties = PropertiesService.getScriptProperties();
+  removeAutomaticDailySummaryTriggers_();
+  ScriptApp.newTrigger('runAutomaticDailyTelegramSummary_').timeBased().everyHours(1).create();
+  properties.setProperty(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY, 'true');
+  SpreadsheetApp.getActiveSpreadsheet().toast('Auto daily summary enabled with an hourly background check.', 'BS Noise', 6);
+}
+
+function disableAutomaticDailySummary_() {
+  const properties = PropertiesService.getScriptProperties();
+  removeAutomaticDailySummaryTriggers_();
+  properties.setProperty(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY, 'false');
+  SpreadsheetApp.getActiveSpreadsheet().toast('Auto daily summary disabled.', 'BS Noise', 5);
+}
+
+function runAutomaticDailyTelegramSummary_() {
+  const config = getTelegramConfig_();
+  if (!config.enabled || !config.autoDailyEnabled) {
+    return;
+  }
+
+  const targetDate = getLatestArchivedDateText_();
+  if (!targetDate) {
+    return;
+  }
+
+  const properties = PropertiesService.getScriptProperties();
+  const lastSentDate = String(properties.getProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY) || '').trim();
+  if (lastSentDate === targetDate) {
+    return;
+  }
+
+  rebuildAnalytics_();
+  const text = buildDailyTelegramSummary_(targetDate);
+  sendTelegramMessage_(text);
+  properties.setProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY, targetDate);
 }
 
 function sortRecords_(records) {
@@ -1059,6 +1097,7 @@ function collectRawRecords_() {
         quietCount: toNumber_(row[17]),
         loudCount: toNumber_(row[18]),
         samples: toNumber_(row[19]),
+        uptimeText: String(row[20] || ''),
         sourceSheet: sheet.getName(),
         dayState: sheet.getName() === ACTIVE_LOG_SHEET_NAME ? 'CURRENT' : 'ARCHIVE',
         recordKey
@@ -1135,6 +1174,7 @@ function buildCleanSummaryData_(records) {
       record.quietCount,
       record.loudCount,
       record.samples,
+      record.uptimeText,
       record.sourceSheet,
       record.dayState,
       record.recordKey,
@@ -1657,8 +1697,8 @@ function rebuildAnalyticsCharts_() {
     partText: normalizePartText_(row[6]),
     nowPct: toNumber_(row[8]),
     levelText: String(row[7] || ''),
-    isValid: toNumber_(row[26]) === 1,
-    gapBefore: toNumber_(row[27])
+    isValid: toNumber_(row[27]) === 1,
+    gapBefore: toNumber_(row[28])
   }));
 
   const chartBlocks = buildChartSourceBlocks_(records);
@@ -1793,7 +1833,8 @@ function doPost(e) {
     valueOrBlank(data.window_minutes),
     valueOrBlank(data.quiet_count),
     valueOrBlank(data.loud_count),
-    valueOrBlank(data.samples)
+    valueOrBlank(data.samples),
+    valueOrBlank(data.uptime)
   ]);
   ensureHeaderFormatting_(sheet);
 
