@@ -1247,8 +1247,17 @@ function buildChartSourceBlocks_(records) {
     latestDate,
     dayPartRows,
     levelMixRows,
-    coverageRows
+    coverageRows,
+    coveragePct: roundValue_(latestCoverage.validWindows * 100 / 144, 1)
   };
+}
+
+function buildTextBar_(value, maxValue, width) {
+  const safeMax = Math.max(maxValue || 0, 1);
+  const ratio = Math.max(0, Math.min(1, toNumber_(value) / safeMax));
+  const totalWidth = Math.max(width || 10, 1);
+  const filled = Math.round(ratio * totalWidth);
+  return `[${'='.repeat(filled)}${'.'.repeat(totalWidth - filled)}]`;
 }
 
 function rebuildAnalyticsCharts_() {
@@ -1271,7 +1280,7 @@ function rebuildAnalyticsCharts_() {
 
   const chartBlocks = buildChartSourceBlocks_(records);
   const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
-  ensureMinColumnCount_(sheet, 12);
+  ensureMinColumnCount_(sheet, 6);
   sheet.clearContents();
   sheet.clearFormats();
   sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
@@ -1279,20 +1288,21 @@ function rebuildAnalyticsCharts_() {
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
   sheet.setHiddenGridlines(true);
-  sheet.setColumnWidths(1, 8, 110);
   sheet.setColumnWidth(1, 180);
-  sheet.setColumnWidth(2, 120);
-  sheet.setColumnWidths(10, 3, 110);
-  sheet.hideColumns(10, 3);
+  sheet.setColumnWidth(2, 110);
+  sheet.setColumnWidth(3, 300);
+  sheet.setColumnWidth(4, 150);
+  sheet.setColumnWidth(5, 110);
+  sheet.setColumnWidth(6, 110);
 
-  sheet.getRange(1, 1, 1, 8).merge();
+  sheet.getRange(1, 1, 1, 6).merge();
   sheet.getRange(1, 1).setValue('DASHBOARD · QUICK VIEW')
     .setFontWeight('bold')
     .setFontSize(16)
     .setHorizontalAlignment('left')
     .setBackground('#d9ead3')
     .setFontColor('#274e13');
-  sheet.getRange(2, 1, 1, 8).merge();
+  sheet.getRange(2, 1, 1, 6).merge();
   sheet.getRange(2, 1).setValue(
     chartBlocks.latestDate
       ? `Latest date: ${chartBlocks.latestDate}. Use charts for quick reading and summary_* sheets for exact numbers.`
@@ -1307,85 +1317,39 @@ function rebuildAnalyticsCharts_() {
   sheet.getRange(4, 3, 1, 2).setValues([['Valid windows', chartBlocks.coverageRows[0][1]]]);
   sheet.getRange(4, 5, 1, 2).setValues([['Missing windows', chartBlocks.coverageRows[1][1]]]);
   sheet.getRange(4, 1, 1, 6).setBackground('#f3f6fa').setFontWeight('bold');
+  sheet.getRange(5, 1, 1, 2).setValues([['Coverage %', chartBlocks.coveragePct]]);
+  sheet.getRange(5, 3, 1, 4).merge();
+  sheet.getRange(5, 3).setValue(`${buildTextBar_(chartBlocks.coveragePct, 100, 24)} ${chartBlocks.coveragePct}%`)
+    .setHorizontalAlignment('left');
+  sheet.getRange(5, 1, 1, 6).setBackground('#fbfdf8');
 
-  const helperDayStartRow = 1;
-  const helperLevelStartRow = 8;
-  const helperCoverageStartRow = 15;
-  const helperStartCol = 10;
+  sheet.getRange(7, 1, 1, 3).merge().setValue('DAYPART LEVELS')
+    .setBackground('#eaf4e3').setFontWeight('bold').setHorizontalAlignment('left');
+  sheet.getRange(8, 1, 1, 3).setValues([['PART', 'AVG NOW %', 'DIAGRAM']]).setBackground('#eff7ea').setFontWeight('bold');
+  const dayPartDisplayRows = chartBlocks.dayPartRows.map((row) => [row[0], row[1], `${buildTextBar_(row[1], 100, 24)} ${row[1]}%`]);
+  sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setValues(dayPartDisplayRows);
+  sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(dayPartDisplayRows.length, 3, '#fbfdf8'));
 
-  sheet.getRange(helperDayStartRow, helperStartCol, 1, 2).setValues([['PART', 'AVG NOW %']]);
-  sheet.getRange(helperDayStartRow + 1, helperStartCol, chartBlocks.dayPartRows.length, 2).setValues(chartBlocks.dayPartRows);
-  sheet.getRange(helperLevelStartRow, helperStartCol, 1, 2).setValues([['LEVEL', 'SHARE %']]);
-  sheet.getRange(helperLevelStartRow + 1, helperStartCol, chartBlocks.levelMixRows.length, 2).setValues(chartBlocks.levelMixRows);
-  sheet.getRange(helperCoverageStartRow, helperStartCol, 1, 2).setValues([['METRIC', 'VALUE']]);
-  sheet.getRange(helperCoverageStartRow + 1, helperStartCol, chartBlocks.coverageRows.length, 2).setValues(chartBlocks.coverageRows);
+  sheet.getRange(14, 1, 1, 3).merge().setValue('NOISE MIX')
+    .setBackground('#fff7df').setFontWeight('bold').setHorizontalAlignment('left');
+  sheet.getRange(15, 1, 1, 3).setValues([['LEVEL', 'SHARE %', 'DIAGRAM']]).setBackground('#fffaf0').setFontWeight('bold');
+  const levelDisplayRows = chartBlocks.levelMixRows.map((row) => [row[0], row[1], `${buildTextBar_(row[1], 100, 24)} ${row[1]}%`]);
+  sheet.getRange(16, 1, levelDisplayRows.length, 3).setValues(levelDisplayRows);
+  sheet.getRange(16, 1, levelDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(levelDisplayRows.length, 3, '#fffdfa'));
 
-  sheet.getRange(6, 1, 1, 2).setValues([['PART', 'AVG NOW %']]).setBackground('#eaf4e3').setFontWeight('bold');
-  sheet.getRange(7, 1, chartBlocks.dayPartRows.length, 2).setValues(chartBlocks.dayPartRows);
-  sheet.getRange(7, 1, chartBlocks.dayPartRows.length, 2).setBackgrounds(
-    buildSolidBackgrounds_(chartBlocks.dayPartRows.length, 2, '#fbfdf8')
-  );
+  sheet.getRange(22, 1, 1, 3).merge().setValue('DATA COVERAGE')
+    .setBackground('#fde9e7').setFontWeight('bold').setHorizontalAlignment('left');
+  sheet.getRange(23, 1, 1, 3).setValues([['METRIC', 'VALUE', 'DIAGRAM']]).setBackground('#fff3f3').setFontWeight('bold');
+  const coverageDisplayRows = chartBlocks.coverageRows.map((row) => {
+    const maxValue = row[0] === 'VALID WINDOWS' ? 144 : 144;
+    return [row[0], row[1], buildTextBar_(row[1], maxValue, 24)];
+  });
+  sheet.getRange(24, 1, coverageDisplayRows.length, 3).setValues(coverageDisplayRows);
+  sheet.getRange(24, 1, coverageDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(coverageDisplayRows.length, 3, '#fffafa'));
 
-  sheet.getRange(12, 1, 1, 2).setValues([['LEVEL', 'SHARE %']]).setBackground('#fff7df').setFontWeight('bold');
-  sheet.getRange(13, 1, chartBlocks.levelMixRows.length, 2).setValues(chartBlocks.levelMixRows);
-  sheet.getRange(13, 1, chartBlocks.levelMixRows.length, 2).setBackgrounds(
-    buildSolidBackgrounds_(chartBlocks.levelMixRows.length, 2, '#fffdfa')
-  );
-
-  sheet.getRange(19, 1, 1, 2).setValues([['METRIC', 'VALUE']]).setBackground('#fde9e7').setFontWeight('bold');
-  sheet.getRange(20, 1, chartBlocks.coverageRows.length, 2).setValues(chartBlocks.coverageRows);
-  sheet.getRange(20, 1, chartBlocks.coverageRows.length, 2).setBackgrounds(
-    buildSolidBackgrounds_(chartBlocks.coverageRows.length, 2, '#fffafa')
-  );
-
-  sheet.getRange(6, 1, 16, 2).setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
-
-  const dayPartChart = sheet.newChart()
-    .setChartType(Charts.ChartType.BAR)
-    .addRange(sheet.getRange(helperDayStartRow, helperStartCol, chartBlocks.dayPartRows.length + 1, 2))
-    .setNumHeaders(1)
-    .setOption('title', chartBlocks.latestDate ? `Average NOW % by day part (${chartBlocks.latestDate})` : 'Average NOW % by day part')
-    .setOption('legend', { position: 'none' })
-    .setOption('colors', ['#6aa84f'])
-    .setOption('backgroundColor', '#ffffff')
-    .setOption('hAxis', { minValue: 0 })
-    .setOption('chartArea', { left: 110, top: 45, width: '70%', height: '72%' })
-    .setOption('width', 520)
-    .setOption('height', 250)
-    .setPosition(6, 4, 0, 0)
-    .build();
-  sheet.insertChart(dayPartChart);
-
-  const levelChart = sheet.newChart()
-    .setChartType(Charts.ChartType.BAR)
-    .addRange(sheet.getRange(helperLevelStartRow, helperStartCol, chartBlocks.levelMixRows.length + 1, 2))
-    .setNumHeaders(1)
-    .setOption('title', 'Noise level mix')
-    .setOption('legend', { position: 'none' })
-    .setOption('colors', ['#f6b26b'])
-    .setOption('backgroundColor', '#ffffff')
-    .setOption('hAxis', { minValue: 0, maxValue: 100 })
-    .setOption('chartArea', { left: 110, top: 45, width: '70%', height: '72%' })
-    .setOption('width', 520)
-    .setOption('height', 250)
-    .setPosition(18, 4, 0, 0)
-    .build();
-  sheet.insertChart(levelChart);
-
-  const coverageChart = sheet.newChart()
-    .setChartType(Charts.ChartType.PIE)
-    .addRange(sheet.getRange(helperCoverageStartRow, helperStartCol, chartBlocks.coverageRows.length + 1, 2))
-    .setNumHeaders(1)
-    .setOption('title', 'Valid vs missing windows')
-    .setOption('legend', { position: 'right' })
-    .setOption('colors', ['#6d9eeb', '#e06666'])
-    .setOption('backgroundColor', '#ffffff')
-    .setOption('pieSliceText', 'value')
-    .setOption('width', 520)
-    .setOption('height', 250)
-    .setPosition(30, 4, 0, 0)
-    .build();
-  sheet.insertChart(coverageChart);
+  sheet.getRange(7, 1, 18, 3).setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
+  sheet.getRange(1, 1, 25, 6).setVerticalAlignment('middle');
+  sheet.getRange(1, 1, 25, 6).setWrap(false);
 }
 
 function rebuildAnalytics_() {
