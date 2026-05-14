@@ -1271,7 +1271,7 @@ function rebuildAnalyticsCharts_() {
 
   const chartBlocks = buildChartSourceBlocks_(records);
   const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
-  ensureMinColumnCount_(sheet, 8);
+  ensureMinColumnCount_(sheet, 12);
   sheet.clearContents();
   sheet.clearFormats();
   sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
@@ -1279,108 +1279,111 @@ function rebuildAnalyticsCharts_() {
   sheet.setFrozenRows(0);
   sheet.setFrozenColumns(0);
   sheet.setHiddenGridlines(true);
+  sheet.setColumnWidths(1, 8, 110);
+  sheet.setColumnWidth(1, 180);
+  sheet.setColumnWidth(2, 120);
+  sheet.setColumnWidths(10, 3, 110);
+  sheet.hideColumns(10, 3);
 
   sheet.getRange(1, 1, 1, 8).merge();
   sheet.getRange(1, 1).setValue('DASHBOARD · QUICK VIEW')
     .setFontWeight('bold')
-    .setFontSize(14)
+    .setFontSize(16)
     .setHorizontalAlignment('left')
     .setBackground('#d9ead3')
     .setFontColor('#274e13');
   sheet.getRange(2, 1, 1, 8).merge();
-  sheet.getRange(2, 1).setValue('Use charts for quick reading. Use summary_* sheets for exact numbers. Use clean_summary_10m only for technical checks.')
+  sheet.getRange(2, 1).setValue(
+    chartBlocks.latestDate
+      ? `Latest date: ${chartBlocks.latestDate}. Use charts for quick reading and summary_* sheets for exact numbers.`
+      : 'Use charts for quick reading and summary_* sheets for exact numbers.'
+  )
     .setFontSize(10)
     .setHorizontalAlignment('left')
     .setBackground('#eef7ea')
     .setFontColor('#4d5b45');
 
-  const dayPartHeader = ['PART', 'AVG NOW %'];
-  const levelHeader = ['LEVEL', 'SHARE %'];
-  const coverageHeader = ['METRIC', 'VALUE'];
+  sheet.getRange(4, 1, 1, 2).setValues([['Current day focus', chartBlocks.latestDate || 'n/a']]);
+  sheet.getRange(4, 3, 1, 2).setValues([['Valid windows', chartBlocks.coverageRows[0][1]]]);
+  sheet.getRange(4, 5, 1, 2).setValues([['Missing windows', chartBlocks.coverageRows[1][1]]]);
+  sheet.getRange(4, 1, 1, 6).setBackground('#f3f6fa').setFontWeight('bold');
 
-  sheet.getRange(4, 1, 1, 8).merge();
-  sheet.getRange(4, 1).setValue(
-    chartBlocks.latestDate
-      ? `Chart data blocks below are helper ranges for the dashboard. Latest date: ${chartBlocks.latestDate}`
-      : 'Chart data blocks below are helper ranges for the dashboard.'
-  )
-    .setFontSize(9)
-    .setBackground('#f3f6fa')
-    .setFontColor('#5f6b7a');
+  const helperDayStartRow = 1;
+  const helperLevelStartRow = 8;
+  const helperCoverageStartRow = 15;
+  const helperStartCol = 10;
 
-  sheet.getRange(6, 1, 1, dayPartHeader.length).setValues([dayPartHeader]);
-  if (chartBlocks.dayPartRows.length > 0) {
-    sheet.getRange(7, 1, chartBlocks.dayPartRows.length, dayPartHeader.length).setValues(chartBlocks.dayPartRows);
-  }
+  sheet.getRange(helperDayStartRow, helperStartCol, 1, 2).setValues([['PART', 'AVG NOW %']]);
+  sheet.getRange(helperDayStartRow + 1, helperStartCol, chartBlocks.dayPartRows.length, 2).setValues(chartBlocks.dayPartRows);
+  sheet.getRange(helperLevelStartRow, helperStartCol, 1, 2).setValues([['LEVEL', 'SHARE %']]);
+  sheet.getRange(helperLevelStartRow + 1, helperStartCol, chartBlocks.levelMixRows.length, 2).setValues(chartBlocks.levelMixRows);
+  sheet.getRange(helperCoverageStartRow, helperStartCol, 1, 2).setValues([['METRIC', 'VALUE']]);
+  sheet.getRange(helperCoverageStartRow + 1, helperStartCol, chartBlocks.coverageRows.length, 2).setValues(chartBlocks.coverageRows);
 
-  const levelStartRow = Math.max(chartBlocks.dayPartRows.length + 10, 14);
-  sheet.getRange(levelStartRow, 1, 1, levelHeader.length).setValues([levelHeader]);
-  if (chartBlocks.levelMixRows.length > 0) {
-    sheet.getRange(levelStartRow + 1, 1, chartBlocks.levelMixRows.length, levelHeader.length).setValues(chartBlocks.levelMixRows);
-  }
-
-  const coverageStartRow = Math.max(levelStartRow + chartBlocks.levelMixRows.length + 6, 22);
-  sheet.getRange(coverageStartRow, 1, 1, coverageHeader.length).setValues([coverageHeader]);
-  if (chartBlocks.coverageRows.length > 0) {
-    sheet.getRange(coverageStartRow + 1, 1, chartBlocks.coverageRows.length, coverageHeader.length).setValues(chartBlocks.coverageRows);
-  }
-
-  sheet.getRange(6, 1, 1, dayPartHeader.length).setBackground('#eaf4e3').setFontWeight('bold');
-  sheet.getRange(levelStartRow, 1, 1, levelHeader.length).setBackground('#fff7df').setFontWeight('bold');
-  sheet.getRange(coverageStartRow, 1, 1, coverageHeader.length).setBackground('#fde9e7').setFontWeight('bold');
-  sheet.getRange(7, 1, Math.max(chartBlocks.dayPartRows.length, 1), dayPartHeader.length).setBackgrounds(
-    buildSolidBackgrounds_(Math.max(chartBlocks.dayPartRows.length, 1), dayPartHeader.length, '#fbfdf8')
+  sheet.getRange(6, 1, 1, 2).setValues([['PART', 'AVG NOW %']]).setBackground('#eaf4e3').setFontWeight('bold');
+  sheet.getRange(7, 1, chartBlocks.dayPartRows.length, 2).setValues(chartBlocks.dayPartRows);
+  sheet.getRange(7, 1, chartBlocks.dayPartRows.length, 2).setBackgrounds(
+    buildSolidBackgrounds_(chartBlocks.dayPartRows.length, 2, '#fbfdf8')
   );
-  sheet.getRange(levelStartRow + 1, 1, Math.max(chartBlocks.levelMixRows.length, 1), levelHeader.length).setBackgrounds(
-    buildSolidBackgrounds_(Math.max(chartBlocks.levelMixRows.length, 1), levelHeader.length, '#fffdfa')
+
+  sheet.getRange(12, 1, 1, 2).setValues([['LEVEL', 'SHARE %']]).setBackground('#fff7df').setFontWeight('bold');
+  sheet.getRange(13, 1, chartBlocks.levelMixRows.length, 2).setValues(chartBlocks.levelMixRows);
+  sheet.getRange(13, 1, chartBlocks.levelMixRows.length, 2).setBackgrounds(
+    buildSolidBackgrounds_(chartBlocks.levelMixRows.length, 2, '#fffdfa')
   );
-  sheet.getRange(coverageStartRow + 1, 1, Math.max(chartBlocks.coverageRows.length, 1), coverageHeader.length).setBackgrounds(
-    buildSolidBackgrounds_(Math.max(chartBlocks.coverageRows.length, 1), coverageHeader.length, '#fffafa')
+
+  sheet.getRange(19, 1, 1, 2).setValues([['METRIC', 'VALUE']]).setBackground('#fde9e7').setFontWeight('bold');
+  sheet.getRange(20, 1, chartBlocks.coverageRows.length, 2).setValues(chartBlocks.coverageRows);
+  sheet.getRange(20, 1, chartBlocks.coverageRows.length, 2).setBackgrounds(
+    buildSolidBackgrounds_(chartBlocks.coverageRows.length, 2, '#fffafa')
   );
-  sheet.autoResizeColumns(1, 3);
+
+  sheet.getRange(6, 1, 16, 2).setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
 
   const dayPartChart = sheet.newChart()
-    .setChartType(Charts.ChartType.COLUMN)
-    .addRange(sheet.getRange(6, 1, Math.max(chartBlocks.dayPartRows.length + 1, 2), dayPartHeader.length))
+    .setChartType(Charts.ChartType.BAR)
+    .addRange(sheet.getRange(helperDayStartRow, helperStartCol, chartBlocks.dayPartRows.length + 1, 2))
     .setNumHeaders(1)
     .setOption('title', chartBlocks.latestDate ? `Average NOW % by day part (${chartBlocks.latestDate})` : 'Average NOW % by day part')
     .setOption('legend', { position: 'none' })
     .setOption('colors', ['#6aa84f'])
     .setOption('backgroundColor', '#ffffff')
-    .setOption('hAxis', { slantedText: false })
-    .setOption('vAxis', { minValue: 0 })
-    .setOption('chartArea', { left: 70, top: 55, width: '75%', height: '65%' })
-    .setPosition(6, 7, 0, 0)
+    .setOption('hAxis', { minValue: 0 })
+    .setOption('chartArea', { left: 110, top: 45, width: '70%', height: '72%' })
+    .setOption('width', 520)
+    .setOption('height', 250)
+    .setPosition(6, 4, 0, 0)
     .build();
   sheet.insertChart(dayPartChart);
 
   const levelChart = sheet.newChart()
-    .setChartType(Charts.ChartType.COLUMN)
-    .addRange(sheet.getRange(levelStartRow, 1, Math.max(chartBlocks.levelMixRows.length + 1, 2), levelHeader.length))
+    .setChartType(Charts.ChartType.BAR)
+    .addRange(sheet.getRange(helperLevelStartRow, helperStartCol, chartBlocks.levelMixRows.length + 1, 2))
     .setNumHeaders(1)
     .setOption('title', 'Noise level mix')
     .setOption('legend', { position: 'none' })
     .setOption('colors', ['#f6b26b'])
     .setOption('backgroundColor', '#ffffff')
-    .setOption('hAxis', { slantedText: false })
-    .setOption('vAxis', { minValue: 0 })
-    .setOption('chartArea', { left: 70, top: 55, width: '75%', height: '65%' })
-    .setPosition(22, 7, 0, 0)
+    .setOption('hAxis', { minValue: 0, maxValue: 100 })
+    .setOption('chartArea', { left: 110, top: 45, width: '70%', height: '72%' })
+    .setOption('width', 520)
+    .setOption('height', 250)
+    .setPosition(18, 4, 0, 0)
     .build();
   sheet.insertChart(levelChart);
 
   const coverageChart = sheet.newChart()
-    .setChartType(Charts.ChartType.COLUMN)
-    .addRange(sheet.getRange(coverageStartRow, 1, Math.max(chartBlocks.coverageRows.length + 1, 2), coverageHeader.length))
+    .setChartType(Charts.ChartType.PIE)
+    .addRange(sheet.getRange(helperCoverageStartRow, helperStartCol, chartBlocks.coverageRows.length + 1, 2))
     .setNumHeaders(1)
     .setOption('title', 'Valid vs missing windows')
-    .setOption('legend', { position: 'none' })
-    .setOption('colors', ['#6d9eeb'])
+    .setOption('legend', { position: 'right' })
+    .setOption('colors', ['#6d9eeb', '#e06666'])
     .setOption('backgroundColor', '#ffffff')
-    .setOption('hAxis', { slantedText: false })
-    .setOption('vAxis', { minValue: 0 })
-    .setOption('chartArea', { left: 70, top: 55, width: '75%', height: '65%' })
-    .setPosition(38, 7, 0, 0)
+    .setOption('pieSliceText', 'value')
+    .setOption('width', 520)
+    .setOption('height', 250)
+    .setPosition(30, 4, 0, 0)
     .build();
   sheet.insertChart(coverageChart);
 }
