@@ -872,6 +872,20 @@ function getMainLevelForPart_(dateText, partText) {
   return levelPairs[0][1] > 0 ? levelPairs[0][0] : 'no data';
 }
 
+function partIcon_(partText) {
+  const normalized = normalizePartText_(partText);
+  if (normalized === 'DAY') {
+    return '☀️';
+  }
+  if (normalized === 'EVE') {
+    return '🌆';
+  }
+  if (normalized === 'NGT') {
+    return '🌙';
+  }
+  return '🌗';
+}
+
 function buildLatestTelegramStatus_() {
   const record = getLatestValidCleanRecord_();
   if (!record) {
@@ -911,7 +925,7 @@ function buildDailyTelegramSummary_(dateText) {
     const row = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, partText);
     if (!row) {
       return [
-        `🌗 <b>${partText}</b>`,
+        `${partIcon_(partText)} <b>${partText}</b>`,
         'Avg: no data',
         'Main: no data',
         'Valid windows: 0/0'
@@ -921,7 +935,7 @@ function buildDailyTelegramSummary_(dateText) {
     const validWindows = toNumber_(row[4]);
     const expectedWindows = toNumber_(row[5]);
     return [
-      `🌗 <b>${partText}</b>`,
+      `${partIcon_(partText)} <b>${partText}</b>`,
       `Avg: ${formatMaybePct_(row[7])}`,
       `Main: ${getMainLevelForPart_(targetDate, partText)}`,
       `Valid windows: ${validWindows}/${expectedWindows || 0}`
