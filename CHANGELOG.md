@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Apps Script analytics - 2026-05-14
+
+1. Expanded the Google Sheets source-of-truth script so the same `Код.gs` can now rebuild `clean_summary_10m`, `summary_daypart`, `summary_levels`, `summary_health`, and a starter `charts` sheet on top of the fixed `log` plus daily-archive contract.
+2. Added local ignore rules for `backup/` and exported `test/*.xlsx` analysis files so temporary backup and spreadsheet artifacts do not pollute routine Git status or publish steps.
+
 ## 0.1.29-EXP+83 - 2026-05-13
 
 1. Added averaged `SHT31` temperature and humidity to each 10-minute Google Sheets window instead of raw high-frequency environment spam.

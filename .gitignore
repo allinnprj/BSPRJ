@@ -6,3 +6,5 @@
 include/secrets.h
 tmp_log_inspect/
 tmp_log_inspect2/
+backup/
+test/*.xlsx
