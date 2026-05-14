@@ -13,6 +13,8 @@
 9. Reworked the `charts` sheet into a tighter dashboard layout with hidden helper ranges, KPI strip, and simpler two-column sources for visual blocks so the page wastes less space and is easier to scan.
 10. Replaced the fragile floating Google chart objects in `charts` with a compact cell-based dashboard using KPI rows and inline mini-diagrams, so the overview remains readable even when embedded chart rendering is unreliable.
 11. Added the first manual Telegram layer in `Apps Script`: `Send latest Telegram status` and `Send daily Telegram summary` now send text reports from `clean_summary_10m` and `summary_*`, while secrets stay out of the code via `Script Properties`.
+12. Added an optional `online restored` Telegram notice in `doPost(...)` that sends a short recovery message after a configurable pause between successful posts, without blocking normal log writes if Telegram delivery fails.
+13. Added `Show Telegram chat debug` to the `BS Noise` menu so the bot can display the last chats returned by `getUpdates`, making `chat not found` troubleshooting much easier for private chats and groups.
 
 ## 0.1.29-EXP+83 - 2026-05-13
 

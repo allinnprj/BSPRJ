@@ -231,6 +231,7 @@
 
 - `Send latest Telegram status`
 - `Send daily Telegram summary`
+- `Show Telegram chat debug`
 
 Это пока ручной режим:
 
@@ -247,6 +248,8 @@
 - `BS_TELEGRAM_ENABLED`
 - `BS_TELEGRAM_BOT_TOKEN`
 - `BS_TELEGRAM_CHAT_ID`
+- `BS_TELEGRAM_ONLINE_RESTORE_ENABLED`
+- `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES`
 
 ### Где это задавать
 
@@ -257,6 +260,8 @@
    - `BS_TELEGRAM_ENABLED` = `true`
    - `BS_TELEGRAM_BOT_TOKEN` = токен бота
    - `BS_TELEGRAM_CHAT_ID` = chat id
+   - `BS_TELEGRAM_ONLINE_RESTORE_ENABLED` = `true`
+   - `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES` = `30`
 5. Сохрани
 
 ### Как это работает
@@ -267,6 +272,10 @@
 - `Send daily Telegram summary`
   - берёт последний доступный день из `summary_daypart`, `summary_levels`, `summary_health`
   - отправляет краткую дневную сводку
+- `Show Telegram chat debug`
+  - вызывает `getUpdates` у Telegram Bot API
+  - показывает последние чаты, которые реально видит именно этот бот
+  - помогает найти правильный `chat_id`, если появляется `chat not found`
 
 ### Что дальше планируется
 
@@ -278,6 +287,24 @@
 4. Автоматический `daily summary`
 5. `anomaly / bad data alerts`
 6. Уведомление `device online restored`
+
+### Как работает `online restored`
+
+Если устройство долго не присылало новые данные, а потом снова успешно отправило новое окно, `Apps Script` может отправить Telegram-уведомление:
+
+- `BS_TELEGRAM_ONLINE_RESTORE_ENABLED=true`
+- `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES=30`
+
+То есть:
+
+- если пауза между успешными `doPost(...)` меньше 30 минут, уведомления не будет
+- если пауза 30 минут или больше, после новой успешной записи придёт `online restored`
+
+Это облачная логика на стороне Google:
+
+- компьютер не нужен
+- браузер не нужен
+- важно только, чтобы `Apps Script` был развёрнут и ESP32 снова смог отправить данные
 
 ## Как временно убрать аналитические листы
 

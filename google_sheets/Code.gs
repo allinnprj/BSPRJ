@@ -38,6 +38,9 @@ const ANALYTICS_SHEET_NAMES = [
 const TELEGRAM_ENABLED_PROPERTY = 'BS_TELEGRAM_ENABLED';
 const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
 const TELEGRAM_CHAT_ID_PROPERTY = 'BS_TELEGRAM_CHAT_ID';
+const TELEGRAM_ONLINE_RESTORE_ENABLED_PROPERTY = 'BS_TELEGRAM_ONLINE_RESTORE_ENABLED';
+const TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY = 'BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES';
+const TELEGRAM_LAST_POST_MS_PROPERTY = 'BS_TELEGRAM_LAST_POST_MS';
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -510,6 +513,7 @@ function onOpen() {
     .addSeparator()
     .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
     .addItem('Send daily Telegram summary', 'sendDailyTelegramSummary_')
+    .addItem('Show Telegram chat debug', 'showTelegramChatDebug_')
     .addSeparator()
     .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
     .addItem('Show analytics sheets', 'showAnalyticsSheets_')
@@ -646,7 +650,9 @@ function getTelegramConfig_() {
   return {
     enabled: String(properties.getProperty(TELEGRAM_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true',
     botToken: String(properties.getProperty(TELEGRAM_BOT_TOKEN_PROPERTY) || '').trim(),
-    chatId: String(properties.getProperty(TELEGRAM_CHAT_ID_PROPERTY) || '').trim()
+    chatId: String(properties.getProperty(TELEGRAM_CHAT_ID_PROPERTY) || '').trim(),
+    onlineRestoreEnabled: String(properties.getProperty(TELEGRAM_ONLINE_RESTORE_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true',
+    onlineRestoreGapMinutes: Math.max(1, toNumber_(properties.getProperty(TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY) || 30))
   };
 }
 
@@ -682,6 +688,94 @@ function sendTelegramMessage_(text) {
   }
 
   return response;
+}
+
+function getTelegramUpdates_() {
+  const config = ensureTelegramConfigured_();
+  const response = UrlFetchApp.fetch(`https://api.telegram.org/bot${config.botToken}/getUpdates`, {
+    method: 'get',
+    muteHttpExceptions: true
+  });
+
+  const statusCode = response.getResponseCode();
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(`Telegram getUpdates failed: HTTP ${statusCode} ${response.getContentText()}`);
+  }
+
+  const payload = JSON.parse(response.getContentText() || '{}');
+  if (!payload.ok) {
+    throw new Error(`Telegram getUpdates error: ${response.getContentText()}`);
+  }
+
+  return payload.result || [];
+}
+
+function showTelegramChatDebug_() {
+  const updates = getTelegramUpdates_();
+  const ui = SpreadsheetApp.getUi();
+  if (!updates.length) {
+    ui.alert(
+      'Telegram debug',
+      'No updates yet. Send a message to the bot in private or in the target group, then run this again.',
+      ui.ButtonSet.OK
+    );
+    return;
+  }
+
+  const lines = updates.slice(-5).reverse().map((update) => {
+    const message = update.message || update.edited_message || update.channel_post || update.edited_channel_post;
+    if (!message || !message.chat) {
+      return `update_id=${update.update_id} | no chat payload`;
+    }
+
+    const chat = message.chat;
+    const title = chat.title || `${chat.first_name || ''} ${chat.last_name || ''}`.trim() || 'n/a';
+    return [
+      `update_id=${update.update_id}`,
+      `chat_id=${chat.id}`,
+      `type=${chat.type}`,
+      `title=${title}`
+    ].join(' | ');
+  });
+
+  ui.alert('Telegram debug', lines.join('\n\n'), ui.ButtonSet.OK);
+}
+
+function maybeSendOnlineRestoredTelegram_(payload) {
+  const config = getTelegramConfig_();
+  if (!config.enabled || !config.botToken || !config.chatId || !config.onlineRestoreEnabled) {
+    return;
+  }
+
+  const properties = PropertiesService.getScriptProperties();
+  const nowMs = Date.now();
+  const previousMs = toNumber_(properties.getProperty(TELEGRAM_LAST_POST_MS_PROPERTY) || 0);
+  properties.setProperty(TELEGRAM_LAST_POST_MS_PROPERTY, String(nowMs));
+
+  if (!previousMs) {
+    return;
+  }
+
+  const gapMinutes = Math.round((nowMs - previousMs) / 60000);
+  if (gapMinutes < config.onlineRestoreGapMinutes) {
+    return;
+  }
+
+  const normalizedDate = normalizeDateText_(payload.date);
+  const normalizedTimeFrom = normalizeTimeText_(payload.time_from);
+  const normalizedTimeTo = normalizeTimeText_(payload.time_to);
+  const text = [
+    '<b>BS Noise Online</b>',
+    `Device: <code>${payload.device_id || 'n/a'}</code>`,
+    `Status: <b>online restored</b>`,
+    `Gap: <b>${gapMinutes} min</b>`,
+    `Date: <b>${normalizedDate || 'n/a'}</b>`,
+    `Window: <b>${normalizedTimeFrom || 'n/a'}-${normalizedTimeTo || 'n/a'}</b>`,
+    `Part: <b>${normalizePartText_(payload.part || '')}</b>`,
+    `Version: <code>${payload.fw_version || 'n/a'}</code> build <code>${payload.build || 'n/a'}</code>`
+  ].join('\n');
+
+  sendTelegramMessage_(text);
 }
 
 function getLatestValidCleanRecord_() {
@@ -1702,6 +1796,12 @@ function doPost(e) {
     valueOrBlank(data.samples)
   ]);
   ensureHeaderFormatting_(sheet);
+
+  try {
+    maybeSendOnlineRestoredTelegram_(data);
+  } catch (error) {
+    Logger.log(`Online restored Telegram notice failed: ${error}`);
+  }
 
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))
