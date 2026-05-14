@@ -28,6 +28,13 @@ const DAYPART_SUMMARY_SHEET_NAME = 'summary_daypart';
 const LEVEL_SUMMARY_SHEET_NAME = 'summary_levels';
 const HEALTH_SUMMARY_SHEET_NAME = 'summary_health';
 const CHARTS_SHEET_NAME = 'charts';
+const ANALYTICS_SHEET_NAMES = [
+  CLEAN_SUMMARY_SHEET_NAME,
+  DAYPART_SUMMARY_SHEET_NAME,
+  LEVEL_SUMMARY_SHEET_NAME,
+  HEALTH_SUMMARY_SHEET_NAME,
+  CHARTS_SHEET_NAME
+];
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -497,6 +504,9 @@ function onOpen() {
     .createMenu('BS Noise')
     .addItem('Rebuild analytics', 'rebuildAnalytics_')
     .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
+    .addSeparator()
+    .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
+    .addItem('Show analytics sheets', 'showAnalyticsSheets_')
     .addToUi();
 }
 
@@ -555,6 +565,28 @@ function isRawDaySheetName_(name) {
 
 function listRawDataSheets_(spreadsheet) {
   return spreadsheet.getSheets().filter((sheet) => isRawDaySheetName_(sheet.getName()));
+}
+
+function isAnalyticsSheetName_(name) {
+  return ANALYTICS_SHEET_NAMES.indexOf(name) >= 0;
+}
+
+function hideAnalyticsSheets_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  spreadsheet.getSheets().forEach((sheet) => {
+    if (isAnalyticsSheetName_(sheet.getName())) {
+      sheet.hideSheet();
+    }
+  });
+}
+
+function showAnalyticsSheets_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  spreadsheet.getSheets().forEach((sheet) => {
+    if (isAnalyticsSheetName_(sheet.getName())) {
+      sheet.showSheet();
+    }
+  });
 }
 
 function timestampKey_(dateText, timeText) {
@@ -994,6 +1026,16 @@ function buildColumnColorBackgrounds_(rowCount, colors, lightenAmount) {
   return Array.from({ length: rowCount }, () => lightColors.slice());
 }
 
+function buildAlternatingColumnColorBackgrounds_(rowCount, colors, oddLightenAmount, evenLightenAmount) {
+  const oddColors = colors.map((color) => lightenHexColor_(color, oddLightenAmount));
+  const evenColors = colors.map((color) => lightenHexColor_(color, evenLightenAmount));
+  const backgrounds = [];
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+    backgrounds.push((rowIndex % 2 === 0 ? oddColors : evenColors).slice());
+  }
+  return backgrounds;
+}
+
 function buildAlternatingBackgrounds_(rowCount, colCount, oddColor, evenColor) {
   const backgrounds = [];
   for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
@@ -1001,6 +1043,16 @@ function buildAlternatingBackgrounds_(rowCount, colCount, oddColor, evenColor) {
     backgrounds.push(Array(colCount).fill(fill));
   }
   return backgrounds;
+}
+
+function findGroupBoundaryCols_(colors) {
+  const boundaries = [];
+  for (let index = 1; index < colors.length; index++) {
+    if (colors[index] !== colors[index - 1]) {
+      boundaries.push(index);
+    }
+  }
+  return boundaries;
 }
 
 function getSheetStyleProfile_(sheetName) {
@@ -1050,13 +1102,21 @@ function applySheetRoleFormatting_(sheet, headers, outputLength, profile) {
   dataRange
     .setBackgrounds(
       profile.headerColors && profile.headerColors.length === totalCols
-        ? buildColumnColorBackgrounds_(dataRows, profile.headerColors, 0.82)
+        ? buildAlternatingColumnColorBackgrounds_(dataRows, profile.headerColors, 0.82, 0.87)
         : buildAlternatingBackgrounds_(dataRows, totalCols, profile.bodyOdd, profile.bodyEven)
     )
     .setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID)
     .setHorizontalAlignment('center')
     .setVerticalAlignment('middle')
     .setWrap(false);
+
+  const boundaryCols = profile.headerColors && profile.headerColors.length === totalCols
+    ? findGroupBoundaryCols_(profile.headerColors)
+    : [];
+  boundaryCols.forEach((colIndex) => {
+    sheet.getRange(1, colIndex, dataRows + 1, 1)
+      .setBorder(null, null, null, true, null, null, '#8a8a8a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  });
 
   if (!profile.headerColors || profile.headerColors.length !== totalCols) {
     (profile.accentCols || []).forEach((col) => {
@@ -1159,32 +1219,32 @@ function buildChartSourceBlocks_(records) {
     coverageByDate[dateKey] = coverage;
   });
 
-  const dayPartRows = Object.keys(byDatePart).sort().map((dateKey) => {
-    const bucket = byDatePart[dateKey];
-    return [
-      dateKey,
-      bucket.DAY.length ? roundValue_(bucket.DAY.reduce((sum, value) => sum + value, 0) / bucket.DAY.length, 1) : '',
-      bucket.EVE.length ? roundValue_(bucket.EVE.reduce((sum, value) => sum + value, 0) / bucket.EVE.length, 1) : '',
-      bucket.NGT.length ? roundValue_(bucket.NGT.reduce((sum, value) => sum + value, 0) / bucket.NGT.length, 1) : ''
-    ];
-  });
-
-  const totalLevelWindows = LEVEL_ORDER.reduce((sum, level) => sum + (levelMix[level] || 0), 0) || 1;
-  const levelMixRows = [[
-    'ALL',
-    roundValue_((levelMix.SILENT || 0) * 100 / totalLevelWindows, 1),
-    roundValue_((levelMix.NORMAL || 0) * 100 / totalLevelWindows, 1),
-    roundValue_((levelMix.LOUD || 0) * 100 / totalLevelWindows, 1),
-    roundValue_((levelMix.PEAK || 0) * 100 / totalLevelWindows, 1)
-  ]];
-
-  const coverageRows = Object.keys(coverageByDate).sort().map((dateKey) => ([
-    dateKey,
-    coverageByDate[dateKey].validWindows,
-    coverageByDate[dateKey].missingWindows
+  const sortedDates = Object.keys(byDatePart).sort();
+  const latestDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : '';
+  const latestBucket = latestDate ? byDatePart[latestDate] : { DAY: [], EVE: [], NGT: [] };
+  const dayPartRows = PART_ORDER.map((partText) => ([
+    partText,
+    latestBucket[partText] && latestBucket[partText].length
+      ? roundValue_(latestBucket[partText].reduce((sum, value) => sum + value, 0) / latestBucket[partText].length, 1)
+      : 0
   ]));
 
+  const totalLevelWindows = LEVEL_ORDER.reduce((sum, level) => sum + (levelMix[level] || 0), 0) || 1;
+  const levelMixRows = LEVEL_ORDER.map((level) => ([
+    level,
+    roundValue_((levelMix[level] || 0) * 100 / totalLevelWindows, 1)
+  ]));
+
+  const latestCoverage = latestDate
+    ? (coverageByDate[latestDate] || { validWindows: 0, missingWindows: 0 })
+    : { validWindows: 0, missingWindows: 0 };
+  const coverageRows = [
+    ['VALID WINDOWS', latestCoverage.validWindows],
+    ['MISSING WINDOWS', latestCoverage.missingWindows]
+  ];
+
   return {
+    latestDate,
     dayPartRows,
     levelMixRows,
     coverageRows
@@ -1234,12 +1294,16 @@ function rebuildAnalyticsCharts_() {
     .setBackground('#eef7ea')
     .setFontColor('#4d5b45');
 
-  const dayPartHeader = ['DATE', 'DAY AVG NOW %', 'EVE AVG NOW %', 'NGT AVG NOW %'];
-  const levelHeader = ['SCOPE', 'SILENT %', 'NORMAL %', 'LOUD %', 'PEAK %'];
-  const coverageHeader = ['DATE', 'VALID WINDOWS', 'MISSING WINDOWS'];
+  const dayPartHeader = ['PART', 'AVG NOW %'];
+  const levelHeader = ['LEVEL', 'SHARE %'];
+  const coverageHeader = ['METRIC', 'VALUE'];
 
   sheet.getRange(4, 1, 1, 8).merge();
-  sheet.getRange(4, 1).setValue('Chart data blocks below are helper ranges for the dashboard.')
+  sheet.getRange(4, 1).setValue(
+    chartBlocks.latestDate
+      ? `Chart data blocks below are helper ranges for the dashboard. Latest date: ${chartBlocks.latestDate}`
+      : 'Chart data blocks below are helper ranges for the dashboard.'
+  )
     .setFontSize(9)
     .setBackground('#f3f6fa')
     .setFontColor('#5f6b7a');
@@ -1273,15 +1337,15 @@ function rebuildAnalyticsCharts_() {
   sheet.getRange(coverageStartRow + 1, 1, Math.max(chartBlocks.coverageRows.length, 1), coverageHeader.length).setBackgrounds(
     buildSolidBackgrounds_(Math.max(chartBlocks.coverageRows.length, 1), coverageHeader.length, '#fffafa')
   );
-  sheet.autoResizeColumns(1, 5);
+  sheet.autoResizeColumns(1, 3);
 
   const dayPartChart = sheet.newChart()
     .setChartType(Charts.ChartType.COLUMN)
     .addRange(sheet.getRange(6, 1, Math.max(chartBlocks.dayPartRows.length + 1, 2), dayPartHeader.length))
     .setNumHeaders(1)
-    .setOption('title', 'Average NOW % by day part')
-    .setOption('legend', { position: 'top' })
-    .setOption('colors', ['#6aa84f', '#f6b26b', '#6d9eeb'])
+    .setOption('title', chartBlocks.latestDate ? `Average NOW % by day part (${chartBlocks.latestDate})` : 'Average NOW % by day part')
+    .setOption('legend', { position: 'none' })
+    .setOption('colors', ['#6aa84f'])
     .setOption('backgroundColor', '#ffffff')
     .setOption('hAxis', { slantedText: false })
     .setOption('vAxis', { minValue: 0 })
@@ -1295,9 +1359,8 @@ function rebuildAnalyticsCharts_() {
     .addRange(sheet.getRange(levelStartRow, 1, Math.max(chartBlocks.levelMixRows.length + 1, 2), levelHeader.length))
     .setNumHeaders(1)
     .setOption('title', 'Noise level mix')
-    .setOption('isStacked', true)
-    .setOption('legend', { position: 'top' })
-    .setOption('colors', ['#93c47d', '#ffd966', '#f6b26b', '#e06666'])
+    .setOption('legend', { position: 'none' })
+    .setOption('colors', ['#f6b26b'])
     .setOption('backgroundColor', '#ffffff')
     .setOption('hAxis', { slantedText: false })
     .setOption('vAxis', { minValue: 0 })
@@ -1311,8 +1374,8 @@ function rebuildAnalyticsCharts_() {
     .addRange(sheet.getRange(coverageStartRow, 1, Math.max(chartBlocks.coverageRows.length + 1, 2), coverageHeader.length))
     .setNumHeaders(1)
     .setOption('title', 'Valid vs missing windows')
-    .setOption('legend', { position: 'top' })
-    .setOption('colors', ['#6d9eeb', '#e06666'])
+    .setOption('legend', { position: 'none' })
+    .setOption('colors', ['#6d9eeb'])
     .setOption('backgroundColor', '#ffffff')
     .setOption('hAxis', { slantedText: false })
     .setOption('vAxis', { minValue: 0 })

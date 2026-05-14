@@ -9,6 +9,7 @@
 5. Hardened the Apps Script sheet-formatting path so analytics rebuild first expands new sheets to the required width before showing or hiding columns, fixing the `columns are out of bounds` failure on freshly created summary tabs.
 6. Removed the merged analytics title row from the Apps Script formatting path so frozen columns no longer collide with partially merged cells during `BS Noise` rebuilds.
 7. Simplified the analytics sheet look by dropping the awkward top title band, switching `clean_*` and `summary_*` to a `log`-style full-column color scheme with lighter data cells, and tightening embedded chart generation so Sheets treats the first row as chart headers explicitly.
+8. Added `Hide analytics sheets` and `Show analytics sheets` to the `BS Noise` menu, aligned the analytics tables to one shared `log`-style visual standard with per-category column coloring plus lighter alternating data rows, and rebuilt the chart helper blocks into simpler vertical label-value ranges so Google Sheets has a cleaner source for rendering charts.
 
 ## 0.1.29-EXP+83 - 2026-05-13
 
