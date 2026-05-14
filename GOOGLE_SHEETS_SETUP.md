@@ -221,6 +221,64 @@
 1. Перезагрузи таблицу
 2. Нажми `BS Noise -> Rebuild charts only`
 
+## Telegram
+
+### Что уже умеет Apps Script
+
+Сейчас Telegram сделан как ручной внешний отчётный слой поверх `summary_*` и `clean_summary_10m`.
+
+В меню `BS Noise` есть:
+
+- `Send latest Telegram status`
+- `Send daily Telegram summary`
+
+Это пока ручной режим:
+
+- без автотриггера
+- без `online restored`
+- без Telegram-команд в обратную сторону
+
+### Как настроить Telegram
+
+Секреты не нужно хранить в коде `Code.gs`.
+
+Используются `Script Properties`:
+
+- `BS_TELEGRAM_ENABLED`
+- `BS_TELEGRAM_BOT_TOKEN`
+- `BS_TELEGRAM_CHAT_ID`
+
+### Где это задавать
+
+1. Открой `Расширения -> Apps Script`
+2. Нажми `Project Settings`
+3. Найди блок `Script properties`
+4. Добавь свойства:
+   - `BS_TELEGRAM_ENABLED` = `true`
+   - `BS_TELEGRAM_BOT_TOKEN` = токен бота
+   - `BS_TELEGRAM_CHAT_ID` = chat id
+5. Сохрани
+
+### Как это работает
+
+- `Send latest Telegram status`
+  - берёт последнюю валидную строку из `clean_summary_10m`
+  - отправляет краткий текущий статус
+- `Send daily Telegram summary`
+  - берёт последний доступный день из `summary_daypart`, `summary_levels`, `summary_health`
+  - отправляет краткую дневную сводку
+
+### Что дальше планируется
+
+Следующая согласованная последовательность такая:
+
+1. Ручной `Latest status`
+2. Ручной `Daily summary`
+3. Проверка формата сообщений
+4. Автоматический `daily summary`
+5. `anomaly / bad data alerts`
+6. Уведомление `device online restored`
+
 ## Как временно убрать аналитические листы
 
 Если нужно оставить в работе только `log` и архивные сырые дни:

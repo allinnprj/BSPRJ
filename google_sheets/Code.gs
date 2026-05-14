@@ -35,6 +35,9 @@ const ANALYTICS_SHEET_NAMES = [
   HEALTH_SUMMARY_SHEET_NAME,
   CHARTS_SHEET_NAME
 ];
+const TELEGRAM_ENABLED_PROPERTY = 'BS_TELEGRAM_ENABLED';
+const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
+const TELEGRAM_CHAT_ID_PROPERTY = 'BS_TELEGRAM_CHAT_ID';
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -505,6 +508,9 @@ function onOpen() {
     .addItem('Rebuild analytics', 'rebuildAnalytics_')
     .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
     .addSeparator()
+    .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
+    .addItem('Send daily Telegram summary', 'sendDailyTelegramSummary_')
+    .addSeparator()
     .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
     .addItem('Show analytics sheets', 'showAnalyticsSheets_')
     .addToUi();
@@ -527,6 +533,24 @@ function toNumber_(value) {
 function roundValue_(value, digits) {
   const factor = Math.pow(10, digits || 0);
   return Math.round(value * factor) / factor;
+}
+
+function formatPct_(value) {
+  return `${roundValue_(toNumber_(value), 1)}%`;
+}
+
+function formatMaybePct_(value) {
+  if (value === '' || value === null || value === undefined) {
+    return 'no data';
+  }
+  return formatPct_(value);
+}
+
+function formatMaybeNumber_(value, suffix) {
+  if (value === '' || value === null || value === undefined) {
+    return 'no data';
+  }
+  return `${roundValue_(toNumber_(value), 1)}${suffix || ''}`;
 }
 
 function normalizePartText_(value) {
@@ -615,6 +639,271 @@ function buildQualityText_(record, isValid, gapBefore) {
     flags.push('GAP_BEFORE');
   }
   return flags.length > 0 ? flags.join('+') : 'OK';
+}
+
+function getTelegramConfig_() {
+  const properties = PropertiesService.getScriptProperties();
+  return {
+    enabled: String(properties.getProperty(TELEGRAM_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true',
+    botToken: String(properties.getProperty(TELEGRAM_BOT_TOKEN_PROPERTY) || '').trim(),
+    chatId: String(properties.getProperty(TELEGRAM_CHAT_ID_PROPERTY) || '').trim()
+  };
+}
+
+function ensureTelegramConfigured_() {
+  const config = getTelegramConfig_();
+  if (!config.enabled || !config.botToken || !config.chatId) {
+    throw new Error(
+      'Telegram is not configured. Set Script Properties: ' +
+      `${TELEGRAM_ENABLED_PROPERTY}=true, ` +
+      `${TELEGRAM_BOT_TOKEN_PROPERTY}=your_bot_token, ` +
+      `${TELEGRAM_CHAT_ID_PROPERTY}=your_chat_id`
+    );
+  }
+  return config;
+}
+
+function sendTelegramMessage_(text) {
+  const config = ensureTelegramConfigured_();
+  const response = UrlFetchApp.fetch(`https://api.telegram.org/bot${config.botToken}/sendMessage`, {
+    method: 'post',
+    payload: {
+      chat_id: config.chatId,
+      text: text,
+      parse_mode: 'HTML',
+      disable_web_page_preview: 'true'
+    },
+    muteHttpExceptions: true
+  });
+
+  const statusCode = response.getResponseCode();
+  if (statusCode < 200 || statusCode >= 300) {
+    throw new Error(`Telegram send failed: HTTP ${statusCode} ${response.getContentText()}`);
+  }
+
+  return response;
+}
+
+function getLatestValidCleanRecord_() {
+  const sheet = getOrCreateSheet_(CLEAN_SUMMARY_SHEET_NAME);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return null;
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, CLEAN_SUMMARY_HEADERS.length).getValues();
+  const validRows = values.filter((row) => toNumber_(row[26]) === 1);
+  const sourceRows = validRows.length ? validRows : values;
+  if (!sourceRows.length) {
+    return null;
+  }
+
+  sourceRows.sort((left, right) => {
+    const leftKey = `${normalizeDateText_(left[3])}T${normalizeTimeText_(left[5])}`;
+    const rightKey = `${normalizeDateText_(right[3])}T${normalizeTimeText_(right[5])}`;
+    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
+  });
+
+  const row = sourceRows[sourceRows.length - 1];
+  return {
+    deviceId: row[0],
+    version: row[1],
+    build: row[2],
+    dateText: normalizeDateText_(row[3]),
+    timeFrom: normalizeTimeText_(row[4]),
+    timeTo: normalizeTimeText_(row[5]),
+    partText: normalizePartText_(row[6]),
+    levelText: row[7],
+    nowPct: row[8],
+    hourPct: row[9],
+    totalPct: row[10],
+    temperatureC: row[15],
+    humidityPct: row[16],
+    samples: row[20],
+    qualityText: row[28],
+    isValid: toNumber_(row[26]) === 1
+  };
+}
+
+function getLatestSummaryDateText_() {
+  const sheet = getOrCreateSheet_(DAYPART_SUMMARY_SHEET_NAME);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return '';
+  }
+
+  const values = sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat();
+  const dates = values
+    .map((value) => normalizeDateText_(value))
+    .filter((value) => value);
+  if (!dates.length) {
+    return '';
+  }
+
+  dates.sort();
+  return dates[dates.length - 1];
+}
+
+function findRowByDateAndPart_(sheetName, dateText, partText) {
+  const sheet = getOrCreateSheet_(sheetName);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return null;
+  }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  const values = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+  const wantedPart = normalizePartText_(partText);
+
+  for (let index = 0; index < values.length; index++) {
+    const row = values[index];
+    const rowDate = normalizeDateText_(row[1]);
+    const rowPart = normalizePartText_(row[2]);
+    if (rowDate === dateText && rowPart === wantedPart) {
+      return row;
+    }
+  }
+
+  return null;
+}
+
+function findHealthRowByDate_(dateText) {
+  const sheet = getOrCreateSheet_(HEALTH_SUMMARY_SHEET_NAME);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return null;
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, HEALTH_SUMMARY_HEADERS.length).getValues();
+  for (let index = 0; index < values.length; index++) {
+    const row = values[index];
+    if (normalizeDateText_(row[1]) === dateText) {
+      return row;
+    }
+  }
+
+  return null;
+}
+
+function getMainLevelForPart_(dateText, partText) {
+  const row = findRowByDateAndPart_(LEVEL_SUMMARY_SHEET_NAME, dateText, partText);
+  if (!row) {
+    return 'no data';
+  }
+
+  const levelPairs = [
+    ['SILENT', toNumber_(row[4])],
+    ['NORMAL', toNumber_(row[5])],
+    ['LOUD', toNumber_(row[6])],
+    ['PEAK', toNumber_(row[7])]
+  ];
+  levelPairs.sort((left, right) => right[1] - left[1]);
+  return levelPairs[0][1] > 0 ? levelPairs[0][0] : 'no data';
+}
+
+function buildLatestTelegramStatus_() {
+  const record = getLatestValidCleanRecord_();
+  if (!record) {
+    return 'BS Noise Latest\n\nNo clean summary data yet. Run Rebuild analytics first.';
+  }
+
+  const qualityLabel = record.isValid ? 'valid' : String(record.qualityText || 'raw');
+  return [
+    '<b>BS Noise Latest</b>',
+    `Device: <code>${record.deviceId || 'n/a'}</code>`,
+    `Version: <code>${record.version || 'n/a'}</code> build <code>${record.build || 'n/a'}</code>`,
+    '',
+    `Date: <b>${record.dateText || 'n/a'}</b>`,
+    `Window: <b>${record.timeFrom || 'n/a'}-${record.timeTo || 'n/a'}</b>`,
+    `Part: <b>${record.partText || 'n/a'}</b>`,
+    '',
+    `Now: <b>${formatPct_(record.nowPct)}</b>`,
+    `H: ${formatPct_(record.hourPct)}`,
+    `M: ${formatPct_(record.totalPct)}`,
+    `Level: <b>${record.levelText || 'n/a'}</b>`,
+    '',
+    `Temp: ${formatMaybeNumber_(record.temperatureC, ' C')}`,
+    `Hum: ${formatMaybeNumber_(record.humidityPct, ' %')}`,
+    `Samples: ${toNumber_(record.samples)}`,
+    `Quality: ${qualityLabel}`
+  ].join('\n');
+}
+
+function buildDailyTelegramSummary_(dateText) {
+  const targetDate = dateText || getLatestSummaryDateText_();
+  if (!targetDate) {
+    return 'BS Noise Summary\n\nNo summary data yet. Run Rebuild analytics first.';
+  }
+
+  const partLines = PART_ORDER.map((partText) => {
+    const row = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, partText);
+    if (!row) {
+      return [
+        `<b>${partText}</b>`,
+        'Avg: no data',
+        'Main: no data',
+        'Valid windows: 0/0'
+      ].join('\n');
+    }
+
+    const validWindows = toNumber_(row[4]);
+    const expectedWindows = toNumber_(row[5]);
+    return [
+      `<b>${partText}</b>`,
+      `Avg: ${formatMaybePct_(row[7])}`,
+      `Main: ${getMainLevelForPart_(targetDate, partText)}`,
+      `Valid windows: ${validWindows}/${expectedWindows || 0}`
+    ].join('\n');
+  });
+
+  const healthRow = findHealthRowByDate_(targetDate);
+  const validTotal = healthRow ? toNumber_(healthRow[3]) : 0;
+  const missingWindows = healthRow ? toNumber_(healthRow[6]) : 0;
+  const coveragePct = healthRow ? toNumber_(healthRow[10]) : 0;
+  const qualityLabel = coveragePct >= 80
+    ? 'good'
+    : coveragePct >= 40
+      ? 'partial'
+      : 'weak';
+
+  const overallDayRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'DAY');
+  const overallNightRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'NGT');
+  const resultLines = [];
+  if (overallDayRow && toNumber_(overallDayRow[7]) > 0) {
+    resultLines.push(`Day looks mostly ${getMainLevelForPart_(targetDate, 'DAY').toLowerCase()}.`);
+  }
+  if (overallNightRow && toNumber_(overallNightRow[7]) > 0) {
+    resultLines.push(`Night looks mostly ${getMainLevelForPart_(targetDate, 'NGT').toLowerCase()}.`);
+  }
+  resultLines.push(`Data quality is ${qualityLabel}.`);
+
+  return [
+    '<b>BS Noise Summary</b>',
+    `Date: <b>${targetDate}</b>`,
+    '',
+    partLines.join('\n\n'),
+    '',
+    '<b>Coverage</b>',
+    `Valid total: ${validTotal}`,
+    `Missing windows: ${missingWindows}`,
+    `Coverage: ${formatPct_(coveragePct)}`,
+    `Quality: ${qualityLabel}`,
+    '',
+    '<b>Result</b>',
+    resultLines.join('\n')
+  ].join('\n');
+}
+
+function sendLatestTelegramStatus_() {
+  const text = buildLatestTelegramStatus_();
+  sendTelegramMessage_(text);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Latest Telegram status sent.', 'BS Noise', 5);
+}
+
+function sendDailyTelegramSummary_() {
+  const text = buildDailyTelegramSummary_('');
+  sendTelegramMessage_(text);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Daily Telegram summary sent.', 'BS Noise', 5);
 }
 
 function sortRecords_(records) {
