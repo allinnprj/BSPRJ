@@ -4,6 +4,11 @@
 
 1. Expanded the Google Sheets source-of-truth script so the same `Код.gs` can now rebuild `clean_summary_10m`, `summary_daypart`, `summary_levels`, `summary_health`, and a starter `charts` sheet on top of the fixed `log` plus daily-archive contract.
 2. Added local ignore rules for `backup/` and exported `test/*.xlsx` analysis files so temporary backup and spreadsheet artifacts do not pollute routine Git status or publish steps.
+3. Refined the analytics sheet styling standard so `log` stays untouched while `clean_*`, `summary_*`, and `charts` get clearer visual roles, calmer palettes, and a less overwhelming default view.
+4. Split the Apps Script into a dedicated `google_sheets/Code.gs` file and turned `GOOGLE_SHEETS_SETUP.md` into a readable deployment and naming guide, so future updates no longer require hunting for the start and end of a giant embedded code block.
+5. Hardened the Apps Script sheet-formatting path so analytics rebuild first expands new sheets to the required width before showing or hiding columns, fixing the `columns are out of bounds` failure on freshly created summary tabs.
+6. Removed the merged analytics title row from the Apps Script formatting path so frozen columns no longer collide with partially merged cells during `BS Noise` rebuilds.
+7. Simplified the analytics sheet look by dropping the awkward top title band, switching `clean_*` and `summary_*` to a `log`-style full-column color scheme with lighter data cells, and tightening embedded chart generation so Sheets treats the first row as chart headers explicitly.
 
 ## 0.1.29-EXP+83 - 2026-05-13
 
