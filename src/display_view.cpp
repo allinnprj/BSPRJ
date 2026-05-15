@@ -62,7 +62,7 @@ void DisplayView::drawCenteredText(const String &text, int16_t topY, uint8_t tex
 }
 
 void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
-                                  bool wifiConnected, uint8_t wifiPercent) {
+                                  bool timeSynced, bool wifiConnected, uint8_t wifiPercent) {
   static constexpr int kTopBarMaxWidth = 31;
   static constexpr int kTopBarX = 46;
   static constexpr int kTopBarWidth = 33;
@@ -109,7 +109,9 @@ void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Read
   drawCenteredText(String(secondLine), 35, 1);
 
   char environmentLine[24];
-  if (sht31Reading.available) {
+  if (!timeSynced) {
+    snprintf(environmentLine, sizeof(environmentLine), "TIME WAIT");
+  } else if (sht31Reading.available) {
     snprintf(environmentLine, sizeof(environmentLine), "T %.1f  H %.2f%%",
              sht31Reading.temperatureC, sht31Reading.humidityPct);
   } else {
@@ -134,7 +136,8 @@ void DisplayView::renderDebugPage(const AudioSnapshot &snapshot, const Sht31Read
 }
 
 void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
-                         const char *versionText, uint32_t buildNumber, bool wifiConnected,
+                         const char *versionText, uint32_t buildNumber, bool timeSynced,
+                         bool wifiConnected,
                          uint8_t wifiPercent) {
   if (!initialized_) {
     return;
@@ -155,7 +158,7 @@ void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht3
   blanked_ = false;
   switch (currentPage_) {
     case 0:
-      renderSoundPage(snapshot, sht31Reading, wifiConnected, wifiPercent);
+      renderSoundPage(snapshot, sht31Reading, timeSynced, wifiConnected, wifiPercent);
       break;
     case 1:
     default:

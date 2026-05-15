@@ -72,6 +72,19 @@ void AudioSampler::begin(uint8_t analogPin) {
   referenceLevel_ = 80;
 }
 
+void AudioSampler::restoreLongMean(uint64_t totalLevelSum, uint32_t totalLevelCount) {
+  totalLevelSum_ = totalLevelSum;
+  totalLevelCount_ = totalLevelCount;
+}
+
+uint64_t AudioSampler::totalLevelSum() const {
+  return totalLevelSum_;
+}
+
+uint32_t AudioSampler::totalLevelCount() const {
+  return totalLevelCount_;
+}
+
 AudioSnapshot AudioSampler::sample() {
   AudioSnapshot snapshot{};
   if (!started_) {

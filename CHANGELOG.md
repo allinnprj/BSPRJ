@@ -1,5 +1,41 @@
 # CHANGELOG
 
+## 0.1.36-EXP+90 - 2026-05-15
+
+1. Added lightweight `M` persistence through ESP32 `Preferences/NVS` by saving and restoring the long-term mean accumulators (`sum + count`) instead of only the derived percentage.
+2. The firmware now reloads the long-term mean after reboot and refreshes the stored state on a slow interval, so `M` can survive restarts without writing to flash too aggressively.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.35-EXP+89 - 2026-05-15
+
+1. Hardened the controller-side `Wi-Fi Restored` Telegram path so it no longer depends on a single send attempt at the exact reconnect moment.
+2. The restored alert now waits for a short stable post-reconnect warmup and keeps retrying on the regular Telegram retry interval until it succeeds or the outage is deemed too short to report.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.34-EXP+88 - 2026-05-15
+
+1. Extended the lightweight controller-side Telegram alert path with a `Wi-Fi Restored` notification that fires only after a real outage longer than a short threshold, so brief reconnect noise does not spam chat.
+2. Included downtime, IP, Wi-Fi quality, time-sync state, uptime, and the `Online Statistics` link in the restored message while keeping the implementation on direct Telegram Bot API calls.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.33-EXP+87 - 2026-05-15
+
+1. Added a minimal controller-side Telegram `Device Online` alert path that sends one boot-time notification directly through the Telegram Bot API after Wi-Fi has stayed up through a short warmup period.
+2. Kept the implementation lightweight by reusing direct HTTPS POSTs instead of pulling in a heavier Telegram bot framework, while still including IP, Wi-Fi, time-sync state, uptime, and the `Online Statistics` link in the alert.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.32-EXP+86 - 2026-05-15
+
+1. Added a clear `TIME WAIT` state to the main OLED page before NTP sync is ready, so users can see that day-part statistics are not yet running on valid wall-clock time.
+2. Added matching serial visibility for the unsynced state to make startup and reconnect diagnostics easier during runtime checks.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.31-EXP+85 - 2026-05-15
+
+1. Replaced the single pending Google Sheets upload slot with a small firmware-side queue of completed 10-minute windows, so temporary Wi-Fi or delivery failures no longer drop finished windows immediately.
+2. Added queue-aware serial diagnostics for queued and delivered Google Sheets windows, making upload backlog behavior easier to see during recovery testing.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## Apps Script polish - 2026-05-15
 
 1. Polished `google_sheets/Code.gs` by simplifying analytics-sheet checks, extracting repeated Telegram no-data and daypart-summary builders, and centralizing the coverage-quality label helper.

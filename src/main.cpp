@@ -6,9 +6,11 @@
 #include "display_view.h"
 #include "google_sheets_service.h"
 #include "log_service.h"
+#include "mean_persistence_service.h"
 #include "mqtt_service.h"
 #include "project_version.h"
 #include "sht31_service.h"
+#include "telegram_alert_service.h"
 #include "time_service.h"
 #include "wifi_service.h"
 
@@ -21,6 +23,8 @@ static constexpr uint16_t DISPLAY_REFRESH_MS = 500;
 static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 5000;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
+static constexpr uint8_t GOOGLE_SHEETS_QUEUE_SIZE = 6;
+static constexpr unsigned long MEAN_PERSIST_INTERVAL_MS = 600000UL;
 static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 60000UL;
 static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
 static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
@@ -67,8 +71,10 @@ ButtonService buttonService;
 DisplayView displayView;
 GoogleSheetsService googleSheetsService;
 LogService logService;
+MeanPersistenceService meanPersistenceService;
 MqttService mqttService;
 Sht31Service sht31Service;
+TelegramAlertService telegramAlertService;
 TimeService timeService;
 WifiService wifiService;
 AudioSnapshot latestSnapshot;
@@ -77,10 +83,13 @@ unsigned long lastDisplayAt = 0;
 unsigned long lastSerialLogAt = 0;
 unsigned long lastGoogleSheetsAttemptAt = 0;
 unsigned long lastDisplayInteractionAt = 0;
+unsigned long lastMeanPersistAt = 0;
 DayPartStats dayPartStats[3];
 GoogleSheetsAccumulator activeSheetsWindow;
-GoogleSheetsWindowRecord pendingSheetsUpload;
-bool pendingSheetsUploadReady = false;
+GoogleSheetsWindowRecord pendingSheetsUploads[GOOGLE_SHEETS_QUEUE_SIZE];
+uint8_t pendingSheetsHead = 0;
+uint8_t pendingSheetsTail = 0;
+uint8_t pendingSheetsCount = 0;
 
 const char *signalStateText(SignalState state) {
   switch (state) {
@@ -269,6 +278,42 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   return record;
 }
 
+bool hasPendingGoogleSheetsUploads() {
+  return pendingSheetsCount > 0;
+}
+
+bool enqueueGoogleSheetsUpload(const GoogleSheetsWindowRecord &record) {
+  if (record.windowKey.isEmpty() || record.sampleCount == 0) {
+    return false;
+  }
+
+  if (pendingSheetsCount >= GOOGLE_SHEETS_QUEUE_SIZE) {
+    Serial.print(F("[GS] queue full -> drop oldest window "));
+    Serial.println(pendingSheetsUploads[pendingSheetsHead].windowKey);
+    pendingSheetsHead = static_cast<uint8_t>((pendingSheetsHead + 1) % GOOGLE_SHEETS_QUEUE_SIZE);
+    pendingSheetsCount--;
+  }
+
+  pendingSheetsUploads[pendingSheetsTail] = record;
+  pendingSheetsTail = static_cast<uint8_t>((pendingSheetsTail + 1) % GOOGLE_SHEETS_QUEUE_SIZE);
+  pendingSheetsCount++;
+  return true;
+}
+
+GoogleSheetsWindowRecord &frontPendingGoogleSheetsUpload() {
+  return pendingSheetsUploads[pendingSheetsHead];
+}
+
+void popPendingGoogleSheetsUpload() {
+  if (pendingSheetsCount == 0) {
+    return;
+  }
+
+  pendingSheetsUploads[pendingSheetsHead] = GoogleSheetsWindowRecord{};
+  pendingSheetsHead = static_cast<uint8_t>((pendingSheetsHead + 1) % GOOGLE_SHEETS_QUEUE_SIZE);
+  pendingSheetsCount--;
+}
+
 void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &timeService) {
   if (!snapshot.statsUpdated || !timeService.isSynced()) {
     return;
@@ -279,19 +324,18 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   if (!activeSheetsWindow.active) {
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   } else if (activeSheetsWindow.windowKey != currentWindowKey) {
-    if (!pendingSheetsUploadReady) {
-      pendingSheetsUpload = buildGoogleSheetsRecord(activeSheetsWindow);
-      pendingSheetsUploadReady = !pendingSheetsUpload.windowKey.isEmpty();
-      if (pendingSheetsUploadReady) {
-        Serial.print(F("[GS] queued window -> "));
-        Serial.print(pendingSheetsUpload.timeFromText);
-        Serial.print(F(".."));
-        Serial.print(pendingSheetsUpload.timeToText);
-        Serial.print(F(" samples="));
-        Serial.print(pendingSheetsUpload.sampleCount);
-        Serial.print(F(" avgNow="));
-        Serial.println(pendingSheetsUpload.averageNowPercent);
-      }
+    GoogleSheetsWindowRecord completedRecord = buildGoogleSheetsRecord(activeSheetsWindow);
+    if (enqueueGoogleSheetsUpload(completedRecord)) {
+      Serial.print(F("[GS] queued window -> "));
+      Serial.print(completedRecord.timeFromText);
+      Serial.print(F(".."));
+      Serial.print(completedRecord.timeToText);
+      Serial.print(F(" samples="));
+      Serial.print(completedRecord.sampleCount);
+      Serial.print(F(" avgNow="));
+      Serial.print(completedRecord.averageNowPercent);
+      Serial.print(F(" queue="));
+      Serial.println(pendingSheetsCount);
     }
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   }
@@ -325,7 +369,7 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
 }
 
 void uploadPendingGoogleSheetsWindow() {
-  if (!pendingSheetsUploadReady) {
+  if (!hasPendingGoogleSheetsUploads()) {
     return;
   }
 
@@ -336,15 +380,18 @@ void uploadPendingGoogleSheetsWindow() {
   }
   lastGoogleSheetsAttemptAt = nowMs;
 
-  if (googleSheetsService.appendWindowAggregate(pendingSheetsUpload, PROJECT_VERSION,
+  GoogleSheetsWindowRecord &nextRecord = frontPendingGoogleSheetsUpload();
+  if (googleSheetsService.appendWindowAggregate(nextRecord, PROJECT_VERSION,
                                                 PROJECT_BUILD)) {
     Serial.print(F("[GS] uploaded window -> "));
-    Serial.print(pendingSheetsUpload.timeFromText);
+    Serial.print(nextRecord.timeFromText);
     Serial.print(F(".."));
-    Serial.print(pendingSheetsUpload.timeToText);
+    Serial.print(nextRecord.timeToText);
     Serial.print(F(" samples="));
-    Serial.println(pendingSheetsUpload.sampleCount);
-    pendingSheetsUploadReady = false;
+    Serial.print(nextRecord.sampleCount);
+    Serial.print(F(" queue="));
+    popPendingGoogleSheetsUpload();
+    Serial.println(pendingSheetsCount);
     lastGoogleSheetsAttemptAt = 0;
   }
 }
@@ -455,8 +502,15 @@ void setup() {
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
+  meanPersistenceService.begin();
   mqttService.begin();
+  telegramAlertService.begin();
   timeService.begin();
+  uint64_t restoredMeanSum = 0;
+  uint32_t restoredMeanCount = 0;
+  if (meanPersistenceService.load(restoredMeanSum, restoredMeanCount)) {
+    audioSampler.restoreLongMean(restoredMeanSum, restoredMeanCount);
+  }
   Wire.begin(SDA_PIN, SCL_PIN);
   if (STARTUP_I2C_SCAN_ENABLED) {
     scanI2cBus(&Wire);
@@ -516,6 +570,15 @@ void loop() {
   appendLogSample(latestSnapshot, timeService);
   uploadPendingGoogleSheetsWindow();
   updateMqttState(latestSnapshot);
+  telegramAlertService.update(wifiService.isConnected(), wifiService.ipAddressString(),
+                              wifiService.rssiDbm(), wifiService.signalPercent(),
+                              timeService.isSynced(), PROJECT_VERSION, PROJECT_BUILD,
+                              formatCompactUptime(millis()));
+  if (latestSnapshot.statsUpdated && nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
+    if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {
+      lastMeanPersistAt = nowMs;
+    }
+  }
 
   if (displayView.isEnabled() &&
       nowMs - lastDisplayInteractionAt >= DISPLAY_IDLE_TIMEOUT_MS) {
@@ -526,7 +589,8 @@ void loop() {
   if (nowMs - lastDisplayAt >= DISPLAY_REFRESH_MS) {
     lastDisplayAt = nowMs;
     displayView.render(latestSnapshot, latestSht31Reading, PROJECT_VERSION, PROJECT_BUILD,
-                       wifiService.isConnected(), wifiService.signalPercent());
+                       timeService.isSynced(), wifiService.isConnected(),
+                       wifiService.signalPercent());
   }
 
   if (nowMs - lastSerialLogAt >= SERIAL_LOG_INTERVAL_MS) {
@@ -568,6 +632,8 @@ void loop() {
       Serial.print(stats.quietCount);
       Serial.print(F(" loud="));
       Serial.print(stats.loudCount);
+    } else {
+      Serial.print(F(" time=WAIT"));
     }
     if (wifiService.isConnected()) {
       Serial.print(F(" wifi="));

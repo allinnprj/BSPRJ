@@ -1,0 +1,46 @@
+#pragma once
+
+#include <Arduino.h>
+
+class TelegramAlertService {
+ public:
+  void begin();
+ void update(bool wifiConnected, const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
+              bool timeSynced, const char *versionText, uint32_t buildNumber,
+              const String &uptimeText);
+
+  bool isConfigured() const;
+
+ private:
+  static constexpr unsigned long kOnlineWarmupMs = 20000UL;
+  static constexpr unsigned long kRetryIntervalMs = 30000UL;
+  static constexpr unsigned long kRestoreThresholdMs = 90000UL;
+  static constexpr unsigned long kRestoreWarmupMs = 10000UL;
+
+  bool sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
+                         bool timeSynced, const char *versionText, uint32_t buildNumber,
+                         const String &uptimeText);
+  bool sendWifiRestored_(const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
+                         bool timeSynced, const char *versionText, uint32_t buildNumber,
+                         const String &uptimeText, unsigned long downtimeMs);
+  String buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
+                                   uint8_t wifiSignalPercent, bool timeSynced,
+                                   const char *versionText, uint32_t buildNumber,
+                                   const String &uptimeText) const;
+  String buildWifiRestoredMessage_(const String &ipAddress, int wifiRssiDbm,
+                                   uint8_t wifiSignalPercent, bool timeSynced,
+                                   const char *versionText, uint32_t buildNumber,
+                                   const String &uptimeText, unsigned long downtimeMs) const;
+  static String htmlEscape_(const String &value);
+  static String urlEncode_(const String &value);
+  static String formatDowntimeText_(unsigned long downtimeMs);
+
+  bool configured_ = false;
+  bool onlineSentThisBoot_ = false;
+  bool wifiWasConnected_ = false;
+  bool restorePending_ = false;
+  unsigned long wifiConnectedSinceMs_ = 0;
+  unsigned long wifiLostAtMs_ = 0;
+  unsigned long restoreDowntimeMs_ = 0;
+  unsigned long lastAttemptAtMs_ = 0;
+};

@@ -28,6 +28,9 @@ class AudioSampler {
  public:
   void begin(uint8_t analogPin);
   AudioSnapshot sample();
+  void restoreLongMean(uint64_t totalLevelSum, uint32_t totalLevelCount);
+  uint64_t totalLevelSum() const;
+  uint32_t totalLevelCount() const;
 
  private:
   static constexpr uint16_t kSampleWindowMs = 25;
