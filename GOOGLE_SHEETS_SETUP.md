@@ -96,6 +96,9 @@
   - показывает распределение `SILENT / NORMAL / LOUD / PEAK`
 - `summary_health`
   - показывает качество данных: дубли, малые выборки, пропуски, покрытие
+- `summary_conclusions`
+  - короткий человеко-понятный итог по `DAY / EVE / NGT`
+  - сводит вместе средний относительный уровень, типичный уровень и уверенность по покрытию
 
 ### Витрина
 
@@ -123,6 +126,8 @@
   - итог по уровням шума
 - `summary_health`
   - итог по качеству данных
+- `summary_conclusions`
+  - короткий итог для быстрого чтения
 - `charts`
   - визуальный обзор
 
@@ -173,6 +178,13 @@
 - `MISSING WIN` = сколько окон пропущено
 - `SILENT WIN / NORMAL WIN / LOUD WIN / PEAK WIN`
   - сколько валидных окон попало в этот уровень
+- `MAIN LEVEL` = какой человеческий уровень чаще всего встречался в этой части суток
+- `MAIN SHARE %` = какую долю валидных окон занял этот типичный уровень
+- `CONFIDENCE`
+  - `GOOD` = покрытие достаточно уверенное
+  - `PARTIAL` = данные уже полезны, но день закрыт неполно
+  - `WEAK` = вывод пока ранний
+- `READING` = готовая короткая текстовая формулировка для быстрого понимания
 
 ## Что считается валидным окном
 
@@ -250,8 +262,6 @@
 - `BS_TELEGRAM_ENABLED`
 - `BS_TELEGRAM_BOT_TOKEN`
 - `BS_TELEGRAM_CHAT_ID`
-- `BS_TELEGRAM_ONLINE_RESTORE_ENABLED`
-- `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES`
 - `BS_TELEGRAM_AUTO_DAILY_ENABLED`
 
 ### Где это задавать
@@ -263,8 +273,6 @@
    - `BS_TELEGRAM_ENABLED` = `true`
    - `BS_TELEGRAM_BOT_TOKEN` = токен бота
    - `BS_TELEGRAM_CHAT_ID` = chat id
-   - `BS_TELEGRAM_ONLINE_RESTORE_ENABLED` = `true`
-   - `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES` = `30`
    - `BS_TELEGRAM_AUTO_DAILY_ENABLED` = `false`
 5. Сохрани
 
@@ -276,6 +284,9 @@
 - `Send daily Telegram summary`
   - берёт последний доступный день из `summary_daypart`, `summary_levels`, `summary_health`
   - отправляет краткую дневную сводку
+- Все Telegram-уведомления
+  - внизу добавляют аккуратную ссылку `Онлайн Статистика`
+  - ссылка ведёт сразу в рабочую Google Sheets-таблицу
 - `Enable auto daily summary`
   - включает hourly background trigger
   - сам шлёт сводку по последнему архивному дню только один раз
@@ -291,25 +302,6 @@
 3. Проверка формата сообщений
 4. Автоматический `daily summary`
 5. `anomaly / bad data alerts`
-6. Уведомление `device online restored`
-
-### Как работает `online restored`
-
-Если устройство долго не присылало новые данные, а потом снова успешно отправило новое окно, `Apps Script` может отправить Telegram-уведомление:
-
-- `BS_TELEGRAM_ONLINE_RESTORE_ENABLED=true`
-- `BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES=30`
-
-То есть:
-
-- если пауза между успешными `doPost(...)` меньше 30 минут, уведомления не будет
-- если пауза 30 минут или больше, после новой успешной записи придёт `online restored`
-
-Это облачная логика на стороне Google:
-
-- компьютер не нужен
-- браузер не нужен
-- важно только, чтобы `Apps Script` был развёрнут и ESP32 снова смог отправить данные
 
 ### Как работает автоматический `daily summary`
 
@@ -355,6 +347,7 @@
 3. `summary_daypart` читается как основной итог
 4. `summary_levels` быстро показывает смесь уровней
 5. `summary_health` быстро показывает качество данных
+6. `summary_conclusions` даёт самый быстрый человеческий вывод без ручной сборки из нескольких листов
 6. `charts` подходит для быстрого обзора и не разбрасывает полезные блоки по пустому листу
 7. даже без встроенных chart-объектов `charts` должен оставаться полезным за счёт KPI и мини-диаграмм в ячейках
 

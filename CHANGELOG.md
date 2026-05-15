@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## Apps Script polish - 2026-05-15
+
+1. Polished `google_sheets/Code.gs` by simplifying analytics-sheet checks, extracting repeated Telegram no-data and daypart-summary builders, and centralizing the coverage-quality label helper.
+2. Kept the current `log`, analytics, and Telegram behavior unchanged while making the script easier to read and safer to maintain.
+
+## Apps Script cleanup - 2026-05-15
+
+1. Removed the unfinished `online restored` notification path from `google_sheets/Code.gs`, including its extra Script Properties and `doPost(...)` hook, so the Apps Script Telegram layer stays clean and focused on the working manual status/summary flow.
+2. Cleaned the setup guide to match the new contract and avoid keeping dead Telegram recovery settings around.
+
+## Apps Script Telegram link - 2026-05-15
+
+1. Added a shared `Онлайн Статистика` link to the bottom of Telegram notifications in `google_sheets/Code.gs`, so each message can open the working Google Sheets dashboard directly without searching for the spreadsheet URL again.
+2. Applied the link to the latest status, daily summary, and online-restored notification paths, including the no-data fallback messages.
+
+## Apps Script online restore fix - 2026-05-15
+
+1. Tightened the `online restored` contract in `google_sheets/Code.gs` so Telegram now notifies only after a real communication gap between successful device posts, not after ordinary controller reboots by themselves.
+2. Removed the temporary reboot/uptime-based recovery trigger and kept the alert strictly gap-based, which better matches the goal of tracking lost and restored device connectivity.
+
+## Apps Script conclusions - 2026-05-15
+
+1. Added a new `summary_conclusions` analytics sheet in `google_sheets/Code.gs` so each `DAY / EVE / NGT` block now has one quick human-readable line with its average relative level, dominant `SILENT / NORMAL / LOUD / PEAK` class, and a coverage-based confidence label.
+2. Kept the existing `log`, archive-day contract, `summary_*` base tables, and Telegram menu flow unchanged, so the new layer stays additive and safe for the current working setup.
+3. Updated `GOOGLE_SHEETS_SETUP.md` so the new summary layer is documented as part of the intended analytics reading flow.
+
 ## 0.1.30-EXP+84 - 2026-05-15
 
 1. Added compact `UPTIME` telemetry to each Google Sheets 10-minute window as a single human-readable value like `0 d, 3 h, 14 m`, so log rows show how long the controller lived before each upload without cluttering the table with separate day/hour/minute columns.

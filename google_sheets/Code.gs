@@ -28,23 +28,22 @@ const CLEAN_SUMMARY_SHEET_NAME = 'clean_summary_10m';
 const DAYPART_SUMMARY_SHEET_NAME = 'summary_daypart';
 const LEVEL_SUMMARY_SHEET_NAME = 'summary_levels';
 const HEALTH_SUMMARY_SHEET_NAME = 'summary_health';
+const CONCLUSION_SUMMARY_SHEET_NAME = 'summary_conclusions';
 const CHARTS_SHEET_NAME = 'charts';
+const TELEGRAM_STATS_URL = 'https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943';
 const ANALYTICS_SHEET_NAMES = [
   CLEAN_SUMMARY_SHEET_NAME,
   DAYPART_SUMMARY_SHEET_NAME,
   LEVEL_SUMMARY_SHEET_NAME,
   HEALTH_SUMMARY_SHEET_NAME,
+  CONCLUSION_SUMMARY_SHEET_NAME,
   CHARTS_SHEET_NAME
 ];
 const TELEGRAM_ENABLED_PROPERTY = 'BS_TELEGRAM_ENABLED';
 const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
 const TELEGRAM_CHAT_ID_PROPERTY = 'BS_TELEGRAM_CHAT_ID';
-const TELEGRAM_ONLINE_RESTORE_ENABLED_PROPERTY = 'BS_TELEGRAM_ONLINE_RESTORE_ENABLED';
-const TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY = 'BS_TELEGRAM_ONLINE_RESTORE_GAP_MINUTES';
 const TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_ENABLED';
 const TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_LAST_SENT_DATE';
-const TELEGRAM_LAST_POST_MS_PROPERTY = 'BS_TELEGRAM_LAST_POST_MS';
-const TELEGRAM_LAST_UPTIME_MIN_PROPERTY = 'BS_TELEGRAM_LAST_UPTIME_MIN';
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -134,6 +133,19 @@ const HEALTH_SUMMARY_HEADERS = [
   'HAS LOG ROWS',
   'COVERAGE %'
 ];
+const CONCLUSION_SUMMARY_HEADERS = [
+  'DEV ID',
+  'DATE',
+  'PART',
+  'AVG NOW %',
+  'MAIN LEVEL',
+  'MAIN SHARE %',
+  'VALID WINDOWS',
+  'EXPECTED WINDOWS',
+  'COVERAGE %',
+  'CONFIDENCE',
+  'READING'
+];
 const SHEET_STYLE_PROFILES = {
   clean: {
     title: 'TECH LAYER · CLEAN 10M WINDOWS',
@@ -219,6 +231,24 @@ const SHEET_STYLE_PROFILES = {
     accentCols: [4, 5, 6, 7, 11],
     accentColor: '#ffe4e1',
     freezeCols: 2
+  },
+  summaryConclusions: {
+    title: 'MAIN ANALYTICS · HUMAN SUMMARY',
+    titleColor: '#d0e0e3',
+    titleTextColor: '#134f5c',
+    headerColor: '#eaf4f6',
+    headerTextColor: '#134f5c',
+    headerColors: [
+      '#d9ead3', '#cfe2f3', '#cfe2f3',
+      '#ffe599', '#ffe599', '#fff2cc',
+      '#d9d2e9', '#d9d2e9', '#d9d2e9',
+      '#d0e0e3', '#d0e0e3'
+    ],
+    bodyOdd: '#f8fcfd',
+    bodyEven: '#f1f8fa',
+    accentCols: [4, 5, 6, 9, 10, 11],
+    accentColor: '#e7f4f7',
+    freezeCols: 3
   }
 };
 const HEADER_COLORS = [
@@ -609,7 +639,7 @@ function listRawDataSheets_(spreadsheet) {
 }
 
 function isAnalyticsSheetName_(name) {
-  return ANALYTICS_SHEET_NAMES.indexOf(name) >= 0;
+  return ANALYTICS_SHEET_NAMES.includes(name);
 }
 
 function hideAnalyticsSheets_() {
@@ -664,8 +694,6 @@ function getTelegramConfig_() {
     enabled: String(properties.getProperty(TELEGRAM_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true',
     botToken: String(properties.getProperty(TELEGRAM_BOT_TOKEN_PROPERTY) || '').trim(),
     chatId: String(properties.getProperty(TELEGRAM_CHAT_ID_PROPERTY) || '').trim(),
-    onlineRestoreEnabled: String(properties.getProperty(TELEGRAM_ONLINE_RESTORE_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true',
-    onlineRestoreGapMinutes: Math.max(1, toNumber_(properties.getProperty(TELEGRAM_ONLINE_RESTORE_GAP_MINUTES_PROPERTY) || 30)),
     autoDailyEnabled: String(properties.getProperty(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true'
   };
 }
@@ -704,54 +732,18 @@ function sendTelegramMessage_(text) {
   return response;
 }
 
-function deviceScopedPropertyKey_(baseKey, deviceId) {
-  const safeDeviceId = String(deviceId || 'default').replace(/[^a-zA-Z0-9_-]/g, '_');
-  return `${baseKey}_${safeDeviceId}`;
+function buildTelegramStatsLinkLine_() {
+  return `🔗 <a href="${TELEGRAM_STATS_URL}">Онлайн Статистика</a>`;
 }
 
-function maybeSendOnlineRestoredTelegram_(payload) {
-  const config = getTelegramConfig_();
-  if (!config.enabled || !config.botToken || !config.chatId || !config.onlineRestoreEnabled) {
-    return;
-  }
-
-  const properties = PropertiesService.getScriptProperties();
-  const nowMs = Date.now();
-  const deviceId = String(payload.device_id || 'default');
-  const lastPostKey = deviceScopedPropertyKey_(TELEGRAM_LAST_POST_MS_PROPERTY, deviceId);
-  const lastUptimeKey = deviceScopedPropertyKey_(TELEGRAM_LAST_UPTIME_MIN_PROPERTY, deviceId);
-  const previousMs = toNumber_(properties.getProperty(lastPostKey) || 0);
-  const previousUptimeMin = toNumber_(properties.getProperty(lastUptimeKey) || 0);
-  const currentUptimeMin = Math.max(0, toNumber_(payload.uptime_min || 0));
-  properties.setProperty(lastPostKey, String(nowMs));
-  properties.setProperty(lastUptimeKey, String(currentUptimeMin));
-
-  if (!previousMs) {
-    return;
-  }
-
-  const gapMinutes = Math.round((nowMs - previousMs) / 60000);
-  const rebootDetected = currentUptimeMin > 0 && previousUptimeMin > 0 && currentUptimeMin + 2 < previousUptimeMin;
-  if (!rebootDetected && gapMinutes < config.onlineRestoreGapMinutes) {
-    return;
-  }
-
-  const normalizedDate = normalizeDateText_(payload.date);
-  const normalizedTimeFrom = normalizeTimeText_(payload.time_from);
-  const normalizedTimeTo = normalizeTimeText_(payload.time_to);
-  const text = [
-    '🟢 <b>BS Noise Online</b>',
-    `Device: <code>${htmlEscape_(payload.device_id || 'n/a')}</code>`,
-    `Status: <b>online restored</b>`,
-    rebootDetected ? `Reason: reboot detected` : `Gap: <b>${gapMinutes} min</b>`,
-    `Date: <b>${htmlEscape_(normalizedDate || 'n/a')}</b>`,
-    `Window: <b>${htmlEscape_(normalizedTimeFrom || 'n/a')}-${htmlEscape_(normalizedTimeTo || 'n/a')}</b>`,
-    `Part: <b>${htmlEscape_(normalizePartText_(payload.part || ''))}</b>`,
-    `Uptime: ${htmlEscape_(payload.uptime || 'n/a')}`,
-    `Version: <code>${htmlEscape_(payload.fw_version || 'n/a')}</code> build <code>${htmlEscape_(payload.build || 'n/a')}</code>`
+function buildTelegramNoDataMessage_(title, body) {
+  return [
+    title,
+    '',
+    body,
+    '',
+    buildTelegramStatsLinkLine_()
   ].join('\n');
-
-  sendTelegramMessage_(text);
 }
 
 function getLatestValidCleanRecord_() {
@@ -797,13 +789,17 @@ function getLatestValidCleanRecord_() {
 }
 
 function getLatestSummaryDateText_() {
-  const sheet = getOrCreateSheet_(DAYPART_SUMMARY_SHEET_NAME);
+  return getLatestDateTextFromSheet_(DAYPART_SUMMARY_SHEET_NAME, 2);
+}
+
+function getLatestDateTextFromSheet_(sheetName, dateColumnIndex) {
+  const sheet = getOrCreateSheet_(sheetName);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) {
     return '';
   }
 
-  const values = sheet.getRange(2, 2, lastRow - 1, 1).getValues().flat();
+  const values = sheet.getRange(2, dateColumnIndex, lastRow - 1, 1).getValues().flat();
   const dates = values
     .map((value) => normalizeDateText_(value))
     .filter((value) => value);
@@ -856,6 +852,16 @@ function findHealthRowByDate_(dateText) {
   return null;
 }
 
+function getCoverageQualityLabel_(coveragePct) {
+  if (coveragePct >= 80) {
+    return 'good';
+  }
+  if (coveragePct >= 40) {
+    return 'partial';
+  }
+  return 'weak';
+}
+
 function getMainLevelForPart_(dateText, partText) {
   const row = findRowByDateAndPart_(LEVEL_SUMMARY_SHEET_NAME, dateText, partText);
   if (!row) {
@@ -886,10 +892,31 @@ function partIcon_(partText) {
   return '🌗';
 }
 
+function buildDayPartTelegramBlock_(targetDate, partText) {
+  const row = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, partText);
+  if (!row) {
+    return [
+      `${partIcon_(partText)} <b>${partText}</b>`,
+      'Avg: no data',
+      'Main: no data',
+      'Valid windows: 0/0'
+    ].join('\n');
+  }
+
+  const validWindows = toNumber_(row[4]);
+  const expectedWindows = toNumber_(row[5]);
+  return [
+    `${partIcon_(partText)} <b>${partText}</b>`,
+    `Avg: ${formatMaybePct_(row[7])}`,
+    `Main: ${getMainLevelForPart_(targetDate, partText)}`,
+    `Valid windows: ${validWindows}/${expectedWindows || 0}`
+  ].join('\n');
+}
+
 function buildLatestTelegramStatus_() {
   const record = getLatestValidCleanRecord_();
   if (!record) {
-    return 'BS Noise Latest\n\nNo clean summary data yet. Run Rebuild analytics first.';
+    return buildTelegramNoDataMessage_('BS Noise Latest', 'No clean summary data yet. Run Rebuild analytics first.');
   }
 
   const qualityLabel = record.isValid ? 'valid' : String(record.qualityText || 'raw');
@@ -911,46 +938,25 @@ function buildLatestTelegramStatus_() {
     `💧 Hum: ${formatMaybeNumber_(record.humidityPct, ' %')}`,
     `⏱️ Uptime: ${htmlEscape_(record.uptimeText || 'n/a')}`,
     `📦 Samples: ${toNumber_(record.samples)}`,
-    `✅ Quality: ${htmlEscape_(qualityLabel)}`
+    `✅ Quality: ${htmlEscape_(qualityLabel)}`,
+    '',
+    buildTelegramStatsLinkLine_()
   ].join('\n');
 }
 
 function buildDailyTelegramSummary_(dateText) {
   const targetDate = dateText || getLatestSummaryDateText_();
   if (!targetDate) {
-    return 'BS Noise Summary\n\nNo summary data yet. Run Rebuild analytics first.';
+    return buildTelegramNoDataMessage_('BS Noise Summary', 'No summary data yet. Run Rebuild analytics first.');
   }
 
-  const partLines = PART_ORDER.map((partText) => {
-    const row = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, partText);
-    if (!row) {
-      return [
-        `${partIcon_(partText)} <b>${partText}</b>`,
-        'Avg: no data',
-        'Main: no data',
-        'Valid windows: 0/0'
-      ].join('\n');
-    }
-
-    const validWindows = toNumber_(row[4]);
-    const expectedWindows = toNumber_(row[5]);
-    return [
-      `${partIcon_(partText)} <b>${partText}</b>`,
-      `Avg: ${formatMaybePct_(row[7])}`,
-      `Main: ${getMainLevelForPart_(targetDate, partText)}`,
-      `Valid windows: ${validWindows}/${expectedWindows || 0}`
-    ].join('\n');
-  });
+  const partLines = PART_ORDER.map((partText) => buildDayPartTelegramBlock_(targetDate, partText));
 
   const healthRow = findHealthRowByDate_(targetDate);
   const validTotal = healthRow ? toNumber_(healthRow[3]) : 0;
   const missingWindows = healthRow ? toNumber_(healthRow[6]) : 0;
   const coveragePct = healthRow ? toNumber_(healthRow[10]) : 0;
-  const qualityLabel = coveragePct >= 80
-    ? 'good'
-    : coveragePct >= 40
-      ? 'partial'
-      : 'weak';
+  const qualityLabel = getCoverageQualityLabel_(coveragePct);
 
   const overallDayRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'DAY');
   const overallNightRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'NGT');
@@ -976,7 +982,9 @@ function buildDailyTelegramSummary_(dateText) {
     `Quality: ${htmlEscape_(qualityLabel)}`,
     '',
     '🧾 <b>Result</b>',
-    resultLines.join('\n')
+    resultLines.join('\n'),
+    '',
+    buildTelegramStatsLinkLine_()
   ].join('\n');
 }
 
@@ -1361,6 +1369,98 @@ function buildLevelSummaryRows_(records) {
   return rows;
 }
 
+function getMainLevelStats_(levelCounts) {
+  const pairs = LEVEL_ORDER.map((level) => [level, levelCounts[level] || 0]);
+  pairs.sort((left, right) => right[1] - left[1]);
+  return {
+    level: pairs[0][0],
+    count: pairs[0][1]
+  };
+}
+
+function getCoverageConfidence_(coveragePct) {
+  if (coveragePct >= 80) {
+    return 'GOOD';
+  }
+  if (coveragePct >= 40) {
+    return 'PARTIAL';
+  }
+  return 'WEAK';
+}
+
+function buildConclusionReading_(partText, avgNowPct, mainLevel, mainSharePct, confidence) {
+  const avgText = avgNowPct === '' ? 'n/a' : `${avgNowPct}%`;
+  const shareText = mainSharePct === '' ? 'n/a' : `${mainSharePct}%`;
+  return `${partText}: typical ${mainLevel}, avg ${avgText}, mix share ${shareText}, ${confidence.toLowerCase()} confidence`;
+}
+
+function buildConclusionSummaryRows_(records) {
+  const buckets = {};
+
+  records.forEach((record) => {
+    const key = `${record.deviceId}|${record.dateText}|${record.partText}`;
+    const bucket = ensureMetricBucket_(buckets, key, () => ({
+      deviceId: record.deviceId,
+      dateText: record.dateText,
+      partText: record.partText,
+      validWindows: 0,
+      sumNow: 0,
+      levelCounts: {
+        SILENT: 0,
+        NORMAL: 0,
+        LOUD: 0,
+        PEAK: 0
+      }
+    }));
+
+    if (!record.isValid) {
+      return;
+    }
+
+    bucket.validWindows++;
+    bucket.sumNow += record.nowPct;
+    bucket.levelCounts[record.levelText] = (bucket.levelCounts[record.levelText] || 0) + 1;
+  });
+
+  const rows = Object.keys(buckets).map((key) => {
+    const bucket = buckets[key];
+    const expectedWindows = EXPECTED_WINDOWS_PER_PART[bucket.partText] || 0;
+    const coveragePct = expectedWindows > 0
+      ? roundValue_(bucket.validWindows * 100 / expectedWindows, 1)
+      : '';
+    const mainLevelStats = getMainLevelStats_(bucket.levelCounts);
+    const avgNowPct = bucket.validWindows > 0 ? roundValue_(bucket.sumNow / bucket.validWindows, 1) : '';
+    const mainSharePct = bucket.validWindows > 0
+      ? roundValue_(mainLevelStats.count * 100 / bucket.validWindows, 1)
+      : '';
+    const confidence = getCoverageConfidence_(toNumber_(coveragePct));
+
+    return [
+      bucket.deviceId,
+      bucket.dateText,
+      bucket.partText,
+      avgNowPct,
+      bucket.validWindows > 0 ? mainLevelStats.level : 'NO DATA',
+      mainSharePct,
+      bucket.validWindows,
+      expectedWindows,
+      coveragePct,
+      confidence,
+      bucket.validWindows > 0
+        ? buildConclusionReading_(bucket.partText, avgNowPct, mainLevelStats.level, mainSharePct, confidence)
+        : `${bucket.partText}: no valid windows yet`
+    ];
+  });
+
+  rows.sort((left, right) => {
+    const leftKey = `${left[0]}|${left[1]}|${PART_ORDER.indexOf(left[2])}`;
+    const rightKey = `${right[0]}|${right[1]}|${PART_ORDER.indexOf(right[2])}`;
+    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
+  });
+
+  return rows;
+}
+
 function buildHealthSummaryRows_(records) {
   const buckets = {};
 
@@ -1458,11 +1558,6 @@ function lightenHexColor_(hexColor, amount) {
   return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
 }
 
-function buildColumnColorBackgrounds_(rowCount, colors, lightenAmount) {
-  const lightColors = colors.map((color) => lightenHexColor_(color, lightenAmount));
-  return Array.from({ length: rowCount }, () => lightColors.slice());
-}
-
 function buildAlternatingColumnColorBackgrounds_(rowCount, colors, oddLightenAmount, evenLightenAmount) {
   const oddColors = colors.map((color) => lightenHexColor_(color, oddLightenAmount));
   const evenColors = colors.map((color) => lightenHexColor_(color, evenLightenAmount));
@@ -1504,6 +1599,9 @@ function getSheetStyleProfile_(sheetName) {
   }
   if (sheetName === HEALTH_SUMMARY_SHEET_NAME) {
     return SHEET_STYLE_PROFILES.summaryHealth;
+  }
+  if (sheetName === CONCLUSION_SUMMARY_SHEET_NAME) {
+    return SHEET_STYLE_PROFILES.summaryConclusions;
   }
   return null;
 }
@@ -1797,6 +1895,7 @@ function rebuildAnalytics_() {
   writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, buildDayPartSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, buildHealthSummaryRows_(cleanData.uniqueRecords));
+  writeTableToSheet_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS, buildConclusionSummaryRows_(cleanData.uniqueRecords));
   rebuildAnalyticsCharts_();
 
   SpreadsheetApp.getActiveSpreadsheet().toast(
@@ -1851,12 +1950,6 @@ function doPost(e) {
     valueOrBlank(data.uptime)
   ]);
   ensureHeaderFormatting_(sheet);
-
-  try {
-    maybeSendOnlineRestoredTelegram_(data);
-  } catch (error) {
-    Logger.log(`Online restored Telegram notice failed: ${error}`);
-  }
 
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))
