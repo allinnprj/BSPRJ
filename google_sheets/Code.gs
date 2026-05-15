@@ -12,7 +12,7 @@ const HEADERS = [
   'RAW MIN',
   'RAW MAX',
   'AVG P2P',
-  'SIG',
+  'SIG IN',
   'TEMP C',
   'HUM %',
   'WIN MIN',
@@ -67,7 +67,7 @@ const CLEAN_SUMMARY_HEADERS = [
   'RAW MIN',
   'RAW MAX',
   'AVG P2P',
-  'SIG',
+  'SIG IN',
   'TEMP C',
   'HUM %',
   'WIN MIN',
@@ -324,7 +324,7 @@ function ensureHeaderFormatting_(sheet) {
   sheet.setColumnWidth(11, 85);  // RAW MIN
   sheet.setColumnWidth(12, 85);  // RAW MAX
   sheet.setColumnWidth(13, 85);  // AVG P2P
-  sheet.setColumnWidth(14, 75);  // SIG
+  sheet.setColumnWidth(14, 75);  // SIG IN
   sheet.setColumnWidth(15, 75);  // TEMP
   sheet.setColumnWidth(16, 75);  // HUM
   sheet.setColumnWidth(17, 75);  // WIN MIN

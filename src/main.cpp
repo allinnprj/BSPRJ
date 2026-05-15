@@ -64,6 +64,8 @@ struct GoogleSheetsAccumulator {
   uint32_t environmentSampleCount = 0;
   uint32_t sampleCount = 0;
   SignalState worstSignalState = SignalState::Low;
+  bool lowSignalWarning = false;
+  bool clipSignalWarning = false;
 };
 
 AudioSampler audioSampler;
@@ -101,6 +103,16 @@ const char *signalStateText(SignalState state) {
     default:
       return "LOW";
   }
+}
+
+String signalQualityText(SignalState state, bool lowSignalWarning, bool clipSignalWarning) {
+  if (clipSignalWarning) {
+    return String(F("CLIP_HOLD"));
+  }
+  if (lowSignalWarning) {
+    return String(F("LOW_HOLD"));
+  }
+  return String(signalStateText(state));
 }
 
 const char *mqttNoiseLevelText(uint8_t percent) {
@@ -238,6 +250,8 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.environmentSampleCount = 0;
   window.sampleCount = 0;
   window.worstSignalState = SignalState::Low;
+  window.lowSignalWarning = false;
+  window.clipSignalWarning = false;
 }
 
 GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &window) {
@@ -261,7 +275,8 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
-  record.signalText = mqttNoiseLevelText(record.averageNowPercent);
+  record.signalText =
+      signalQualityText(window.worstSignalState, window.lowSignalWarning, window.clipSignalWarning);
   if (window.environmentSampleCount > 0) {
     record.averageTemperatureC =
         window.temperatureSum / static_cast<float>(window.environmentSampleCount);
@@ -365,6 +380,9 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
       signalStateSeverity(activeSheetsWindow.worstSignalState)) {
     activeSheetsWindow.worstSignalState = snapshot.signalState;
   }
+  activeSheetsWindow.lowSignalWarning = activeSheetsWindow.lowSignalWarning || snapshot.lowSignalWarning;
+  activeSheetsWindow.clipSignalWarning =
+      activeSheetsWindow.clipSignalWarning || snapshot.clipSignalWarning;
   activeSheetsWindow.sampleCount++;
 }
 
@@ -621,6 +639,11 @@ void loop() {
     Serial.print(latestSnapshot.peakToPeak);
     Serial.print(F(" sig="));
     Serial.print(signalStateText(latestSnapshot.signalState));
+    if (latestSnapshot.clipSignalWarning) {
+      Serial.print(F(" warn=CLIP_HOLD"));
+    } else if (latestSnapshot.lowSignalWarning) {
+      Serial.print(F(" warn=LOW_HOLD"));
+    }
     if (timeService.isSynced()) {
       DayPart currentDayPart = dayPartFromHour(timeService.hour());
       DayPartStats &stats = dayPartStats[dayPartIndex(currentDayPart)];

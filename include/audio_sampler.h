@@ -20,6 +20,10 @@ struct AudioSnapshot {
   uint32_t hourAverage = 0;
   uint32_t totalAverage = 0;
   uint32_t hourSamplesCollected = 0;
+  uint16_t lowSignalHoldSeconds = 0;
+  uint16_t clipSignalHoldSeconds = 0;
+  bool lowSignalWarning = false;
+  bool clipSignalWarning = false;
   bool statsUpdated = false;
   SignalState signalState = SignalState::Low;
 };
@@ -37,6 +41,8 @@ class AudioSampler {
   static constexpr uint16_t kStatsIntervalMs = 1000;
   static constexpr uint16_t kLevelGain = 2;
   static constexpr size_t kHourSampleCount = 3600;
+  static constexpr uint16_t kLowSignalWarnThresholdSeconds = 30;
+  static constexpr uint16_t kClipSignalWarnThresholdSeconds = 10;
 
   uint8_t analogPin_ = 0;
   bool started_ = false;
@@ -49,5 +55,7 @@ class AudioSampler {
   uint16_t smoothedLevel_ = 0;
   uint16_t noiseFloorLevel_ = 0;
   uint16_t referenceLevel_ = 80;
+  uint16_t lowSignalHoldSeconds_ = 0;
+  uint16_t clipSignalHoldSeconds_ = 0;
   unsigned long lastStatsAt_ = 0;
 };

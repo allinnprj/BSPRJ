@@ -58,6 +58,16 @@ const char *signalStateText(SignalState state) {
   }
 }
 
+String signalQualityText(const AudioSnapshot &snapshot) {
+  if (snapshot.clipSignalWarning) {
+    return String(F("CLIP_HOLD"));
+  }
+  if (snapshot.lowSignalWarning) {
+    return String(F("LOW_HOLD"));
+  }
+  return String(signalStateText(snapshot.signalState));
+}
+
 }  // namespace
 
 void LogService::begin() {
@@ -130,7 +140,7 @@ void LogService::appendMinuteSample(const String &minuteKey, const String &dateT
   file.print(',');
   file.print(snapshot.peakToPeak);
   file.print(',');
-  file.print(signalStateText(snapshot.signalState));
+  file.print(signalQualityText(snapshot));
   file.print(',');
   file.print(partAverage);
   file.print(',');

@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## Naming clarity note - 2026-05-15
+
+1. Renamed the user-facing signal-quality header from `SIG` to `SIG IN` in the Google Sheets layer so it reads more clearly as an input-signal diagnostic rather than a noise-level label.
+2. Kept the change strictly at the presentation/documentation layer without reshaping the internal firmware field naming.
+
+## 0.1.37-EXP+91 - 2026-05-15
+
+1. Added `sanity v1` hold counters for the microphone input so brief `LOW` / `CLIP` events no longer look the same as sustained signal problems.
+2. Introduced `LOW_HOLD` and `CLIP_HOLD` as persistent signal-quality warnings in the local log, serial diagnostics, and Google Sheets `SIG` field while keeping `SILENT / NORMAL / LOUD / PEAK` separate as noise-level labels.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## Docs terminology note - 2026-05-15
+
+1. Added a short permanent glossary to the project docs so `CLIP / LOW / OK` remain clearly separated from `SILENT / NORMAL / LOUD / PEAK`.
+2. This keeps the distinction visible between signal-quality diagnostics and user-facing noise-level labels.
+3. Extended the glossary and `SIG` explanation to include persistent warning states `LOW_HOLD` and `CLIP_HOLD`.
+
 ## 0.1.36-EXP+90 - 2026-05-15
 
 1. Added lightweight `M` persistence through ESP32 `Preferences/NVS` by saving and restoring the long-term mean accumulators (`sum + count`) instead of only the derived percentage.

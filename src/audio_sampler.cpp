@@ -70,6 +70,8 @@ void AudioSampler::begin(uint8_t analogPin) {
   smoothedLevel_ = 0;
   noiseFloorLevel_ = 0;
   referenceLevel_ = 80;
+  lowSignalHoldSeconds_ = 0;
+  clipSignalHoldSeconds_ = 0;
 }
 
 void AudioSampler::restoreLongMean(uint64_t totalLevelSum, uint32_t totalLevelCount) {
@@ -94,6 +96,7 @@ AudioSnapshot AudioSampler::sample() {
   RawWindow window = readWindow(analogPin_, kSampleWindowMs);
   uint16_t peakToPeak = window.maxValue - window.minValue;
   uint16_t level = peakToPeak * kLevelGain;
+  SignalState detectedSignalState = detectSignalState(window, peakToPeak);
 
   smoothedLevel_ = static_cast<uint16_t>((smoothedLevel_ * 3U + level) / 4U);
   if (noiseFloorLevel_ == 0) {
@@ -133,6 +136,17 @@ AudioSnapshot AudioSampler::sample() {
 
     totalLevelSum_ += smoothedLevel_;
     totalLevelCount_++;
+
+    if (detectedSignalState == SignalState::Clip) {
+      clipSignalHoldSeconds_++;
+      lowSignalHoldSeconds_ = 0;
+    } else if (detectedSignalState == SignalState::Low) {
+      lowSignalHoldSeconds_++;
+      clipSignalHoldSeconds_ = 0;
+    } else {
+      lowSignalHoldSeconds_ = 0;
+      clipSignalHoldSeconds_ = 0;
+    }
   }
 
   snapshot.currentLevel = smoothedLevel_;
@@ -150,6 +164,10 @@ AudioSnapshot AudioSampler::sample() {
   snapshot.hourPercent = percentFromLevel(snapshot.hourAverage, noiseFloorLevel_, referenceLevel_);
   snapshot.totalPercent =
       percentFromLevel(snapshot.totalAverage, noiseFloorLevel_, referenceLevel_);
-  snapshot.signalState = detectSignalState(window, peakToPeak);
+  snapshot.lowSignalHoldSeconds = lowSignalHoldSeconds_;
+  snapshot.clipSignalHoldSeconds = clipSignalHoldSeconds_;
+  snapshot.lowSignalWarning = lowSignalHoldSeconds_ >= kLowSignalWarnThresholdSeconds;
+  snapshot.clipSignalWarning = clipSignalHoldSeconds_ >= kClipSignalWarnThresholdSeconds;
+  snapshot.signalState = detectedSignalState;
   return snapshot;
 }
