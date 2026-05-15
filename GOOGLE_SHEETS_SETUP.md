@@ -285,7 +285,7 @@
   - берёт последний доступный день из `summary_daypart`, `summary_levels`, `summary_health`
   - отправляет краткую дневную сводку
 - Все Telegram-уведомления
-  - внизу добавляют аккуратную ссылку `Онлайн Статистика`
+  - внизу добавляют аккуратную ссылку `Online Statistics`
   - ссылка ведёт сразу в рабочую Google Sheets-таблицу
 - `Enable auto daily summary`
   - включает hourly background trigger

@@ -12,7 +12,7 @@
 
 ## Apps Script Telegram link - 2026-05-15
 
-1. Added a shared `Онлайн Статистика` link to the bottom of Telegram notifications in `google_sheets/Code.gs`, so each message can open the working Google Sheets dashboard directly without searching for the spreadsheet URL again.
+1. Added a shared `Online Statistics` link to the bottom of Telegram notifications in `google_sheets/Code.gs`, so each message can open the working Google Sheets dashboard directly without searching for the spreadsheet URL again.
 2. Applied the link to the latest status, daily summary, and online-restored notification paths, including the no-data fallback messages.
 
 ## Apps Script online restore fix - 2026-05-15

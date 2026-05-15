@@ -733,7 +733,7 @@ function sendTelegramMessage_(text) {
 }
 
 function buildTelegramStatsLinkLine_() {
-  return `🔗 <a href="${TELEGRAM_STATS_URL}">Онлайн Статистика</a>`;
+  return `🔗 <a href="${TELEGRAM_STATS_URL}">Online Statistics</a>`;
 }
 
 function buildTelegramNoDataMessage_(title, body) {
