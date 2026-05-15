@@ -8,8 +8,8 @@ Firmware playground for a clean `ESP32` restart with:
 ## Status
 
 - Type: local temporary test project
-- Current version: `0.1.27-EXP`
-- Current build: `81`
+- Current version: `0.1.37-EXP`
+- Current build: `91`
 - GitHub flow: intentionally not used
 - Planned future microphone: `INMP441`
 
@@ -26,6 +26,12 @@ To do that, the project relies on two analysis axes:
 
 - `DAY / EVENING / NIGHT` as time-of-day statistics
 - `SILENT / NORMAL / LOUD / PEAK` as human-readable level interpretation
+
+Long-term direction:
+
+- grow from a local single-device prototype into a noise-monitoring system that can later scale further
+- add a more honest audio path, geo context, cross-location comparison, anomaly detection, and mapping later
+- keep the current core principle intact: first understand reliably **when** and **how much** noise is present, then expand the platform
 
 Practical end goal:
 

@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Docs goal extension - 2026-05-16
+
+1. Expanded the documented project goal in `README_RU.md`, `README.md`, and `AGENTS.md` so the current day-part noise analytics path is now explicitly tied to a longer-term direction toward scalable noise monitoring, anomaly analysis, and future mapping.
+2. Kept the wording careful: the project still prioritizes a trustworthy single-device analytical core before moving into geo, multi-point, or city-scale layers.
+
+## Apps Script header layout polish - 2026-05-15
+
+1. Added adaptive header sizing in `google_sheets/Code.gs` so analytics sheets now widen long header columns automatically and use a taller header row when multi-word titles need cleaner wrapping.
+2. This keeps labels like `MAIN LEVEL`, `VALID WINDOWS`, `EXPECTED WINDOWS`, and `CONFIDENCE` readable after each rebuild without manual column tweaking.
+
 ## Naming clarity note - 2026-05-15
 
 1. Renamed the user-facing signal-quality header from `SIG` to `SIG IN` in the Google Sheets layer so it reads more clearly as an input-signal diagnostic rather than a noise-level label.

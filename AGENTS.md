@@ -19,6 +19,8 @@
   - what the average evening noise level is
   - what the average night noise level is
   - which level is most typical for each period
+- The longer-term direction is to let this analytical core grow into a scalable noise-monitoring system with stronger audio input, location context, anomaly detection, and mapping later on.
+- That future direction must not weaken the current stage rule: first make the single-device runtime and its time-based conclusions trustworthy, then expand outward.
 - Future code, dashboard, display, MQTT, Datacake, and hardware decisions should support this analytical goal.
 
 ## Working Rules

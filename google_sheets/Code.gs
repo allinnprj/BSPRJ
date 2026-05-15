@@ -251,6 +251,68 @@ const SHEET_STYLE_PROFILES = {
     freezeCols: 3
   }
 };
+const HEADER_WIDTH_OVERRIDES = {
+  'DEV ID': 110,
+  'VER': 80,
+  'BUILD': 70,
+  'DATE': 95,
+  'T FROM': 85,
+  'T TO': 85,
+  'PART': 70,
+  'NOW %': 75,
+  'H %': 60,
+  'M %': 60,
+  'RAW MIN': 90,
+  'RAW MAX': 90,
+  'AVG P2P': 95,
+  'SIG IN': 80,
+  'TEMP C': 80,
+  'HUM %': 80,
+  'WIN MIN': 85,
+  'QUIET': 70,
+  'LOUD': 70,
+  'SAMPLES': 85,
+  'UPTIME': 100,
+  'AVG NOW %': 105,
+  'MAIN LEVEL': 115,
+  'MAIN SHARE %': 110,
+  'VALID WINDOWS': 100,
+  'EXPECTED WINDOWS': 120,
+  'COVERAGE %': 115,
+  'CONFIDENCE': 115,
+  'READING': 260,
+  'WINDOWS TOTAL': 105,
+  'WINDOWS VALID': 105,
+  'EXPECTED WINDOWS': 120,
+  'AVG TEMP C': 95,
+  'AVG HUM %': 95,
+  'SILENT WIN': 90,
+  'NORMAL WIN': 95,
+  'PEAK WIN': 85,
+  'MISSING WIN': 95,
+  'VALID WINDOWS': 100,
+  'SILENT %': 85,
+  'NORMAL %': 90,
+  'LOUD %': 80,
+  'PEAK %': 80,
+  'WINDOWS UNIQUE': 110,
+  'DUP EXTRA ROWS': 110,
+  'LOW SAMPLE WIN': 110,
+  'FIRST TIME': 90,
+  'LAST TIME': 90,
+  'HAS LOG ROWS': 105,
+  'SOURCE SHEET': 110,
+  'DAY STATE': 95,
+  'RECORD KEY': 130,
+  'DUP COUNT': 85,
+  'IS DUPLICATED': 105,
+  'IS VALID': 80,
+  'GAP BEFORE': 90,
+  'QUALITY': 95,
+  'MAIN LEVEL': 115,
+  'MAIN SHARE %': 110,
+  'READING': 260
+};
 const HEADER_COLORS = [
   '#b7e1cd', '#b7e1cd', '#b7e1cd',
   '#cfe2f3', '#cfe2f3', '#cfe2f3', '#cfe2f3',
@@ -1577,6 +1639,40 @@ function buildAlternatingBackgrounds_(rowCount, colCount, oddColor, evenColor) {
   return backgrounds;
 }
 
+function estimateHeaderMinWidth_(headerText) {
+  const text = String(headerText || '').trim();
+  if (!text) {
+    return 70;
+  }
+
+  if (HEADER_WIDTH_OVERRIDES[text]) {
+    return HEADER_WIDTH_OVERRIDES[text];
+  }
+
+  const words = text.split(/\s+/).filter((word) => word);
+  const longestWord = words.reduce((maxLen, word) => Math.max(maxLen, word.length), 0);
+  if (words.length > 1) {
+    return Math.max(80, Math.min(140, longestWord * 12 + 20));
+  }
+  return Math.max(70, Math.min(130, text.length * 10 + 18));
+}
+
+function applyAdaptiveHeaderLayout_(sheet, headers) {
+  const totalCols = headers.length;
+  const headerHeight = headers.some((header) => String(header || '').trim().split(/\s+/).length > 1)
+    ? 42
+    : 32;
+
+  for (let index = 0; index < totalCols; index++) {
+    const wantedWidth = estimateHeaderMinWidth_(headers[index]);
+    if (sheet.getColumnWidth(index + 1) < wantedWidth) {
+      sheet.setColumnWidth(index + 1, wantedWidth);
+    }
+  }
+
+  sheet.setRowHeight(1, headerHeight);
+}
+
 function findGroupBoundaryCols_(colors) {
   const boundaries = [];
   for (let index = 1; index < colors.length; index++) {
@@ -1695,8 +1791,8 @@ function writeTableToSheet_(sheetName, headers, rows) {
     .setHorizontalAlignment('center')
     .setVerticalAlignment('middle')
     .setWrap(false);
-  sheet.setRowHeight(1, 28);
   sheet.autoResizeColumns(1, headers.length);
+  applyAdaptiveHeaderLayout_(sheet, headers);
   if (output.length > 1) {
     sheet.getRange(2, 1, output.length - 1, headers.length)
       .setBorder(true, true, true, true, true, true, '#d9d9d9', SpreadsheetApp.BorderStyle.SOLID);
