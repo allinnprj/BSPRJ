@@ -371,7 +371,6 @@ function ensureHeaderFormatting_(sheet) {
     .setBackgrounds([HEADER_COLORS]);
 
   fullHeaderRange.setBorder(true, true, true, true, true, true, '#666666', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
-  sheet.setRowHeight(1, 28);
   sheet.setColumnWidths(1, HEADERS.length, 72);
   sheet.setColumnWidth(1, 110);  // DEV ID
   sheet.setColumnWidth(2, 80);   // VER
@@ -393,6 +392,8 @@ function ensureHeaderFormatting_(sheet) {
   sheet.setColumnWidth(18, 70);  // QUIET
   sheet.setColumnWidth(19, 70);  // LOUD
   sheet.setColumnWidth(20, 80);  // SAMPLES
+  sheet.setColumnWidth(21, 120); // UPTIME
+  applyAdaptiveHeaderLayout_(sheet, HEADERS);
 
   const lastRow = Math.max(sheet.getLastRow(), 2);
   const dataRange = sheet.getRange(2, 1, lastRow - 1, HEADERS.length);
@@ -597,6 +598,7 @@ function ensureWritableLogSheet_(incomingDateText) {
 
     sheet = spreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME) || spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
     ensureHeaderFormatting_(sheet);
+    refreshRawSheetsFormatting_(spreadsheet);
   }
 
   return sheet;
@@ -607,12 +609,15 @@ function onOpen() {
     .createMenu('BS Noise')
     .addItem('Rebuild analytics', 'rebuildAnalytics_')
     .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
+    .addItem('Refresh all sheet formatting', 'refreshAllSheetFormatting_')
     .addSeparator()
     .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
     .addItem('Send daily Telegram summary', 'sendDailyTelegramSummary_')
     .addItem('Enable auto daily summary', 'enableAutomaticDailySummary_')
     .addItem('Disable auto daily summary', 'disableAutomaticDailySummary_')
     .addSeparator()
+    .addItem('Hide archive sheets', 'hideArchiveSheets_')
+    .addItem('Show archive sheets', 'showArchiveSheets_')
     .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
     .addItem('Show analytics sheets', 'showAnalyticsSheets_')
     .addToUi();
@@ -702,6 +707,110 @@ function listRawDataSheets_(spreadsheet) {
 
 function isAnalyticsSheetName_(name) {
   return ANALYTICS_SHEET_NAMES.includes(name);
+}
+
+function refreshRawSheetsFormatting_(spreadsheet) {
+  listRawDataSheets_(spreadsheet).forEach((sheet) => ensureHeaderFormatting_(sheet));
+}
+
+function refreshExistingTableSheetFormatting_(sheetName, headers) {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = spreadsheet.getSheetByName(sheetName);
+  if (!sheet) {
+    return false;
+  }
+
+  ensureMinColumnCount_(sheet, headers.length);
+  sheet.showColumns(1, sheet.getMaxColumns());
+  sheet.setFrozenColumns(0);
+  sheet.setHiddenGridlines(false);
+
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  const headerRange = sheet.getRange(1, 1, 1, headers.length);
+  const currentHeaders = headerRange.getValues()[0];
+  const headersMatch = headers.every((header, index) => currentHeaders[index] === header);
+  if (!headersMatch) {
+    headerRange.setValues([headers]);
+  }
+
+  sheet.setFrozenRows(1);
+  headerRange
+    .setFontWeight('bold')
+    .setBackground('#d9eaf7')
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle')
+    .setWrap(true);
+
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow - 1, headers.length)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setWrap(false)
+      .setBorder(true, true, true, true, true, true, '#d9d9d9', SpreadsheetApp.BorderStyle.SOLID);
+  }
+
+  sheet.autoResizeColumns(1, headers.length);
+  applyAdaptiveHeaderLayout_(sheet, headers);
+
+  if (headers.indexOf('DATE') >= 0) {
+    const dateCol = headers.indexOf('DATE') + 1;
+    sheet.getRange(2, dateCol, Math.max(lastRow - 1, 1), 1).setNumberFormat('dd-mm-yyyy');
+  }
+  if (headers.indexOf('T FROM') >= 0) {
+    const fromCol = headers.indexOf('T FROM') + 1;
+    sheet.getRange(2, fromCol, Math.max(lastRow - 1, 1), 1).setNumberFormat('hh:mm:ss');
+  }
+  if (headers.indexOf('T TO') >= 0) {
+    const toCol = headers.indexOf('T TO') + 1;
+    sheet.getRange(2, toCol, Math.max(lastRow - 1, 1), 1).setNumberFormat('hh:mm:ss');
+  }
+  if (headers.indexOf('FIRST TIME') >= 0) {
+    const firstCol = headers.indexOf('FIRST TIME') + 1;
+    const lastCol = headers.indexOf('LAST TIME') + 1;
+    sheet.getRange(2, firstCol, Math.max(lastRow - 1, 1), 1).setNumberFormat('hh:mm:ss');
+    sheet.getRange(2, lastCol, Math.max(lastRow - 1, 1), 1).setNumberFormat('hh:mm:ss');
+  }
+
+  applySheetRoleFormatting_(sheet, headers, lastRow, getSheetStyleProfile_(sheetName));
+  return true;
+}
+
+function refreshAllSheetFormatting_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  refreshRawSheetsFormatting_(spreadsheet);
+
+  refreshExistingTableSheetFormatting_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS);
+  refreshExistingTableSheetFormatting_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS);
+  refreshExistingTableSheetFormatting_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS);
+  refreshExistingTableSheetFormatting_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS);
+  refreshExistingTableSheetFormatting_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS);
+
+  const cleanSheet = spreadsheet.getSheetByName(CLEAN_SUMMARY_SHEET_NAME);
+  if (cleanSheet && cleanSheet.getLastRow() >= 2) {
+    rebuildAnalyticsCharts_();
+  }
+
+  spreadsheet.toast('All known sheet headers and columns refreshed.', 'BS Noise', 6);
+}
+
+function hideArchiveSheets_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  spreadsheet.getSheets().forEach((sheet) => {
+    const name = sheet.getName();
+    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name)) {
+      sheet.hideSheet();
+    }
+  });
+}
+
+function showArchiveSheets_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  spreadsheet.getSheets().forEach((sheet) => {
+    const name = sheet.getName();
+    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name)) {
+      sheet.showSheet();
+    }
+  });
 }
 
 function hideAnalyticsSheets_() {
