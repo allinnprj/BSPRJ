@@ -230,6 +230,22 @@ const SHEET_STYLE_PROFILES = {
     accentColor: '#fff0c2',
     freezeCols: 3
   },
+  summaryTimeline: {
+    title: 'MAIN ANALYTICS · TIMELINE',
+    titleColor: '#cfe2f3',
+    titleTextColor: '#134f5c',
+    headerColor: '#eaf4fb',
+    headerTextColor: '#134f5c',
+    headerColors: [
+      '#d9ead3', '#cfe2f3', '#cfe2f3', '#cfe2f3', '#d9d2e9', '#ffe599', '#ffe599',
+      '#d5f5e3', '#fff2cc', '#f9cb9c', '#ea9999'
+    ],
+    bodyOdd: '#f8fbfe',
+    bodyEven: '#f1f7fb',
+    accentCols: [5, 6, 7, 8, 9, 10, 11],
+    accentColor: '#e7f1f8',
+    freezeCols: 5
+  },
   summaryHealth: {
     title: 'QUALITY CONTROL · DATA HEALTH',
     titleColor: '#f4cccc',
@@ -1941,6 +1957,9 @@ function getSheetStyleProfile_(sheetName) {
   if (sheetName === CLEAN_SUMMARY_SHEET_NAME) {
     return SHEET_STYLE_PROFILES.clean;
   }
+  if (sheetName === TIMELINE_SUMMARY_SHEET_NAME) {
+    return SHEET_STYLE_PROFILES.summaryTimeline;
+  }
   if (sheetName === DAYPART_SUMMARY_SHEET_NAME) {
     return SHEET_STYLE_PROFILES.summaryDaypart;
   }
@@ -2084,15 +2103,16 @@ function rebuildAnalyticsCore_(options) {
   const opts = options || {};
   const rawRecords = collectRawRecords_();
   const cleanData = buildCleanSummaryData_(rawRecords);
+  const tableWriteOptions = { applyFormatting: true };
 
-  writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, cleanData.cleanRows);
-  writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, buildTimelineSummaryRows_(cleanData.uniqueRecords));
-  writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, buildDayPartSummaryRows_(cleanData.uniqueRecords));
-  writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords));
-  writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, buildHealthSummaryRows_(cleanData.uniqueRecords));
-  writeTableToSheet_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS, buildConclusionSummaryRows_(cleanData.uniqueRecords));
+  writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, cleanData.cleanRows, tableWriteOptions);
+  writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, buildTimelineSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, buildDayPartSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, buildHealthSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS, buildConclusionSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   rebuildAnalyticsCharts_({
-    applyFormatting: opts.formatCharts === true,
+    applyFormatting: true,
     silent: opts.silent === true
   });
 
