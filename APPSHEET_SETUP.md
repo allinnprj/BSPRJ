@@ -1,5 +1,36 @@
 # AppSheet Setup
 
+## Shared Team Intent
+
+This file is not only a technical setup note. It is also the shared `AppSheet` direction for every teammate working on this project.
+
+The rule is:
+
+- each person may build their own view structure differently
+- but the user-facing meaning must stay the same
+- the app must explain the daily noise picture simply, not like an engineering console
+
+The main audience is:
+
+- a person who is only beginning to understand the numbers
+- a person who wants the conclusion first
+- a person who should not need to think like the creator of the system
+
+Because of that, every `AppSheet` decision should move the interface toward these outcomes:
+
+- show the noise picture for `DAY / EVE / NGT` clearly
+- explain which level is most typical: `SILENT / NORMAL / LOUD / PEAK`
+- show whether the data is trustworthy enough to read confidently
+- help the user understand the result quickly without decoding too many raw metrics
+
+This means:
+
+- conclusions first
+- supporting numbers second
+- technical diagnostics third
+
+If a screen looks useful only to the engineer who built it, that screen is not the main result yet.
+
 ## Цель
 
 Этот файл фиксирует `v1` для `AppSheet` без ломки текущего контракта записи.
@@ -9,6 +40,27 @@
 - `ESP32 -> Google Apps Script -> Google Sheets` остаётся как есть
 - `AppSheet` работает только как `read-only` витрина
 - `log` и архивные raw-листы не используются как основной AppSheet-источник
+
+## Product Goal Inside AppSheet
+
+The practical goal of `AppSheet v1` is not to display all available analytics.
+
+The practical goal is to let a user open the app and answer these questions fast:
+
+- was the day mostly noisy or mostly calm
+- was the evening better or worse than the day
+- was the night calmer than the rest
+- can this date be trusted, or is coverage too weak
+
+So the app should feel like:
+
+- a short daily noise report
+
+not like:
+
+- a raw analytics warehouse
+- a debug console
+- a sheet mirror
 
 ## Что брать в AppSheet
 

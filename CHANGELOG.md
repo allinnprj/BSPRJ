@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## AppSheet shared UX direction - 2026-05-18
+
+1. Expanded `APPSHEET_SETUP.md` with a shared team-facing `AppSheet` instruction so different teammates can build their own screens without drifting away from one common user goal.
+2. Fixed the product meaning for the mobile layer: conclusions first, supporting numbers second, and technical diagnostics third.
+3. Kept the focus explicitly non-engineering for the first reading experience, so the app should behave like a short daily noise report rather than a raw analytics console.
+
 ## Apps Script auto analytics refresh - 2026-05-17
 
 1. Added a separate automatic analytics refresh path in `google_sheets/Code.gs` so `clean_summary_10m`, `summary_*`, and `charts` can update on a background timer without depending on manual `Rebuild analytics`.
