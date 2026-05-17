@@ -44,6 +44,8 @@ const ANALYTICS_SHEET_NAMES = [
 const TELEGRAM_ENABLED_PROPERTY = 'BS_TELEGRAM_ENABLED';
 const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
 const TELEGRAM_CHAT_ID_PROPERTY = 'BS_TELEGRAM_CHAT_ID';
+const AUTO_ANALYTICS_ENABLED_PROPERTY = 'BS_AUTO_ANALYTICS_ENABLED';
+const AUTO_ANALYTICS_INTERVAL_MINUTES = 10;
 const TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_ENABLED';
 const TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_LAST_SENT_DATE';
 const MIN_VALID_SAMPLES = 100;
@@ -367,13 +369,26 @@ function buildDataBackgrounds_(rowCount) {
   return backgrounds;
 }
 
-function ensureHeaderFormatting_(sheet) {
+function buildDataBackgroundsForSheetRows_(startRow, rowCount) {
+  const backgrounds = [];
+  for (let rowIndex = 0; rowIndex < rowCount; rowIndex++) {
+    const dataRowIndex = startRow + rowIndex - 2;
+    backgrounds.push((dataRowIndex % 2 === 0 ? DATA_COLORS_ODD : DATA_COLORS_EVEN).slice());
+  }
+  return backgrounds;
+}
+
+function ensureHeaderRowValues_(sheet) {
   const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
   const currentHeaders = headerRange.getValues()[0];
   const headersMatch = HEADERS.every((header, index) => currentHeaders[index] === header);
   if (!headersMatch) {
     headerRange.setValues([HEADERS]);
   }
+}
+
+function ensureHeaderFormatting_(sheet) {
+  ensureHeaderRowValues_(sheet);
 
   sheet.setFrozenRows(1);
   const fullHeaderRange = sheet.getRange(1, 1, 1, HEADERS.length);
@@ -428,6 +443,28 @@ function ensureHeaderFormatting_(sheet) {
   // C|D, G|H, J|K, M|N, N|O, P|Q
   [3, 7, 10, 13, 14, 16].forEach((col) => {
     sheet.getRange(1, col, lastRow, 1)
+      .setBorder(null, null, null, true, null, null, '#8a8a8a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+  });
+}
+
+function applyLogRowFormatting_(sheet, startRow, rowCount) {
+  if (!sheet || startRow < 2 || rowCount < 1) {
+    return;
+  }
+
+  const dataRange = sheet.getRange(startRow, 1, rowCount, HEADERS.length);
+  dataRange
+    .setHorizontalAlignment('center')
+    .setVerticalAlignment('middle')
+    .setWrap(false)
+    .setBorder(true, true, true, true, true, true, '#d9d9d9', SpreadsheetApp.BorderStyle.SOLID)
+    .setBackgrounds(buildDataBackgroundsForSheetRows_(startRow, rowCount));
+
+  sheet.getRange(startRow, 4, rowCount, 1).setNumberFormat('dd-mm-yyyy');
+  sheet.getRange(startRow, 5, rowCount, 2).setNumberFormat('hh:mm:ss');
+
+  [3, 7, 10, 13, 14, 16].forEach((col) => {
+    sheet.getRange(startRow, col, rowCount, 1)
       .setBorder(null, null, null, true, null, null, '#8a8a8a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   });
 }
@@ -575,13 +612,14 @@ function appendLogRowsToArchive_(sourceSheet, targetSheet) {
   const values = sourceRange.getValues();
   const filteredValues = values.filter((row) => !sheetHasRecordKey_(targetSheet, buildRecordKeyFromRow_(row)));
   if (filteredValues.length === 0) {
-    ensureHeaderFormatting_(targetSheet);
+    ensureHeaderRowValues_(targetSheet);
     return;
   }
 
   const targetStartRow = Math.max(targetSheet.getLastRow(), 1) + 1;
   targetSheet.getRange(targetStartRow, 1, filteredValues.length, HEADERS.length).setValues(filteredValues);
-  ensureHeaderFormatting_(targetSheet);
+  ensureHeaderRowValues_(targetSheet);
+  applyLogRowFormatting_(targetSheet, targetStartRow, filteredValues.length);
 }
 
 function ensureWritableLogSheet_(incomingDateText) {
@@ -594,7 +632,7 @@ function ensureWritableLogSheet_(incomingDateText) {
     return sheet;
   }
 
-  ensureHeaderFormatting_(sheet);
+  ensureHeaderRowValues_(sheet);
 
   const lastDataDate = getLastDataDate_(sheet);
   if (isIncomingDateNewer_(lastDataDate, normalizedIncomingDateText)) {
@@ -603,7 +641,7 @@ function ensureWritableLogSheet_(incomingDateText) {
       const existingArchive = spreadsheet.getSheetByName(archivedSheetName);
       if (!existingArchive) {
         sheet.setName(archivedSheetName);
-        ensureHeaderFormatting_(sheet);
+        ensureHeaderRowValues_(sheet);
       } else {
         appendLogRowsToArchive_(sheet, existingArchive);
         spreadsheet.deleteSheet(sheet);
@@ -612,7 +650,6 @@ function ensureWritableLogSheet_(incomingDateText) {
 
     sheet = spreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME) || spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
     ensureHeaderFormatting_(sheet);
-    refreshRawSheetsFormatting_(spreadsheet);
   }
 
   return sheet;
@@ -623,6 +660,8 @@ function onOpen() {
     .createMenu('BS Noise')
     .addItem('Rebuild analytics', 'rebuildAnalytics_')
     .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
+    .addItem('Enable auto analytics refresh', 'enableAutomaticAnalyticsRefresh_')
+    .addItem('Disable auto analytics refresh', 'disableAutomaticAnalyticsRefresh_')
     .addItem('Refresh all sheet formatting', 'refreshAllSheetFormatting_')
     .addSeparator()
     .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
@@ -818,6 +857,7 @@ function refreshAllSheetFormatting_() {
   refreshRawSheetsFormatting_(spreadsheet);
 
   refreshExistingTableSheetFormatting_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS);
+  refreshExistingTableSheetFormatting_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS);
@@ -825,7 +865,7 @@ function refreshAllSheetFormatting_() {
 
   const cleanSheet = spreadsheet.getSheetByName(CLEAN_SUMMARY_SHEET_NAME);
   if (cleanSheet && cleanSheet.getLastRow() >= 2) {
-    rebuildAnalyticsCharts_();
+    rebuildAnalyticsCharts_(true);
   }
 
   spreadsheet.toast('All known sheet headers and columns refreshed.', 'BS Noise', 6);
@@ -1222,6 +1262,46 @@ function getLatestArchivedDateText_() {
   }
   dates.sort();
   return dates[dates.length - 1];
+}
+
+function removeAutomaticAnalyticsRefreshTriggers_() {
+  ScriptApp.getProjectTriggers().forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'runAutomaticAnalyticsRefresh_') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+}
+
+function enableAutomaticAnalyticsRefresh_() {
+  const properties = PropertiesService.getScriptProperties();
+  removeAutomaticAnalyticsRefreshTriggers_();
+  ScriptApp.newTrigger('runAutomaticAnalyticsRefresh_').timeBased().everyMinutes(AUTO_ANALYTICS_INTERVAL_MINUTES).create();
+  properties.setProperty(AUTO_ANALYTICS_ENABLED_PROPERTY, 'true');
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `Auto analytics refresh enabled every ${AUTO_ANALYTICS_INTERVAL_MINUTES} minutes.`,
+    'BS Noise',
+    6
+  );
+}
+
+function disableAutomaticAnalyticsRefresh_() {
+  const properties = PropertiesService.getScriptProperties();
+  removeAutomaticAnalyticsRefreshTriggers_();
+  properties.setProperty(AUTO_ANALYTICS_ENABLED_PROPERTY, 'false');
+  SpreadsheetApp.getActiveSpreadsheet().toast('Auto analytics refresh disabled.', 'BS Noise', 5);
+}
+
+function runAutomaticAnalyticsRefresh_() {
+  const properties = PropertiesService.getScriptProperties();
+  const enabled = String(properties.getProperty(AUTO_ANALYTICS_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true';
+  if (!enabled) {
+    return;
+  }
+
+  rebuildAnalyticsCore_({
+    silent: true,
+    formatCharts: false
+  });
 }
 
 function removeAutomaticDailySummaryTriggers_() {
@@ -1941,223 +2021,67 @@ function applySheetRoleFormatting_(sheet, headers, outputLength, profile) {
   }
 }
 
-function writeTableToSheet_(sheetName, headers, rows) {
+function writeTableToSheet_(sheetName, headers, rows, options) {
+  const opts = options || {};
+  const applyFormatting = opts.applyFormatting === true;
   const sheet = getOrCreateSheet_(sheetName);
   ensureMinColumnCount_(sheet, headers.length);
   sheet.clearContents();
-  sheet.clearFormats();
-  sheet.clearConditionalFormatRules();
-  sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
-  sheet.showColumns(1, sheet.getMaxColumns());
-  sheet.setFrozenColumns(0);
-  sheet.setHiddenGridlines(false);
+  if (applyFormatting) {
+    sheet.clearFormats();
+    sheet.clearConditionalFormatRules();
+    sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
+    sheet.showColumns(1, sheet.getMaxColumns());
+    sheet.setFrozenColumns(0);
+    sheet.setHiddenGridlines(false);
+  }
 
   const output = [headers].concat(rows);
   sheet.getRange(1, 1, output.length, headers.length).setValues(output);
-  sheet.setFrozenRows(1);
-  sheet.getRange(1, 1, 1, headers.length)
-    .setFontWeight('bold')
-    .setBackground('#d9eaf7')
-    .setHorizontalAlignment('center')
-    .setVerticalAlignment('middle')
-    .setWrap(true);
-  sheet.getRange(2, 1, Math.max(output.length - 1, 1), headers.length)
-    .setHorizontalAlignment('center')
-    .setVerticalAlignment('middle')
-    .setWrap(false);
-  sheet.autoResizeColumns(1, headers.length);
-  applyAdaptiveHeaderLayout_(sheet, headers);
-  if (output.length > 1) {
-    sheet.getRange(2, 1, output.length - 1, headers.length)
-      .setBorder(true, true, true, true, true, true, '#d9d9d9', SpreadsheetApp.BorderStyle.SOLID);
-  }
-
-  if (headers.indexOf('DATE') >= 0) {
-    const dateCol = headers.indexOf('DATE') + 1;
-    sheet.getRange(2, dateCol, Math.max(output.length - 1, 1), 1).setNumberFormat('dd-mm-yyyy');
-  }
-  if (headers.indexOf('T FROM') >= 0) {
-    const fromCol = headers.indexOf('T FROM') + 1;
-    sheet.getRange(2, fromCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
-  }
-  if (headers.indexOf('T TO') >= 0) {
-    const toCol = headers.indexOf('T TO') + 1;
-    sheet.getRange(2, toCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
-  }
-  if (headers.indexOf('FIRST TIME') >= 0) {
-    const firstCol = headers.indexOf('FIRST TIME') + 1;
-    const lastCol = headers.indexOf('LAST TIME') + 1;
-  sheet.getRange(2, firstCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
-    sheet.getRange(2, lastCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
-  }
-
-  applySheetRoleFormatting_(sheet, headers, output.length, getSheetStyleProfile_(sheetName));
-}
-
-function buildChartSourceBlocks_(records) {
-  const byDatePart = {};
-  const levelMix = {
-    SILENT: 0,
-    NORMAL: 0,
-    LOUD: 0,
-    PEAK: 0
-  };
-  const coverageByDate = {};
-
-  records.forEach((record) => {
-    if (!record.isValid) {
-      return;
+  if (applyFormatting) {
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, headers.length)
+      .setFontWeight('bold')
+      .setBackground('#d9eaf7')
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setWrap(true);
+    sheet.getRange(2, 1, Math.max(output.length - 1, 1), headers.length)
+      .setHorizontalAlignment('center')
+      .setVerticalAlignment('middle')
+      .setWrap(false);
+    sheet.autoResizeColumns(1, headers.length);
+    applyAdaptiveHeaderLayout_(sheet, headers);
+    if (output.length > 1) {
+      sheet.getRange(2, 1, output.length - 1, headers.length)
+        .setBorder(true, true, true, true, true, true, '#d9d9d9', SpreadsheetApp.BorderStyle.SOLID);
     }
 
-    const dateKey = record.dateText;
-    byDatePart[dateKey] = byDatePart[dateKey] || {
-      DAY: [],
-      EVE: [],
-      NGT: []
-    };
-    byDatePart[dateKey][record.partText].push(record.nowPct);
-    levelMix[record.levelText] = (levelMix[record.levelText] || 0) + 1;
+    if (headers.indexOf('DATE') >= 0) {
+      const dateCol = headers.indexOf('DATE') + 1;
+      sheet.getRange(2, dateCol, Math.max(output.length - 1, 1), 1).setNumberFormat('dd-mm-yyyy');
+    }
+    if (headers.indexOf('T FROM') >= 0) {
+      const fromCol = headers.indexOf('T FROM') + 1;
+      sheet.getRange(2, fromCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
+    }
+    if (headers.indexOf('T TO') >= 0) {
+      const toCol = headers.indexOf('T TO') + 1;
+      sheet.getRange(2, toCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
+    }
+    if (headers.indexOf('FIRST TIME') >= 0) {
+      const firstCol = headers.indexOf('FIRST TIME') + 1;
+      const lastCol = headers.indexOf('LAST TIME') + 1;
+      sheet.getRange(2, firstCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
+      sheet.getRange(2, lastCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
+    }
 
-    const coverage = coverageByDate[dateKey] || { validWindows: 0, missingWindows: 0 };
-    coverage.validWindows++;
-    coverage.missingWindows += record.gapBefore || 0;
-    coverageByDate[dateKey] = coverage;
-  });
-
-  const sortedDates = Object.keys(byDatePart).sort();
-  const latestDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : '';
-  const latestBucket = latestDate ? byDatePart[latestDate] : { DAY: [], EVE: [], NGT: [] };
-  const dayPartRows = PART_ORDER.map((partText) => ([
-    partText,
-    latestBucket[partText] && latestBucket[partText].length
-      ? roundValue_(latestBucket[partText].reduce((sum, value) => sum + value, 0) / latestBucket[partText].length, 1)
-      : 0
-  ]));
-
-  const totalLevelWindows = LEVEL_ORDER.reduce((sum, level) => sum + (levelMix[level] || 0), 0) || 1;
-  const levelMixRows = LEVEL_ORDER.map((level) => ([
-    level,
-    roundValue_((levelMix[level] || 0) * 100 / totalLevelWindows, 1)
-  ]));
-
-  const latestCoverage = latestDate
-    ? (coverageByDate[latestDate] || { validWindows: 0, missingWindows: 0 })
-    : { validWindows: 0, missingWindows: 0 };
-  const coverageRows = [
-    ['VALID WINDOWS', latestCoverage.validWindows],
-    ['MISSING WINDOWS', latestCoverage.missingWindows]
-  ];
-
-  return {
-    latestDate,
-    dayPartRows,
-    levelMixRows,
-    coverageRows,
-    coveragePct: roundValue_(latestCoverage.validWindows * 100 / 144, 1)
-  };
-}
-
-function buildTextBar_(value, maxValue, width) {
-  const safeMax = Math.max(maxValue || 0, 1);
-  const ratio = Math.max(0, Math.min(1, toNumber_(value) / safeMax));
-  const totalWidth = Math.max(width || 10, 1);
-  const filled = Math.round(ratio * totalWidth);
-  return `[${'='.repeat(filled)}${'.'.repeat(totalWidth - filled)}]`;
-}
-
-function rebuildAnalyticsCharts_() {
-  const cleanSheet = getOrCreateSheet_(CLEAN_SUMMARY_SHEET_NAME);
-  const lastRow = cleanSheet.getLastRow();
-  if (lastRow < 2) {
-    SpreadsheetApp.getActiveSpreadsheet().toast('No clean summary data yet. Run rebuildAnalytics_ first.', 'BS Noise', 6);
-    return;
+    applySheetRoleFormatting_(sheet, headers, output.length, getSheetStyleProfile_(sheetName));
   }
-
-  const values = cleanSheet.getRange(2, 1, lastRow - 1, CLEAN_SUMMARY_HEADERS.length).getValues();
-  const records = values.map((row) => ({
-    dateText: normalizeDateText_(row[3]),
-    partText: normalizePartText_(row[6]),
-    nowPct: toNumber_(row[8]),
-    levelText: String(row[7] || ''),
-    isValid: toNumber_(row[27]) === 1,
-    gapBefore: toNumber_(row[28])
-  }));
-
-  const chartBlocks = buildChartSourceBlocks_(records);
-  const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
-  ensureMinColumnCount_(sheet, 6);
-  sheet.clearContents();
-  sheet.clearFormats();
-  sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
-  sheet.showColumns(1, sheet.getMaxColumns());
-  sheet.setFrozenRows(0);
-  sheet.setFrozenColumns(0);
-  sheet.setHiddenGridlines(true);
-  sheet.setColumnWidth(1, 180);
-  sheet.setColumnWidth(2, 110);
-  sheet.setColumnWidth(3, 300);
-  sheet.setColumnWidth(4, 150);
-  sheet.setColumnWidth(5, 110);
-  sheet.setColumnWidth(6, 110);
-
-  sheet.getRange(1, 1, 1, 6).merge();
-  sheet.getRange(1, 1).setValue('DASHBOARD · QUICK VIEW')
-    .setFontWeight('bold')
-    .setFontSize(16)
-    .setHorizontalAlignment('left')
-    .setBackground('#d9ead3')
-    .setFontColor('#274e13');
-  sheet.getRange(2, 1, 1, 6).merge();
-  sheet.getRange(2, 1).setValue(
-    chartBlocks.latestDate
-      ? `Latest date: ${chartBlocks.latestDate}. Use charts for quick reading and summary_* sheets for exact numbers.`
-      : 'Use charts for quick reading and summary_* sheets for exact numbers.'
-  )
-    .setFontSize(10)
-    .setHorizontalAlignment('left')
-    .setBackground('#eef7ea')
-    .setFontColor('#4d5b45');
-
-  sheet.getRange(4, 1, 1, 2).setValues([['Current day focus', chartBlocks.latestDate || 'n/a']]);
-  sheet.getRange(4, 3, 1, 2).setValues([['Valid windows', chartBlocks.coverageRows[0][1]]]);
-  sheet.getRange(4, 5, 1, 2).setValues([['Missing windows', chartBlocks.coverageRows[1][1]]]);
-  sheet.getRange(4, 1, 1, 6).setBackground('#f3f6fa').setFontWeight('bold');
-  sheet.getRange(5, 1, 1, 2).setValues([['Coverage %', chartBlocks.coveragePct]]);
-  sheet.getRange(5, 3, 1, 4).merge();
-  sheet.getRange(5, 3).setValue(`${buildTextBar_(chartBlocks.coveragePct, 100, 24)} ${chartBlocks.coveragePct}%`)
-    .setHorizontalAlignment('left');
-  sheet.getRange(5, 1, 1, 6).setBackground('#fbfdf8');
-
-  sheet.getRange(7, 1, 1, 3).merge().setValue('DAYPART LEVELS')
-    .setBackground('#eaf4e3').setFontWeight('bold').setHorizontalAlignment('left');
-  sheet.getRange(8, 1, 1, 3).setValues([['PART', 'AVG NOW %', 'DIAGRAM']]).setBackground('#eff7ea').setFontWeight('bold');
-  const dayPartDisplayRows = chartBlocks.dayPartRows.map((row) => [row[0], row[1], `${buildTextBar_(row[1], 100, 24)} ${row[1]}%`]);
-  sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setValues(dayPartDisplayRows);
-  sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(dayPartDisplayRows.length, 3, '#fbfdf8'));
-
-  sheet.getRange(14, 1, 1, 3).merge().setValue('NOISE MIX')
-    .setBackground('#fff7df').setFontWeight('bold').setHorizontalAlignment('left');
-  sheet.getRange(15, 1, 1, 3).setValues([['LEVEL', 'SHARE %', 'DIAGRAM']]).setBackground('#fffaf0').setFontWeight('bold');
-  const levelDisplayRows = chartBlocks.levelMixRows.map((row) => [row[0], row[1], `${buildTextBar_(row[1], 100, 24)} ${row[1]}%`]);
-  sheet.getRange(16, 1, levelDisplayRows.length, 3).setValues(levelDisplayRows);
-  sheet.getRange(16, 1, levelDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(levelDisplayRows.length, 3, '#fffdfa'));
-
-  sheet.getRange(22, 1, 1, 3).merge().setValue('DATA COVERAGE')
-    .setBackground('#fde9e7').setFontWeight('bold').setHorizontalAlignment('left');
-  sheet.getRange(23, 1, 1, 3).setValues([['METRIC', 'VALUE', 'DIAGRAM']]).setBackground('#fff3f3').setFontWeight('bold');
-  const coverageDisplayRows = chartBlocks.coverageRows.map((row) => {
-    const maxValue = row[0] === 'VALID WINDOWS' ? 144 : 144;
-    return [row[0], row[1], buildTextBar_(row[1], maxValue, 24)];
-  });
-  sheet.getRange(24, 1, coverageDisplayRows.length, 3).setValues(coverageDisplayRows);
-  sheet.getRange(24, 1, coverageDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(coverageDisplayRows.length, 3, '#fffafa'));
-
-  sheet.getRange(7, 1, 18, 3).setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
-  sheet.getRange(1, 1, 25, 6).setVerticalAlignment('middle');
-  sheet.getRange(1, 1, 25, 6).setWrap(false);
 }
 
-function rebuildAnalytics_() {
+function rebuildAnalyticsCore_(options) {
+  const opts = options || {};
   const rawRecords = collectRawRecords_();
   const cleanData = buildCleanSummaryData_(rawRecords);
 
@@ -2167,13 +2091,24 @@ function rebuildAnalytics_() {
   writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, buildHealthSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS, buildConclusionSummaryRows_(cleanData.uniqueRecords));
-  rebuildAnalyticsCharts_();
+  rebuildAnalyticsCharts_({
+    applyFormatting: opts.formatCharts === true,
+    silent: opts.silent === true
+  });
 
-  SpreadsheetApp.getActiveSpreadsheet().toast(
-    `Analytics rebuilt: ${cleanData.uniqueRecords.length} unique windows from ${rawRecords.length} raw rows.`,
-    'BS Noise',
-    8
-  );
+  if (!opts.silent) {
+    SpreadsheetApp.getActiveSpreadsheet().toast(
+      `Analytics rebuilt: ${cleanData.uniqueRecords.length} unique windows from ${rawRecords.length} raw rows.`,
+      'BS Noise',
+      8
+    );
+  }
+}
+
+function rebuildAnalytics_() {
+  rebuildAnalyticsCore_({
+    formatCharts: true
+  });
 }
 
 function doGet() {
@@ -2197,7 +2132,8 @@ function doPost(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  sheet.appendRow([
+  const targetRow = Math.max(sheet.getLastRow(), 1) + 1;
+  sheet.getRange(targetRow, 1, 1, HEADERS.length).setValues([[
     valueOrBlank(data.device_id),
     valueOrBlank(data.fw_version),
     valueOrBlank(data.build),
@@ -2219,8 +2155,9 @@ function doPost(e) {
     valueOrBlank(data.loud_count),
     valueOrBlank(data.samples),
     valueOrBlank(data.uptime)
-  ]);
-  ensureHeaderFormatting_(sheet);
+  ]]);
+  ensureHeaderRowValues_(sheet);
+  applyLogRowFormatting_(sheet, targetRow, 1);
 
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))

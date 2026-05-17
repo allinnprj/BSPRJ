@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Apps Script auto analytics refresh - 2026-05-17
+
+1. Added a separate automatic analytics refresh path in `google_sheets/Code.gs` so `clean_summary_10m`, `summary_*`, and `charts` can update on a background timer without depending on manual `Rebuild analytics`.
+2. Kept the live write path safe: `doPost(...)` still only writes to `log`, while the new installable trigger runs the heavier summary rebuild every 10 minutes.
+3. Kept the spreadsheet layout clean by refreshing only the fixed analytics tabs instead of creating extra helper sheets during automatic runs.
+
 ## AppSheet v1 setup doc - 2026-05-16
 
 1. Added `APPSHEET_SETUP.md` with a concrete `v1` plan for a read-only AppSheet layer on top of `summary_conclusions`, `summary_daypart`, `summary_levels`, and `summary_health`.
