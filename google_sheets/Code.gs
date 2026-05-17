@@ -530,6 +530,16 @@ function normalizeDateText_(value) {
     return raw;
   }
 
+  const ddmmyyyy = raw.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+  if (ddmmyyyy) {
+    return `${ddmmyyyy[3]}-${ddmmyyyy[2]}-${ddmmyyyy[1]}`;
+  }
+
+  const ddmmyy = raw.match(/^(\d{2})-(\d{2})-(\d{2})$/);
+  if (ddmmyy) {
+    return `20${ddmmyy[3]}-${ddmmyy[2]}-${ddmmyy[1]}`;
+  }
+
   const parsed = new Date(raw);
   if (!isNaN(parsed.getTime())) {
     return Utilities.formatDate(parsed, Session.getScriptTimeZone(), 'yyyy-MM-dd');
@@ -1117,6 +1127,19 @@ function findHealthRowByDate_(dateText) {
   return null;
 }
 
+function hasSummaryDataForDate_(dateText) {
+  const normalizedDateText = normalizeDateText_(dateText);
+  if (!normalizedDateText) {
+    return false;
+  }
+
+  if (findHealthRowByDate_(normalizedDateText)) {
+    return true;
+  }
+
+  return PART_ORDER.some((partText) => findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, normalizedDateText, partText));
+}
+
 function getCoverageQualityLabel_(coveragePct) {
   if (!hasDisplayValue_(coveragePct)) {
     return 'no data';
@@ -1267,6 +1290,11 @@ function sendDailyTelegramSummary_() {
 }
 
 function getLatestArchivedDateText_() {
+  const dates = getArchivedDateTexts_();
+  return dates.length ? dates[dates.length - 1] : '';
+}
+
+function getArchivedDateTexts_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const dates = listRawDataSheets_(spreadsheet)
     .map((sheet) => sheet.getName())
@@ -1274,10 +1302,24 @@ function getLatestArchivedDateText_() {
     .map((name) => normalizeDateText_(name))
     .filter((value) => value);
   if (!dates.length) {
-    return '';
+    return [];
   }
   dates.sort();
-  return dates[dates.length - 1];
+  return dates;
+}
+
+function findLatestAvailableSummaryDateForAutoDaily_(lastSentDate) {
+  const archivedDates = getArchivedDateTexts_().slice().reverse();
+  for (let index = 0; index < archivedDates.length; index++) {
+    const dateText = archivedDates[index];
+    if (!dateText || dateText === lastSentDate) {
+      continue;
+    }
+    if (hasSummaryDataForDate_(dateText)) {
+      return dateText;
+    }
+  }
+  return '';
 }
 
 function removeAutomaticAnalyticsRefreshTriggers_() {
@@ -1349,18 +1391,19 @@ function runAutomaticDailyTelegramSummary_() {
     return;
   }
 
-  const targetDate = getLatestArchivedDateText_();
-  if (!targetDate) {
+  const latestArchivedDate = normalizeDateText_(getLatestArchivedDateText_());
+  if (!latestArchivedDate) {
     return;
   }
 
   const properties = PropertiesService.getScriptProperties();
   const lastSentDate = String(properties.getProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY) || '').trim();
-  if (lastSentDate === targetDate) {
+  rebuildAnalyticsCore_({ silent: true });
+  const targetDate = findLatestAvailableSummaryDateForAutoDaily_(lastSentDate);
+  if (!targetDate) {
     return;
   }
 
-  rebuildAnalytics_();
   const text = buildDailyTelegramSummary_(targetDate);
   sendTelegramMessage_(text);
   properties.setProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY, targetDate);
