@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## AppSheet v1 setup doc - 2026-05-16
+
+1. Added `APPSHEET_SETUP.md` with a concrete `v1` plan for a read-only AppSheet layer on top of `summary_conclusions`, `summary_daypart`, `summary_levels`, and `summary_health`.
+2. Kept the plan intentionally lightweight: no writes back into `log`, no archive-sheet dependency, and no change to the existing Google Sheets live write contract.
+
 ## Docs goal extension - 2026-05-16
 
 1. Expanded the documented project goal in `README_RU.md`, `README.md`, and `AGENTS.md` so the current day-part noise analytics path is now explicitly tied to a longer-term direction toward scalable noise monitoring, anomaly analysis, and future mapping.

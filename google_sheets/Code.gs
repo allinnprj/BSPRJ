@@ -25,6 +25,7 @@ const HEADERS = [
 const ACTIVE_LOG_SHEET_NAME = 'log';
 const DAILY_SHEET_NAME_FORMAT = 'DD-MM-YYYY'; // 'DD-MM-YYYY' or 'YYYY-MM-DD'
 const CLEAN_SUMMARY_SHEET_NAME = 'clean_summary_10m';
+const TIMELINE_SUMMARY_SHEET_NAME = 'summary_timeline';
 const DAYPART_SUMMARY_SHEET_NAME = 'summary_daypart';
 const LEVEL_SUMMARY_SHEET_NAME = 'summary_levels';
 const HEALTH_SUMMARY_SHEET_NAME = 'summary_health';
@@ -33,6 +34,7 @@ const CHARTS_SHEET_NAME = 'charts';
 const TELEGRAM_STATS_URL = 'https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943';
 const ANALYTICS_SHEET_NAMES = [
   CLEAN_SUMMARY_SHEET_NAME,
+  TIMELINE_SUMMARY_SHEET_NAME,
   DAYPART_SUMMARY_SHEET_NAME,
   LEVEL_SUMMARY_SHEET_NAME,
   HEALTH_SUMMARY_SHEET_NAME,
@@ -105,6 +107,19 @@ const DAYPART_SUMMARY_HEADERS = [
   'LOUD WIN',
   'PEAK WIN',
   'MISSING WIN'
+];
+const TIMELINE_SUMMARY_HEADERS = [
+  'DEV ID',
+  'DATE',
+  'T FROM',
+  'T TO',
+  'PART',
+  'LEVEL',
+  'NOW %',
+  'SILENT FLAG',
+  'NORMAL FLAG',
+  'LOUD FLAG',
+  'PEAK FLAG'
 ];
 const LEVEL_SUMMARY_HEADERS = [
   'DEV ID',
@@ -392,7 +407,6 @@ function ensureHeaderFormatting_(sheet) {
   sheet.setColumnWidth(18, 70);  // QUIET
   sheet.setColumnWidth(19, 70);  // LOUD
   sheet.setColumnWidth(20, 80);  // SAMPLES
-  sheet.setColumnWidth(21, 120); // UPTIME
   applyAdaptiveHeaderLayout_(sheet, HEADERS);
 
   const lastRow = Math.max(sheet.getLastRow(), 2);
@@ -646,18 +660,42 @@ function formatPct_(value) {
   return `${roundValue_(toNumber_(value), 1)}%`;
 }
 
+function hasDisplayValue_(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+  if (typeof value === 'string') {
+    return value.trim() !== '';
+  }
+  return true;
+}
+
 function formatMaybePct_(value) {
-  if (value === '' || value === null || value === undefined) {
+  if (!hasDisplayValue_(value)) {
     return 'no data';
   }
   return formatPct_(value);
 }
 
 function formatMaybeNumber_(value, suffix) {
-  if (value === '' || value === null || value === undefined) {
+  if (!hasDisplayValue_(value)) {
     return 'no data';
   }
   return `${roundValue_(toNumber_(value), 1)}${suffix || ''}`;
+}
+
+function formatMaybeCount_(value) {
+  if (!hasDisplayValue_(value)) {
+    return 'no data';
+  }
+  return `${Math.round(toNumber_(value))}`;
+}
+
+function formatMaybeFraction_(leftValue, rightValue) {
+  if (!hasDisplayValue_(leftValue) || !hasDisplayValue_(rightValue)) {
+    return 'no data';
+  }
+  return `${Math.round(toNumber_(leftValue))}/${Math.round(toNumber_(rightValue))}`;
 }
 
 function htmlEscape_(value) {
@@ -1024,6 +1062,9 @@ function findHealthRowByDate_(dateText) {
 }
 
 function getCoverageQualityLabel_(coveragePct) {
+  if (!hasDisplayValue_(coveragePct)) {
+    return 'no data';
+  }
   if (coveragePct >= 80) {
     return 'good';
   }
@@ -1070,17 +1111,15 @@ function buildDayPartTelegramBlock_(targetDate, partText) {
       `${partIcon_(partText)} <b>${partText}</b>`,
       'Avg: no data',
       'Main: no data',
-      'Valid windows: 0/0'
+      'Valid windows: no data'
     ].join('\n');
   }
 
-  const validWindows = toNumber_(row[4]);
-  const expectedWindows = toNumber_(row[5]);
   return [
     `${partIcon_(partText)} <b>${partText}</b>`,
     `Avg: ${formatMaybePct_(row[7])}`,
     `Main: ${getMainLevelForPart_(targetDate, partText)}`,
-    `Valid windows: ${validWindows}/${expectedWindows || 0}`
+    `Valid windows: ${formatMaybeFraction_(row[4], row[5])}`
   ].join('\n');
 }
 
@@ -1100,15 +1139,15 @@ function buildLatestTelegramStatus_() {
     `🕒 Window: <b>${htmlEscape_(record.timeFrom || 'n/a')}-${htmlEscape_(record.timeTo || 'n/a')}</b>`,
     `🌗 Part: <b>${htmlEscape_(record.partText || 'n/a')}</b>`,
     '',
-    `🔊 Now: <b>${formatPct_(record.nowPct)}</b>`,
-    `🟡 H: ${formatPct_(record.hourPct)}`,
-    `🔵 M: ${formatPct_(record.totalPct)}`,
+    `🔊 Now: <b>${formatMaybePct_(record.nowPct)}</b>`,
+    `🟡 H: ${formatMaybePct_(record.hourPct)}`,
+    `🔵 M: ${formatMaybePct_(record.totalPct)}`,
     `🏷️ Level: <b>${htmlEscape_(record.levelText || 'n/a')}</b>`,
     '',
     `🌡️ Temp: ${formatMaybeNumber_(record.temperatureC, ' C')}`,
     `💧 Hum: ${formatMaybeNumber_(record.humidityPct, ' %')}`,
     `⏱️ Uptime: ${htmlEscape_(record.uptimeText || 'n/a')}`,
-    `📦 Samples: ${toNumber_(record.samples)}`,
+    `📦 Samples: ${formatMaybeCount_(record.samples)}`,
     `✅ Quality: ${htmlEscape_(qualityLabel)}`,
     '',
     buildTelegramStatsLinkLine_()
@@ -1124,9 +1163,9 @@ function buildDailyTelegramSummary_(dateText) {
   const partLines = PART_ORDER.map((partText) => buildDayPartTelegramBlock_(targetDate, partText));
 
   const healthRow = findHealthRowByDate_(targetDate);
-  const validTotal = healthRow ? toNumber_(healthRow[3]) : 0;
-  const missingWindows = healthRow ? toNumber_(healthRow[6]) : 0;
-  const coveragePct = healthRow ? toNumber_(healthRow[10]) : 0;
+  const validTotal = healthRow ? healthRow[3] : '';
+  const missingWindows = healthRow ? healthRow[6] : '';
+  const coveragePct = healthRow ? healthRow[10] : '';
   const qualityLabel = getCoverageQualityLabel_(coveragePct);
 
   const overallDayRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'DAY');
@@ -1147,9 +1186,9 @@ function buildDailyTelegramSummary_(dateText) {
     partLines.join('\n\n'),
     '',
     '📈 <b>Coverage</b>',
-    `Valid total: ${validTotal}`,
-    `Missing windows: ${missingWindows}`,
-    `Coverage: ${formatPct_(coveragePct)}`,
+    `Valid total: ${formatMaybeCount_(validTotal)}`,
+    `Missing windows: ${formatMaybeCount_(missingWindows)}`,
+    `Coverage: ${formatMaybePct_(coveragePct)}`,
     `Quality: ${htmlEscape_(qualityLabel)}`,
     '',
     '🧾 <b>Result</b>',
@@ -1480,6 +1519,32 @@ function buildDayPartSummaryRows_(records) {
   rows.sort((left, right) => {
     const leftKey = `${left[0]}|${left[1]}|${PART_ORDER.indexOf(left[2])}`;
     const rightKey = `${right[0]}|${right[1]}|${PART_ORDER.indexOf(right[2])}`;
+    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
+  });
+
+  return rows;
+}
+
+function buildTimelineSummaryRows_(records) {
+  const rows = records
+    .filter((record) => record.isValid)
+    .map((record) => ([
+      record.deviceId,
+      record.dateText,
+      record.timeFromText,
+      record.timeToText,
+      record.partText,
+      record.levelText,
+      record.nowPct,
+      record.levelText === 'SILENT' ? 1 : 0,
+      record.levelText === 'NORMAL' ? 1 : 0,
+      record.levelText === 'LOUD' ? 1 : 0,
+      record.levelText === 'PEAK' ? 1 : 0
+    ]));
+
+  rows.sort((left, right) => {
+    const leftKey = `${left[0]}|${left[1]}|${left[2]}|${PART_ORDER.indexOf(left[4])}`;
+    const rightKey = `${right[0]}|${right[1]}|${right[2]}|${PART_ORDER.indexOf(right[4])}`;
     return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
   });
 
@@ -2097,6 +2162,7 @@ function rebuildAnalytics_() {
   const cleanData = buildCleanSummaryData_(rawRecords);
 
   writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, cleanData.cleanRows);
+  writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, buildTimelineSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, buildDayPartSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords));
   writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, buildHealthSummaryRows_(cleanData.uniqueRecords));
