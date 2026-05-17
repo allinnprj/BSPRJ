@@ -62,6 +62,86 @@ not like:
 - a debug console
 - a sheet mirror
 
+## Screen Responsibilities
+
+The team should treat each main screen as having one clear job.
+
+If one screen tries to explain everything at once, the app becomes harder to read.
+
+### `Overview`
+
+This is the main human screen.
+
+Its job is:
+
+- show the conclusion first
+- help the user understand the date quickly
+- explain the day in simple words, not in table logic
+
+The user should be able to open `Overview` and understand:
+
+- what the day looked like overall
+- whether `DAY`, `EVE`, and `NGT` were mostly calm or noisy
+- whether the data confidence is strong enough
+
+If `Overview` looks like a raw list of rows, it is not doing its job yet.
+
+### `Dayparts`
+
+This screen explains the three daily periods directly.
+
+Its job is:
+
+- compare `DAY`, `EVE`, and `NGT`
+- show how strong the average noise was in each period
+- show whether coverage for each part is complete enough
+
+The user should leave this screen with one answer:
+
+- which part of the day was louder or calmer than the others
+
+### `Levels`
+
+This screen explains the mix of human-readable levels.
+
+Its job is:
+
+- show how much of the period looked `SILENT`, `NORMAL`, `LOUD`, or `PEAK`
+- make the dominant level easy to understand
+- support the conclusion without forcing the user to decode raw counts first
+
+The user should leave this screen with one answer:
+
+- what level was most typical in that period
+
+### `Health`
+
+This screen is about trust, not about noise itself.
+
+Its job is:
+
+- show whether the data is complete enough
+- show whether missing windows weaken the conclusion
+- show whether low-sample windows or duplicates reduce confidence
+
+The user should leave this screen with one answer:
+
+- can I trust this date fully, partially, or only carefully
+
+### `Noise`
+
+This screen is optional as a main screen and must justify its existence.
+
+Its job is not to repeat what the other screens already say.
+
+It is allowed only if it adds one of these:
+
+- faster visual comparison
+- easier pattern recognition
+- clearer summary than the tables
+
+If `Noise` only shows decorative charts without improving understanding, it should become a secondary screen or be simplified.
+
 ## Что брать в AppSheet
 
 Для `v1` подключать только эти листы:
@@ -438,6 +518,191 @@ SWITCH(
 - `Latest Day`
 - `Health Alerts`
 - `Coverage Review`
+
+## Current App Refinement From Existing Screens
+
+This section is for the current app state that already has:
+
+- `Overview`
+- `Dayparts`
+- `Levels`
+- `Health`
+- `Noise`
+
+The goal here is not to rebuild everything from zero.
+
+The goal is to take the current app and make it easier to understand with the smallest useful configuration changes.
+
+### 1. Fix `Overview` first
+
+Current problem:
+
+- it behaves like a raw row list
+- it repeats `DAY / EVE / NGT`
+- it does not surface the actual human conclusion strongly enough
+
+What to change:
+
+- keep `Overview` on `summary_conclusions`
+- keep it as `Deck`
+- set `READING` as the main label or main body text
+- keep `DATE`, `PART`, `MAIN LEVEL`, and `CONFIDENCE` visible
+- hide `DEV ID`, `VALID WINDOWS`, `EXPECTED WINDOWS`
+
+What the user should read there:
+
+- the conclusion sentence first
+- the period second
+- the confidence third
+
+If `Overview` still reads like a table in disguise, it needs more simplification.
+
+### 2. Trim `Dayparts`
+
+Current problem:
+
+- it already helps
+- but it still shows more numbers than a beginner needs on the first reading
+
+What to leave visible first:
+
+- `PART`
+- `DATE`
+- `COVERAGE %`
+- `AVG NOW %`
+- `QUIET %`
+- `LOUD %`
+
+What to hide at first:
+
+- `DEV ID`
+- `WINDOWS TOTAL`
+- `AVG P2P`
+- `AVG TEMP C`
+- `AVG HUM %`
+- `SILENT WIN`
+- `NORMAL WIN`
+- `LOUD WIN`
+- `PEAK WIN`
+
+The point of this screen is comparison, not exhaustiveness.
+
+### 3. Trim `Levels`
+
+Current problem:
+
+- this screen is useful
+- but the main meaning can get buried under duplicate count-style fields
+
+What to leave visible first:
+
+- `PART`
+- `DATE`
+- `SILENT %`
+- `NORMAL %`
+- `LOUD %`
+- `PEAK %`
+
+What to hide at first:
+
+- `DEV ID`
+- `VALID WINDOWS`
+- `SILENT WIN`
+- `NORMAL WIN`
+- `LOUD WIN`
+- `PEAK WIN`
+
+This screen should answer:
+
+- what kind of noise was most typical here
+
+not:
+
+- how many support columns can fit on one mobile table
+
+### 4. Keep `Health` strict and short
+
+Current problem:
+
+- this screen is already close to useful
+- but it should feel like a trust screen, not a secondary analytics table
+
+What to leave visible first:
+
+- `DATE`
+- `WINDOWS VALID`
+- `LOW SAMPLE WIN`
+- `MISSING WIN`
+- `COVERAGE %`
+
+What to hide at first:
+
+- `DEV ID`
+- `WINDOWS UNIQUE`
+- `DUP EXTRA ROWS`
+- `FIRST TIME`
+- `LAST TIME`
+- `HAS LOG ROWS`
+
+The user should read this screen as:
+
+- good data
+- partial data
+- weak data
+
+### 5. Reconsider `Noise`
+
+Current problem:
+
+- the dashboard exists
+- but the current `pie + column` combination does not yet provide the clearest user answer
+
+Recommended `v1` rule:
+
+- if `Noise` does not explain more than `Overview + Dayparts + Levels`, demote it from the main navigation
+
+Best immediate options:
+
+- keep `Noise` as a secondary screen only
+- or simplify it to one chart instead of two
+
+The current `Noise Pie` is weak for first-time understanding because:
+
+- it looks decorative
+- it does not explain trust
+- it does not explain dominant level clearly
+- it competes with stronger table-based meaning from other screens
+
+### 6. Hide unnecessary system views
+
+For the current app, these should not remain visible to ordinary users:
+
+- `clean_summary_10m_Detail`
+- `summary_conclusions_Detail`
+- `summary_daypart_Detail`
+- `summary_health_Detail`
+- `summary_levels_Detail`
+- `summary_timeline_Detail`
+
+These are useful as technical scaffolding, but not as part of the product reading flow.
+
+### 7. Best first navigation order
+
+For the current app state, the clean order is:
+
+1. `Overview`
+2. `Dayparts`
+3. `Levels`
+4. `Health`
+5. `Noise` only if it still adds value after simplification
+
+This order matches the intended reading flow:
+
+1. understand the day
+2. compare parts of the day
+3. understand the dominant level mix
+4. check whether the data is trustworthy
+5. optionally inspect a visual comparison layer
 
 ## Самый быстрый сценарий сборки
 

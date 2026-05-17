@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## AppSheet current-screen refinement guide - 2026-05-18
+
+1. Expanded `APPSHEET_SETUP.md` with a practical refinement section for the current live `AppSheet` structure, based on the existing `Overview / Dayparts / Levels / Health / Noise` screens.
+2. Fixed the recommended first-pass cleanup path: simplify `Overview`, trim visible columns in `Dayparts / Levels / Health`, hide technical detail views, and keep `Noise` only if it improves understanding.
+
+## AppSheet screen roles - 2026-05-18
+
+1. Expanded `APPSHEET_SETUP.md` with fixed responsibilities for `Overview`, `Dayparts`, `Levels`, `Health`, and `Noise` so teammates can build different layouts without losing the same product meaning.
+2. Kept the `AppSheet` direction centered on human-readable interpretation: conclusion first, comparison second, trust/coverage separately, and decorative charts only when they add understanding.
+
 ## AppSheet shared UX direction - 2026-05-18
 
 1. Expanded `APPSHEET_SETUP.md` with a shared team-facing `AppSheet` instruction so different teammates can build their own screens without drifting away from one common user goal.
