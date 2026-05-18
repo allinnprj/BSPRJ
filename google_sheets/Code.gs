@@ -30,6 +30,8 @@ const DAYPART_SUMMARY_SHEET_NAME = 'summary_daypart';
 const LEVEL_SUMMARY_SHEET_NAME = 'summary_levels';
 const HEALTH_SUMMARY_SHEET_NAME = 'summary_health';
 const CONCLUSION_SUMMARY_SHEET_NAME = 'summary_conclusions';
+const DAILY_VERDICT_SHEET_NAME = 'daily_verdict';
+const DAILY_VERDICT_TABLE_SHEET_NAME = 'daily_verdict_table';
 const CHARTS_SHEET_NAME = 'charts';
 const TELEGRAM_STATS_URL = 'https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943';
 const ANALYTICS_SHEET_NAMES = [
@@ -39,6 +41,8 @@ const ANALYTICS_SHEET_NAMES = [
   LEVEL_SUMMARY_SHEET_NAME,
   HEALTH_SUMMARY_SHEET_NAME,
   CONCLUSION_SUMMARY_SHEET_NAME,
+  DAILY_VERDICT_SHEET_NAME,
+  DAILY_VERDICT_TABLE_SHEET_NAME,
   CHARTS_SHEET_NAME
 ];
 const TELEGRAM_ENABLED_PROPERTY = 'BS_TELEGRAM_ENABLED';
@@ -113,6 +117,7 @@ const DAYPART_SUMMARY_HEADERS = [
 const TIMELINE_SUMMARY_HEADERS = [
   'DEV ID',
   'DATE',
+  'TS',
   'T FROM',
   'T TO',
   'PART',
@@ -162,6 +167,35 @@ const CONCLUSION_SUMMARY_HEADERS = [
   'COVERAGE %',
   'CONFIDENCE',
   'READING'
+];
+const DAILY_VERDICT_HEADERS = [
+  'DEV ID',
+  'DATE',
+  'PART',
+  'MAIN LEVEL',
+  'VERDICT SCORE',
+  'SILENT FLAG',
+  'NORMAL FLAG',
+  'LOUD FLAG',
+  'PEAK FLAG',
+  'MAIN SHARE %',
+  'COVERAGE %',
+  'CONFIDENCE',
+  'READING'
+];
+const DAILY_VERDICT_TABLE_HEADERS = [
+  'DEV ID',
+  'DATE',
+  'DAY LEVEL',
+  'EVE LEVEL',
+  'NGT LEVEL',
+  'DAY SHARE %',
+  'EVE SHARE %',
+  'NGT SHARE %',
+  'DAY CONF',
+  'EVE CONF',
+  'NGT CONF',
+  'VERDICT'
 ];
 const SHEET_STYLE_PROFILES = {
   clean: {
@@ -282,6 +316,43 @@ const SHEET_STYLE_PROFILES = {
     accentCols: [4, 5, 6, 9, 10, 11],
     accentColor: '#e7f4f7',
     freezeCols: 3
+  },
+  dailyVerdict: {
+    title: 'MAIN ANALYTICS · DAILY VERDICT',
+    titleColor: '#fce5cd',
+    titleTextColor: '#7f6000',
+    headerColor: '#fff3df',
+    headerTextColor: '#7f6000',
+    headerColors: [
+      '#d9ead3', '#cfe2f3', '#cfe2f3',
+      '#ffe599', '#ffe599',
+      '#d5f5e3', '#fff2cc', '#f9cb9c', '#ea9999',
+      '#fff2cc', '#d9d2e9', '#d0e0e3', '#d0e0e3'
+    ],
+    bodyOdd: '#fffdf8',
+    bodyEven: '#fff8ee',
+    accentCols: [3, 4, 5, 10, 11, 12],
+    accentColor: '#fff4d8',
+    freezeCols: 3
+  },
+  dailyVerdictTable: {
+    title: 'MAIN ANALYTICS · DAILY VERDICT TABLE',
+    titleColor: '#d9ead3',
+    titleTextColor: '#274e13',
+    headerColor: '#eef7ea',
+    headerTextColor: '#274e13',
+    headerColors: [
+      '#d9ead3', '#cfe2f3',
+      '#fff2cc', '#f9cb9c', '#d5f5e3',
+      '#fff2cc', '#f9cb9c', '#d5f5e3',
+      '#d0e0e3', '#d0e0e3', '#d0e0e3',
+      '#fce5cd'
+    ],
+    bodyOdd: '#fbfdf8',
+    bodyEven: '#f4f9ef',
+    accentCols: [3, 4, 5, 12],
+    accentColor: '#fff7d6',
+    freezeCols: 2
   }
 };
 const HEADER_WIDTH_OVERRIDES = {
@@ -308,6 +379,16 @@ const HEADER_WIDTH_OVERRIDES = {
   'UPTIME': 100,
   'AVG NOW %': 105,
   'MAIN LEVEL': 115,
+  'VERDICT SCORE': 105,
+  'DAY LEVEL': 105,
+  'EVE LEVEL': 105,
+  'NGT LEVEL': 105,
+  'DAY SHARE %': 105,
+  'EVE SHARE %': 105,
+  'NGT SHARE %': 105,
+  'DAY CONF': 95,
+  'EVE CONF': 95,
+  'NGT CONF': 95,
   'MAIN SHARE %': 110,
   'VALID WINDOWS': 100,
   'EXPECTED WINDOWS': 120,
@@ -888,6 +969,8 @@ function refreshAllSheetFormatting_() {
   refreshExistingTableSheetFormatting_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS);
+  refreshExistingTableSheetFormatting_(DAILY_VERDICT_SHEET_NAME, DAILY_VERDICT_HEADERS);
+  refreshExistingTableSheetFormatting_(DAILY_VERDICT_TABLE_SHEET_NAME, DAILY_VERDICT_TABLE_HEADERS);
 
   const cleanSheet = spreadsheet.getSheetByName(CLEAN_SUMMARY_SHEET_NAME);
   if (cleanSheet && cleanSheet.getLastRow() >= 2) {
@@ -1664,12 +1747,24 @@ function buildDayPartSummaryRows_(records) {
   return rows;
 }
 
+function buildTimelineTimestamp_(dateText, timeText) {
+  const normalizedDate = normalizeDateText_(dateText);
+  const normalizedTime = normalizeTimeText_(timeText);
+  if (!normalizedDate || !normalizedTime) {
+    return '';
+  }
+
+  const timestamp = new Date(`${normalizedDate}T${normalizedTime}`);
+  return isNaN(timestamp.getTime()) ? '' : timestamp;
+}
+
 function buildTimelineSummaryRows_(records) {
   const rows = records
     .filter((record) => record.isValid)
     .map((record) => ([
       record.deviceId,
       record.dateText,
+      buildTimelineTimestamp_(record.dateText, record.timeFromText),
       record.timeFromText,
       record.timeToText,
       record.partText,
@@ -1763,6 +1858,11 @@ function getCoverageConfidence_(coveragePct) {
   return 'WEAK';
 }
 
+function levelToVerdictScore_(levelText) {
+  const index = LEVEL_ORDER.indexOf(String(levelText || '').toUpperCase());
+  return index >= 0 ? index + 1 : '';
+}
+
 function buildConclusionReading_(partText, avgNowPct, mainLevel, mainSharePct, confidence) {
   const avgText = avgNowPct === '' ? 'n/a' : `${avgNowPct}%`;
   const shareText = mainSharePct === '' ? 'n/a' : `${mainSharePct}%`;
@@ -1830,6 +1930,89 @@ function buildConclusionSummaryRows_(records) {
   rows.sort((left, right) => {
     const leftKey = `${left[0]}|${left[1]}|${PART_ORDER.indexOf(left[2])}`;
     const rightKey = `${right[0]}|${right[1]}|${PART_ORDER.indexOf(right[2])}`;
+    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
+  });
+
+  return rows;
+}
+
+function buildDailyVerdictRows_(records) {
+  const conclusionRows = buildConclusionSummaryRows_(records);
+  return conclusionRows.map((row) => {
+    const mainLevel = String(row[4] || 'NO DATA');
+    const verdictScore = levelToVerdictScore_(mainLevel);
+    return [
+      row[0],
+      row[1],
+      row[2],
+      mainLevel,
+      verdictScore,
+      mainLevel === 'SILENT' ? 1 : 0,
+      mainLevel === 'NORMAL' ? 1 : 0,
+      mainLevel === 'LOUD' ? 1 : 0,
+      mainLevel === 'PEAK' ? 1 : 0,
+      row[5],
+      row[8],
+      row[9],
+      row[10]
+    ];
+  });
+}
+
+function buildDailyVerdictTableRows_(records) {
+  const verdictRows = buildDailyVerdictRows_(records);
+  const buckets = {};
+
+  verdictRows.forEach((row) => {
+    const key = `${row[0]}|${row[1]}`;
+    const bucket = ensureMetricBucket_(buckets, key, () => ({
+      deviceId: row[0],
+      dateText: row[1],
+      byPart: {
+        DAY: null,
+        EVE: null,
+        NGT: null
+      }
+    }));
+
+    bucket.byPart[normalizePartText_(row[2])] = {
+      level: row[3],
+      sharePct: row[9],
+      confidence: row[11]
+    };
+  });
+
+  const rows = Object.keys(buckets).map((key) => {
+    const bucket = buckets[key];
+    const day = bucket.byPart.DAY || {};
+    const eve = bucket.byPart.EVE || {};
+    const ngt = bucket.byPart.NGT || {};
+    const verdictText = [
+      `${bucket.dateText}:`,
+      `DAY ${day.level || 'NO DATA'},`,
+      `EVE ${eve.level || 'NO DATA'},`,
+      `NGT ${ngt.level || 'NO DATA'}`
+    ].join(' ');
+
+    return [
+      bucket.deviceId,
+      bucket.dateText,
+      day.level || 'NO DATA',
+      eve.level || 'NO DATA',
+      ngt.level || 'NO DATA',
+      hasDisplayValue_(day.sharePct) ? day.sharePct : '',
+      hasDisplayValue_(eve.sharePct) ? eve.sharePct : '',
+      hasDisplayValue_(ngt.sharePct) ? ngt.sharePct : '',
+      day.confidence || 'NO DATA',
+      eve.confidence || 'NO DATA',
+      ngt.confidence || 'NO DATA',
+      verdictText
+    ];
+  });
+
+  rows.sort((left, right) => {
+    const leftKey = `${left[0]}|${left[1]}`;
+    const rightKey = `${right[0]}|${right[1]}`;
     return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
   });
 
@@ -2015,6 +2198,12 @@ function getSheetStyleProfile_(sheetName) {
   if (sheetName === CONCLUSION_SUMMARY_SHEET_NAME) {
     return SHEET_STYLE_PROFILES.summaryConclusions;
   }
+  if (sheetName === DAILY_VERDICT_SHEET_NAME) {
+    return SHEET_STYLE_PROFILES.dailyVerdict;
+  }
+  if (sheetName === DAILY_VERDICT_TABLE_SHEET_NAME) {
+    return SHEET_STYLE_PROFILES.dailyVerdictTable;
+  }
   return null;
 }
 
@@ -2123,6 +2312,10 @@ function writeTableToSheet_(sheetName, headers, rows, options) {
       const dateCol = headers.indexOf('DATE') + 1;
       sheet.getRange(2, dateCol, Math.max(output.length - 1, 1), 1).setNumberFormat('dd-mm-yyyy');
     }
+    if (headers.indexOf('TS') >= 0) {
+      const tsCol = headers.indexOf('TS') + 1;
+      sheet.getRange(2, tsCol, Math.max(output.length - 1, 1), 1).setNumberFormat('dd-mm-yyyy hh:mm:ss');
+    }
     if (headers.indexOf('T FROM') >= 0) {
       const fromCol = headers.indexOf('T FROM') + 1;
       sheet.getRange(2, fromCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
@@ -2154,6 +2347,8 @@ function rebuildAnalyticsCore_(options) {
   writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, buildHealthSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS, buildConclusionSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(DAILY_VERDICT_SHEET_NAME, DAILY_VERDICT_HEADERS, buildDailyVerdictRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(DAILY_VERDICT_TABLE_SHEET_NAME, DAILY_VERDICT_TABLE_HEADERS, buildDailyVerdictTableRows_(cleanData.uniqueRecords), tableWriteOptions);
   rebuildAnalyticsCharts_({
     applyFormatting: true,
     silent: opts.silent === true

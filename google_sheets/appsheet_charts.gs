@@ -56,12 +56,14 @@ function buildChartSourceBlocks_(records) {
     ['VALID WINDOWS', latestCoverage.validWindows],
     ['MISSING WINDOWS', latestCoverage.missingWindows]
   ];
+  const verdictRows = buildDailyVerdictRows_(records);
 
   return {
     latestDate,
     dayPartRows,
     levelMixRows,
     coverageRows,
+    verdictRows,
     coveragePct: hasDisplayValue_(latestCoverage.validWindows)
       ? roundValue_(toNumber_(latestCoverage.validWindows) * 100 / 144, 1)
       : ''
@@ -82,6 +84,27 @@ function buildTextBar_(value, maxValue, width) {
   const totalWidth = Math.max(width || 10, 1);
   const filled = Math.round(ratio * totalWidth);
   return `[${'='.repeat(filled)}${'.'.repeat(totalWidth - filled)}]`;
+}
+
+function buildDailyVerdictChartRows_(verdictRows) {
+  const byDate = {};
+  verdictRows.forEach((row) => {
+    const dateKey = normalizeDateText_(row[1]);
+    const partText = normalizePartText_(row[2]);
+    byDate[dateKey] = byDate[dateKey] || {
+      DAY: '',
+      EVE: '',
+      NGT: ''
+    };
+    byDate[dateKey][partText] = row[4];
+  });
+
+  return Object.keys(byDate).sort().map((dateKey) => ([
+    dateKey,
+    byDate[dateKey].DAY,
+    byDate[dateKey].EVE,
+    byDate[dateKey].NGT
+  ]));
 }
 
 function rebuildAnalyticsCharts_(options) {
@@ -110,8 +133,9 @@ function rebuildAnalyticsCharts_(options) {
   }));
 
   const chartBlocks = buildChartSourceBlocks_(records);
+  const verdictChartRows = buildDailyVerdictChartRows_(chartBlocks.verdictRows);
   const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
-  ensureMinColumnCount_(sheet, 6);
+  ensureMinColumnCount_(sheet, 10);
   sheet.clearContents();
   if (shouldFormat) {
     sheet.clearFormats();
@@ -126,6 +150,10 @@ function rebuildAnalyticsCharts_(options) {
     sheet.setColumnWidth(4, 150);
     sheet.setColumnWidth(5, 110);
     sheet.setColumnWidth(6, 110);
+    sheet.setColumnWidth(7, 90);
+    sheet.setColumnWidth(8, 90);
+    sheet.setColumnWidth(9, 90);
+    sheet.setColumnWidth(10, 90);
   }
 
   sheet.getRange(1, 1, 1, 6).merge();
@@ -216,7 +244,65 @@ function rebuildAnalyticsCharts_(options) {
   if (shouldFormat) {
     sheet.getRange(24, 1, coverageDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(coverageDisplayRows.length, 3, '#fffafa'));
     sheet.getRange(7, 1, 18, 3).setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
-    sheet.getRange(1, 1, 25, 6).setVerticalAlignment('middle');
-    sheet.getRange(1, 1, 25, 6).setWrap(false);
+  }
+
+  sheet.getRange(28, 1, 1, 4).merge().setValue('DAILY VERDICT · LEVEL BY DATE')
+    .setHorizontalAlignment('left');
+  sheet.getRange(29, 1, 1, 4).merge().setValue('Scale: 1 = SILENT, 2 = NORMAL, 3 = LOUD, 4 = PEAK')
+    .setHorizontalAlignment('left');
+  sheet.getRange(30, 1, 1, 4).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
+  if (verdictChartRows.length > 0) {
+    sheet.getRange(31, 1, verdictChartRows.length, 4).setValues(verdictChartRows);
+  }
+
+  if (shouldFormat) {
+    sheet.getRange(28, 1, 1, 4).setBackground('#fce5cd').setFontWeight('bold');
+    sheet.getRange(29, 1, 1, 4).setBackground('#fff5e8').setFontColor('#7f6000');
+    sheet.getRange(30, 1, 1, 4).setBackground('#fff0d9').setFontWeight('bold');
+    if (verdictChartRows.length > 0) {
+      sheet.getRange(31, 1, verdictChartRows.length, 4)
+        .setBackgrounds(buildSolidBackgrounds_(verdictChartRows.length, 4, '#fffdf8'));
+      sheet.getRange(30, 1, verdictChartRows.length + 1, 4)
+        .setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
+    }
+
+    const helperStartRow = 30;
+    const helperCol = 7;
+    sheet.getRange(helperStartRow, helperCol, 1, 4).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
+    if (verdictChartRows.length > 0) {
+      sheet.getRange(helperStartRow + 1, helperCol, verdictChartRows.length, 4).setValues(verdictChartRows);
+    }
+    sheet.hideColumns(helperCol, 4);
+
+    if (verdictChartRows.length > 0) {
+      const chart = sheet.newChart()
+        .setChartType(Charts.ChartType.COLUMN)
+        .addRange(sheet.getRange(helperStartRow, helperCol, verdictChartRows.length + 1, 4))
+        .setPosition(28, 5, 0, 0)
+        .setOption('title', 'Daily Verdict by Date')
+        .setOption('legend', { position: 'top' })
+        .setOption('height', 320)
+        .setOption('width', 640)
+        .setOption('series', {
+          0: { color: '#cfe2f3' },
+          1: { color: '#f9cb9c' },
+          2: { color: '#d9ead3' }
+        })
+        .setOption('vAxis', {
+          viewWindow: { min: 1, max: 4 },
+          ticks: [
+            { v: 1, f: 'SILENT' },
+            { v: 2, f: 'NORMAL' },
+            { v: 3, f: 'LOUD' },
+            { v: 4, f: 'PEAK' }
+          ]
+        })
+        .setOption('hAxis', { slantedText: true, slantedTextAngle: 45 })
+        .build();
+      sheet.insertChart(chart);
+    }
+
+    sheet.getRange(1, 1, Math.max(31 + verdictChartRows.length, 31), 10).setVerticalAlignment('middle');
+    sheet.getRange(1, 1, Math.max(31 + verdictChartRows.length, 31), 10).setWrap(false);
   }
 }
