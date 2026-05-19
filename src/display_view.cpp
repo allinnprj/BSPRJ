@@ -126,8 +126,9 @@ void DisplayView::renderDebugPage(const AudioSnapshot &snapshot, const Sht31Read
   display_.setTextColor(SSD1306_WHITE);
   drawCenteredText(F("DEBUG"), 0, 2);
 
-  char rawLine[20];
-  snprintf(rawLine, sizeof(rawLine), "%u-%u", snapshot.rawMin, snapshot.rawMax);
+  char rawLine[28];
+  snprintf(rawLine, sizeof(rawLine), "%ld/%ld", static_cast<long>(snapshot.rawMin),
+           static_cast<long>(snapshot.rawMax));
   drawCenteredText(String(rawLine), 16, 2);
 
   char peakLine[16];

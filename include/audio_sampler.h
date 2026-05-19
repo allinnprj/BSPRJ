@@ -10,8 +10,8 @@ enum class SignalState : uint8_t {
 
 struct AudioSnapshot {
   uint16_t currentLevel = 0;
-  uint16_t rawMin = 0;
-  uint16_t rawMax = 0;
+  int32_t rawMin = 0;
+  int32_t rawMax = 0;
   uint16_t peakToPeak = 0;
   uint16_t statsLevel = 0;
   uint8_t currentPercent = 0;
@@ -30,7 +30,7 @@ struct AudioSnapshot {
 
 class AudioSampler {
  public:
-  void begin(uint8_t analogPin);
+  bool begin(uint8_t bclkPin, uint8_t wsPin, uint8_t dataPin);
   AudioSnapshot sample();
   void restoreLongMean(uint64_t totalLevelSum, uint32_t totalLevelCount);
   uint64_t totalLevelSum() const;
@@ -39,12 +39,11 @@ class AudioSampler {
  private:
   static constexpr uint16_t kSampleWindowMs = 25;
   static constexpr uint16_t kStatsIntervalMs = 1000;
-  static constexpr uint16_t kLevelGain = 2;
+  static constexpr uint16_t kLevelGain = 1;
   static constexpr size_t kHourSampleCount = 3600;
   static constexpr uint16_t kLowSignalWarnThresholdSeconds = 30;
   static constexpr uint16_t kClipSignalWarnThresholdSeconds = 10;
 
-  uint8_t analogPin_ = 0;
   bool started_ = false;
   uint16_t hourLevels_[kHourSampleCount] = {};
   size_t hourWriteIndex_ = 0;

@@ -2,16 +2,16 @@
 
 Firmware playground for a clean `ESP32` restart with:
 
-- `MAX9814` microphone amplifier as the current temporary analog source
+- `INMP441` microphone on `I2S` as the current audio source
 - `SSD1306 128x64` OLED on I2C
 
 ## Status
 
 - Type: local temporary test project
-- Current version: `0.1.37-EXP`
-- Current build: `91`
+- Current version: `0.1.38-EXP`
+- Current build: `92`
 - GitHub flow: intentionally not used
-- Planned future microphone: `INMP441`
+- Active microphone path: `INMP441` on `I2S`
 
 ## Main Goal
 
@@ -50,13 +50,13 @@ Build the project step by step from a clean ESP32 base:
 - short-term and long-term sound statistics
 - Wi-Fi and time modules only after the base runtime is stable
 
-At this stage `MAX9814` is used as a convenient experimental signal source so the project structure, telemetry, display logic, statistics, and likely pitfalls can be understood before switching to a more serious audio path.
+At this stage the project is fully focused on `INMP441`, so the runtime reads digital `I2S` audio directly and treats this as the primary microphone path for further tuning and analytics work.
 
 ## Roadmap
 
 ### Now
 
-- make the current `ESP32 + MAX9814` prototype calm and predictable
+- make the current `ESP32 + INMP441` prototype calm and predictable
 - keep `DAY / EVENING / NIGHT` as the main time-of-day analysis
 - keep `SILENT / NORMAL / LOUD / PEAK` as the main human-readable level set
 - keep `MQTT` fast and convenient for `MqttDesk`
@@ -69,9 +69,9 @@ At this stage `MAX9814` is used as a convenient experimental signal source so th
 - add more environment context with `SHT31` and `BH1750` if needed
 - improve Google Sheets as an auxiliary observation log
 
-### After New Hardware Arrives
+### Current Hardware Focus
 
-- move from `MAX9814` to `INMP441` as the main audio source
+- stabilize the new `INMP441` digital audio path before any further audio hardware changes
 - use `FNIRSI FDM01` as an external reference for validation and future calibration
 - add `Neo-8M` for accurate time and, if useful later, location context
 - add `SIM800L` as an additional communication path instead of the main telemetry path

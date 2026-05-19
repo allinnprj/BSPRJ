@@ -4,10 +4,12 @@
 
 - Project type: local temporary test project, no GitHub publishing required
 - Current device target: `ESP32 DevKit`
-- Current microphone stage: `MAX9814` on an ESP32 ADC pin as a temporary relative-level source
+- Current microphone stage: `INMP441` on ESP32 `I2S` as the active relative-level source
+- Current microphone wiring target: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`
+- Current real-world power target: battery operation is the primary mode; USB readings are secondary debug mode only
 - Display: `SSD1306 128x64 I2C` at address `0x3C`
 - Framework target: `Arduino / ESP32`
-- Planned future microphone platform: `ESP32 + INMP441`
+- Active microphone platform: `ESP32 + INMP441`
 
 ## Main Project Goal
 

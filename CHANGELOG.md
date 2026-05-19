@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 0.1.40-EXP+94 - 2026-05-19
+
+1. Reworked the display button logic for microphone observation sessions: long press now enables a pinned-on display mode that disables idle blanking, and another long press turns the display back off.
+2. Kept short press behavior lightweight: it still switches pages while the display is on, and wakes the display in normal auto-off mode when it is off.
+3. Recorded the new project assumption that battery power is the real target operating mode, while USB power is only a secondary debug path.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.39-EXP+93 - 2026-05-19
+
+1. Removed the remaining current-stage `MAX9814` wording from the active project docs and rules so the repo now describes the hardware focus directly as `INMP441` on `I2S`.
+2. Clarified the live microphone wiring target in `AGENTS.md` and updated the signal-quality wording so `CLIP` now describes `INMP441` digital saturation instead of the old ADC-specific interpretation.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.38-EXP+92 - 2026-05-19
+
+1. Replaced the temporary `MAX9814` analog microphone path with `INMP441` on `I2S`, keeping the existing `Now / H / M` analytics flow intact while changing the runtime audio source to digital sampling.
+2. Updated the firmware boot/runtime diagnostics and debug views so microphone wiring now reports `BCLK / WS / DATA`, and raw debug values reflect signed `I2S` sample windows instead of ADC-only ranges.
+3. Synced the project docs and rules to the new active hardware stage: `ESP32 + INMP441`.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## AppSheet current-screen refinement guide - 2026-05-18
 
 1. Expanded `APPSHEET_SETUP.md` with a practical refinement section for the current live `AppSheet` structure, based on the existing `Overview / Dayparts / Levels / Health / Noise` screens.

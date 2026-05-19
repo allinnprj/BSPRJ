@@ -13,8 +13,8 @@ struct GoogleSheetsWindowRecord {
   uint8_t averageNowPercent = 0;
   uint8_t averageHourPercent = 0;
   uint8_t averageTotalPercent = 0;
-  uint16_t minRaw = 0;
-  uint16_t maxRaw = 0;
+  int32_t minRaw = 0;
+  int32_t maxRaw = 0;
   uint16_t averagePeakToPeak = 0;
   String signalText;
   float averageTemperatureC = 0.0f;

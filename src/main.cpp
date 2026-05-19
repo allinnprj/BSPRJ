@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <limits.h>
 #include <Wire.h>
 
 #include "audio_sampler.h"
@@ -16,7 +17,9 @@
 
 static constexpr uint8_t SDA_PIN = 21;
 static constexpr uint8_t SCL_PIN = 22;
-static constexpr uint8_t MIC_PIN = 34;
+static constexpr uint8_t I2S_BCLK_PIN = 26;
+static constexpr uint8_t I2S_WS_PIN = 25;
+static constexpr uint8_t I2S_DATA_PIN = 32;
 static constexpr uint8_t BUTTON_PIN = 27;
 static constexpr uint8_t OLED_ADDRESS = 0x3C;
 static constexpr uint16_t DISPLAY_REFRESH_MS = 500;
@@ -55,8 +58,8 @@ struct GoogleSheetsAccumulator {
   uint32_t hourPercentSum = 0;
   uint32_t totalPercentSum = 0;
   uint32_t peakToPeakSum = 0;
-  uint16_t minRaw = 4095;
-  uint16_t maxRaw = 0;
+  int32_t minRaw = INT32_MAX;
+  int32_t maxRaw = INT32_MIN;
   uint32_t quietCount = 0;
   uint32_t loudCount = 0;
   float temperatureSum = 0.0f;
@@ -86,6 +89,7 @@ unsigned long lastSerialLogAt = 0;
 unsigned long lastGoogleSheetsAttemptAt = 0;
 unsigned long lastDisplayInteractionAt = 0;
 unsigned long lastMeanPersistAt = 0;
+bool displayPinnedOn = false;
 DayPartStats dayPartStats[3];
 GoogleSheetsAccumulator activeSheetsWindow;
 GoogleSheetsWindowRecord pendingSheetsUploads[GOOGLE_SHEETS_QUEUE_SIZE];
@@ -241,8 +245,8 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.hourPercentSum = 0;
   window.totalPercentSum = 0;
   window.peakToPeakSum = 0;
-  window.minRaw = 4095;
-  window.maxRaw = 0;
+  window.minRaw = INT32_MAX;
+  window.maxRaw = INT32_MIN;
   window.quietCount = 0;
   window.loudCount = 0;
   window.temperatureSum = 0.0f;
@@ -514,9 +518,20 @@ void setup() {
   Serial.print(SDA_PIN);
   Serial.print(F(" SCL="));
   Serial.println(SCL_PIN);
+  Serial.print(F("[MIC] INMP441 BCLK="));
+  Serial.print(I2S_BCLK_PIN);
+  Serial.print(F(" WS="));
+  Serial.print(I2S_WS_PIN);
+  Serial.print(F(" DATA="));
+  Serial.println(I2S_DATA_PIN);
 
   wifiService.begin();
-  audioSampler.begin(MIC_PIN);
+  if (!audioSampler.begin(I2S_BCLK_PIN, I2S_WS_PIN, I2S_DATA_PIN)) {
+    Serial.println(F("[MIC] INMP441 I2S init failed."));
+    while (true) {
+      delay(1000);
+    }
+  }
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
@@ -550,7 +565,7 @@ void setup() {
   }
   char bootLine1[32];
   snprintf(bootLine1, sizeof(bootLine1), "%s b%u", PROJECT_VERSION, PROJECT_BUILD);
-  displayView.showBootMessage(bootLine1, "Addr 0x3C  Pins 21/22");
+  displayView.showBootMessage(bootLine1, "I2S 26/25/32");
   delay(BOOT_SCREEN_DELAY_MS);
   lastDisplayInteractionAt = millis();
 }
@@ -566,16 +581,25 @@ void loop() {
       Serial.println(displayView.currentPage());
     } else {
       displayView.setEnabled(true);
+      displayPinnedOn = false;
       lastDisplayInteractionAt = nowMs;
-      Serial.println(F("[BTN] short press -> display ON"));
+      Serial.println(F("[BTN] short press -> display ON (auto)"));
     }
   } else if (buttonEvent == ButtonEvent::LongPress) {
-    displayView.toggleEnabled();
-    if (displayView.isEnabled()) {
+    if (!displayView.isEnabled()) {
+      displayView.setEnabled(true);
+      displayPinnedOn = true;
       lastDisplayInteractionAt = nowMs;
+      Serial.println(F("[BTN] long press -> display ON (pinned)"));
+    } else if (!displayPinnedOn) {
+      displayPinnedOn = true;
+      lastDisplayInteractionAt = nowMs;
+      Serial.println(F("[BTN] long press -> display pinned ON"));
+    } else {
+      displayPinnedOn = false;
+      displayView.setEnabled(false);
+      Serial.println(F("[BTN] long press -> display OFF"));
     }
-    Serial.print(F("[BTN] long press -> display "));
-    Serial.println(displayView.isEnabled() ? F("ON") : F("OFF"));
   }
 
   wifiService.update();
@@ -598,7 +622,7 @@ void loop() {
     }
   }
 
-  if (displayView.isEnabled() &&
+  if (displayView.isEnabled() && !displayPinnedOn &&
       nowMs - lastDisplayInteractionAt >= DISPLAY_IDLE_TIMEOUT_MS) {
     displayView.setEnabled(false);
     Serial.println(F("[DSP] idle timeout -> display OFF"));
@@ -633,7 +657,7 @@ void loop() {
     Serial.print(latestSnapshot.totalPercent);
     Serial.print(F(" raw="));
     Serial.print(latestSnapshot.rawMin);
-    Serial.print('-');
+    Serial.print('/');
     Serial.print(latestSnapshot.rawMax);
     Serial.print(F(" p2p="));
     Serial.print(latestSnapshot.peakToPeak);

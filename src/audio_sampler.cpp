@@ -1,38 +1,65 @@
 #include "audio_sampler.h"
 
+#include <driver/i2s.h>
+
 namespace {
 
-constexpr uint16_t kAdcFloorThreshold = 40;
-constexpr uint16_t kAdcCeilingThreshold = 4055;
-constexpr uint16_t kPeakToPeakLowThreshold = 16;
-constexpr uint16_t kPercentHeadroom = 120;
-constexpr uint16_t kMinReferenceSpan = 180;
+constexpr i2s_port_t kI2sPort = I2S_NUM_0;
+constexpr uint32_t kI2sSampleRate = 16000;
+constexpr size_t kI2sReadSampleCount = 256;
+constexpr int32_t kI2sClipThreshold = 30000;
+constexpr uint16_t kPeakToPeakLowThreshold = 200;
+constexpr uint16_t kPercentHeadroom = 4000;
+constexpr uint16_t kMinReferenceSpan = 2500;
 
 struct RawWindow {
-  uint16_t minValue;
-  uint16_t maxValue;
+  int32_t minValue;
+  int32_t maxValue;
 };
 
-RawWindow readWindow(uint8_t analogPin, uint16_t sampleWindowMs) {
-  RawWindow window{4095, 0};
+int32_t normalizeI2sSample(int32_t rawSample) {
+  return rawSample >> 16;
+}
+
+RawWindow readWindow(uint16_t sampleWindowMs) {
+  RawWindow window{32767, -32768};
   unsigned long startMs = millis();
+  int32_t sampleBuffer[kI2sReadSampleCount];
+  bool captured = false;
 
   while (millis() - startMs < sampleWindowMs) {
-    uint16_t sample = analogRead(analogPin);
-    if (sample < window.minValue) {
-      window.minValue = sample;
+    size_t bytesRead = 0;
+    esp_err_t readResult =
+        i2s_read(kI2sPort, sampleBuffer, sizeof(sampleBuffer), &bytesRead, pdMS_TO_TICKS(5));
+    if (readResult != ESP_OK || bytesRead == 0) {
+      delay(0);
+      continue;
     }
-    if (sample > window.maxValue) {
-      window.maxValue = sample;
+
+    size_t sampleCount = bytesRead / sizeof(sampleBuffer[0]);
+    for (size_t index = 0; index < sampleCount; ++index) {
+      int32_t sample = normalizeI2sSample(sampleBuffer[index]);
+      if (sample < window.minValue) {
+        window.minValue = sample;
+      }
+      if (sample > window.maxValue) {
+        window.maxValue = sample;
+      }
+      captured = true;
     }
+
     delay(0);
+  }
+
+  if (!captured) {
+    return RawWindow{0, 0};
   }
 
   return window;
 }
 
 SignalState detectSignalState(const RawWindow &window, uint16_t peakToPeak) {
-  if (window.minValue <= kAdcFloorThreshold || window.maxValue >= kAdcCeilingThreshold) {
+  if (window.minValue <= -kI2sClipThreshold || window.maxValue >= kI2sClipThreshold) {
     return SignalState::Clip;
   }
 
@@ -64,14 +91,47 @@ uint8_t percentFromLevel(uint32_t level, uint16_t floorLevel, uint16_t reference
 
 }  // namespace
 
-void AudioSampler::begin(uint8_t analogPin) {
-  analogPin_ = analogPin;
+bool AudioSampler::begin(uint8_t bclkPin, uint8_t wsPin, uint8_t dataPin) {
+  const i2s_config_t config = {
+      .mode = static_cast<i2s_mode_t>(I2S_MODE_MASTER | I2S_MODE_RX),
+      .sample_rate = static_cast<int>(kI2sSampleRate),
+      .bits_per_sample = I2S_BITS_PER_SAMPLE_32BIT,
+      .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+      .communication_format = I2S_COMM_FORMAT_STAND_I2S,
+      .intr_alloc_flags = ESP_INTR_FLAG_LEVEL1,
+      .dma_buf_count = 4,
+      .dma_buf_len = 256,
+      .use_apll = false,
+      .tx_desc_auto_clear = false,
+      .fixed_mclk = 0,
+  };
+
+  const i2s_pin_config_t pinConfig = {
+      .bck_io_num = static_cast<int>(bclkPin),
+      .ws_io_num = static_cast<int>(wsPin),
+      .data_out_num = I2S_PIN_NO_CHANGE,
+      .data_in_num = static_cast<int>(dataPin),
+  };
+
+  if (i2s_driver_install(kI2sPort, &config, 0, nullptr) != ESP_OK) {
+    started_ = false;
+    return false;
+  }
+  if (i2s_set_pin(kI2sPort, &pinConfig) != ESP_OK) {
+    i2s_driver_uninstall(kI2sPort);
+    started_ = false;
+    return false;
+  }
+  i2s_zero_dma_buffer(kI2sPort);
+
   started_ = true;
   smoothedLevel_ = 0;
   noiseFloorLevel_ = 0;
-  referenceLevel_ = 80;
+  referenceLevel_ = kMinReferenceSpan;
   lowSignalHoldSeconds_ = 0;
   clipSignalHoldSeconds_ = 0;
+  lastStatsAt_ = 0;
+  return true;
 }
 
 void AudioSampler::restoreLongMean(uint64_t totalLevelSum, uint32_t totalLevelCount) {
@@ -93,8 +153,9 @@ AudioSnapshot AudioSampler::sample() {
     return snapshot;
   }
 
-  RawWindow window = readWindow(analogPin_, kSampleWindowMs);
-  uint16_t peakToPeak = window.maxValue - window.minValue;
+  RawWindow window = readWindow(kSampleWindowMs);
+  uint16_t peakToPeak =
+      static_cast<uint16_t>(constrain(window.maxValue - window.minValue, 0, 65535));
   uint16_t level = peakToPeak * kLevelGain;
   SignalState detectedSignalState = detectSignalState(window, peakToPeak);
 
