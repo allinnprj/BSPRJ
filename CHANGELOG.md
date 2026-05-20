@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## 0.1.42-EXP+96 - 2026-05-20
+
+1. Added a third OLED page, `RANGE`, that shows the minimum and maximum `P2P` seen since boot so quiet baseline and loud reference can be measured directly on the device.
+2. Added the same session `P2P` range to Serial Monitor as `range=min/max`, next to the current `p2p` value.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## Data dictionary - 2026-05-20
+
+1. Added `DATA_DICTIONARY.md` as a practical reference for Google Sheets, Telegram, AppSheet, log, and analytics terms.
+2. Documented what each important name means, why it exists, what the user should understand from its values, and which technical columns may become secondary later.
+3. Added `DATA_DICTIONARY_RU.md` as the Russian version of the same practical reference.
+4. Linked the dictionaries from `AGENTS.md` and `memory.md` so future chats know where to look when terminology questions come up.
+
+## Project memory context - 2026-05-20
+
+1. Added `memory.md` as a concise continuation context for new chats, covering the active `INMP441` hardware state, battery-first operating assumption, recent balcony-log findings, and next practical steps.
+2. Updated `AGENTS.md` so future work starts by reading `memory.md` together with the normal project rules.
+3. Added `Продолжаем проект` as the short context-restore phrase for new chats and clarified that meaningful handoff context should be kept current in `memory.md`.
+
 ## 0.1.41-EXP+95 - 2026-05-20
 
 1. Retuned the live `INMP441` percent scale from the balcony `log.xlsx` run so `P2P` windows around `1200 / 1800 / 2400` now map near the useful `SILENT / NORMAL / LOUD / PEAK` boundaries instead of compressing the whole day into `1..9%`.

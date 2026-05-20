@@ -27,6 +27,12 @@
 
 ## Working Rules
 
+- If the user writes `Продолжаем проект`, treat it as a context-restore command: read `STANDARD.md`, `AGENTS.md`, `AGENTS.local.md`, and `memory.md`, then give a short current-state summary and continue from the next practical step.
+- At the start of a new chat or before continuing non-trivial work, read `memory.md` together with `STANDARD.md`, `AGENTS.md`, and `AGENTS.local.md`.
+- Treat `memory.md` as the project continuation context: it summarizes where the work stopped, what decisions are already settled, and what the next likely steps are.
+- Keep `memory.md` concise and update it only with durable context that helps a future chat continue the project quickly.
+- After meaningful project decisions, hardware changes, log-analysis conclusions, or end-of-session handoff points, update `memory.md` so `Продолжаем проект` works in a new chat without requiring a fresh manual `СОС`.
+- Use `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` as the human-readable references for Google Sheets, Telegram, AppSheet, log, and analytics term meanings.
 - Keep the project incremental: one hardware check or one behavior change per step.
 - Prefer the smallest safe edit for the current task.
 - Validate firmware changes with `pio run` for `env:esp32dev`.

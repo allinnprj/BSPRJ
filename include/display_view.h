@@ -24,7 +24,7 @@ class DisplayView {
   static constexpr uint8_t kScreenWidth = 128;
   static constexpr uint8_t kScreenHeight = 64;
   static constexpr uint32_t kHourWarmupCount = 3600;
-  static constexpr uint8_t kPageCount = 2;
+  static constexpr uint8_t kPageCount = 3;
 
   Adafruit_SSD1306 display_{kScreenWidth, kScreenHeight, nullptr, -1};
   bool initialized_ = false;
@@ -35,5 +35,6 @@ class DisplayView {
   void renderSoundPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
                        bool timeSynced, bool wifiConnected, uint8_t wifiPercent);
   void renderDebugPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading);
+  void renderRangePage(const AudioSnapshot &snapshot);
   void drawCenteredText(const String &text, int16_t topY, uint8_t textSize);
 };

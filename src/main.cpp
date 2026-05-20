@@ -661,6 +661,10 @@ void loop() {
     Serial.print(latestSnapshot.rawMax);
     Serial.print(F(" p2p="));
     Serial.print(latestSnapshot.peakToPeak);
+    Serial.print(F(" range="));
+    Serial.print(latestSnapshot.sessionMinPeakToPeak);
+    Serial.print('/');
+    Serial.print(latestSnapshot.sessionMaxPeakToPeak);
     Serial.print(F(" sig="));
     Serial.print(signalStateText(latestSnapshot.signalState));
     if (latestSnapshot.clipSignalWarning) {

@@ -136,6 +136,20 @@ void DisplayView::renderDebugPage(const AudioSnapshot &snapshot, const Sht31Read
   drawCenteredText(String(peakLine), 42, 2);
 }
 
+void DisplayView::renderRangePage(const AudioSnapshot &snapshot) {
+  display_.setFont(nullptr);
+  display_.setTextColor(SSD1306_WHITE);
+  drawCenteredText(F("RANGE"), 0, 2);
+
+  char minLine[18];
+  snprintf(minLine, sizeof(minLine), "MIN %u", snapshot.sessionMinPeakToPeak);
+  drawCenteredText(String(minLine), 20, 2);
+
+  char maxLine[18];
+  snprintf(maxLine, sizeof(maxLine), "MAX %u", snapshot.sessionMaxPeakToPeak);
+  drawCenteredText(String(maxLine), 44, 2);
+}
+
 void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
                          const char *versionText, uint32_t buildNumber, bool timeSynced,
                          bool wifiConnected,
@@ -162,8 +176,11 @@ void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht3
       renderSoundPage(snapshot, sht31Reading, timeSynced, wifiConnected, wifiPercent);
       break;
     case 1:
-    default:
       renderDebugPage(snapshot, sht31Reading);
+      break;
+    case 2:
+    default:
+      renderRangePage(snapshot);
       break;
   }
   display_.display();

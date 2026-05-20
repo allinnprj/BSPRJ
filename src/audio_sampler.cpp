@@ -129,6 +129,8 @@ bool AudioSampler::begin(uint8_t bclkPin, uint8_t wsPin, uint8_t dataPin) {
 
   started_ = true;
   smoothedLevel_ = 0;
+  sessionMinPeakToPeak_ = 0;
+  sessionMaxPeakToPeak_ = 0;
   lowSignalHoldSeconds_ = 0;
   clipSignalHoldSeconds_ = 0;
   lastStatsAt_ = 0;
@@ -159,6 +161,13 @@ AudioSnapshot AudioSampler::sample() {
       static_cast<uint16_t>(constrain(window.maxValue - window.minValue, 0, 65535));
   uint16_t level = peakToPeak * kLevelGain;
   SignalState detectedSignalState = detectSignalState(window, peakToPeak);
+
+  if (sessionMinPeakToPeak_ == 0 || peakToPeak < sessionMinPeakToPeak_) {
+    sessionMinPeakToPeak_ = peakToPeak;
+  }
+  if (peakToPeak > sessionMaxPeakToPeak_) {
+    sessionMaxPeakToPeak_ = peakToPeak;
+  }
 
   smoothedLevel_ = static_cast<uint16_t>((smoothedLevel_ * 3U + level) / 4U);
 
@@ -197,6 +206,8 @@ AudioSnapshot AudioSampler::sample() {
   snapshot.rawMin = window.minValue;
   snapshot.rawMax = window.maxValue;
   snapshot.peakToPeak = peakToPeak;
+  snapshot.sessionMinPeakToPeak = sessionMinPeakToPeak_;
+  snapshot.sessionMaxPeakToPeak = sessionMaxPeakToPeak_;
   snapshot.hourSamplesCollected = static_cast<uint32_t>(hourSamplesCollected_);
   snapshot.hourAverage =
       hourSamplesCollected_ == 0 ? 0 : rollingHourSum_ / hourSamplesCollected_;
