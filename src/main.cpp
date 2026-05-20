@@ -22,7 +22,8 @@ static constexpr uint8_t I2S_WS_PIN = 25;
 static constexpr uint8_t I2S_DATA_PIN = 32;
 static constexpr uint8_t BUTTON_PIN = 27;
 static constexpr uint8_t OLED_ADDRESS = 0x3C;
-static constexpr uint16_t DISPLAY_REFRESH_MS = 500;
+static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 250;
+static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 1000;
 static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 5000;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
@@ -200,6 +201,10 @@ uint32_t dayPartAveragePercent(const DayPartStats &stats) {
   return stats.count == 0 ? 0 : static_cast<uint32_t>(stats.percentSum / stats.count);
 }
 
+uint16_t currentDisplayRefreshIntervalMs() {
+  return displayView.currentPage() == 1 ? DISPLAY_DEBUG_REFRESH_MS : DISPLAY_NORMAL_REFRESH_MS;
+}
+
 String twoDigitText(uint8_t value) {
   char buffer[4];
   snprintf(buffer, sizeof(buffer), "%02u", value);
@@ -364,8 +369,7 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
       Serial.print(F(" queue="));
       Serial.println(pendingSheetsCount);
     }
-    logService.appendWindowAggregate(completedRecord, PROJECT_VERSION, PROJECT_BUILD,
-                                     wifiService.rssiDbm(), "BAT");
+    logService.appendWindowAggregate(completedRecord, PROJECT_BUILD, wifiService.rssiDbm());
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   }
 
@@ -579,12 +583,14 @@ void loop() {
     if (displayView.isEnabled()) {
       displayView.nextPage();
       lastDisplayInteractionAt = nowMs;
+      lastDisplayAt = 0;
       Serial.print(F("[BTN] short press -> page "));
       Serial.println(displayView.currentPage());
     } else {
       displayView.setEnabled(true);
       displayPinnedOn = false;
       lastDisplayInteractionAt = nowMs;
+      lastDisplayAt = 0;
       Serial.println(F("[BTN] short press -> display ON (auto)"));
     }
   } else if (buttonEvent == ButtonEvent::LongPress) {
@@ -592,14 +598,17 @@ void loop() {
       displayView.setEnabled(true);
       displayPinnedOn = true;
       lastDisplayInteractionAt = nowMs;
+      lastDisplayAt = 0;
       Serial.println(F("[BTN] long press -> display ON (pinned)"));
     } else if (!displayPinnedOn) {
       displayPinnedOn = true;
       lastDisplayInteractionAt = nowMs;
+      lastDisplayAt = 0;
       Serial.println(F("[BTN] long press -> display pinned ON"));
     } else {
       displayPinnedOn = false;
       lastDisplayInteractionAt = nowMs;
+      lastDisplayAt = 0;
       Serial.println(F("[BTN] long press -> display auto-off enabled"));
     }
   }
@@ -629,7 +638,7 @@ void loop() {
     Serial.println(F("[DSP] idle timeout -> display OFF"));
   }
 
-  if (nowMs - lastDisplayAt >= DISPLAY_REFRESH_MS) {
+  if (nowMs - lastDisplayAt >= currentDisplayRefreshIntervalMs()) {
     lastDisplayAt = nowMs;
     displayView.render(latestSnapshot, latestSht31Reading, PROJECT_VERSION, PROJECT_BUILD,
                        timeService.isSynced(), wifiService.isConnected(),

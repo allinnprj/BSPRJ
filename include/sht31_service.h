@@ -20,7 +20,7 @@ class Sht31Service {
  private:
   static constexpr uint8_t kPrimaryAddress = 0x44;
   static constexpr uint8_t kAlternateAddress = 0x45;
-  static constexpr unsigned long kReadIntervalMs = 5000UL;
+  static constexpr unsigned long kReadIntervalMs = 15000UL;
 
   Adafruit_SHT31 sensor_;
   bool started_ = false;

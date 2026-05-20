@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 0.1.46-EXP+100 - 2026-05-20
+
+1. Slimmed the compact local `/log.csv` schema by removing `ver`, `power_target`, and `uptime_min`.
+2. Kept only `build` as the firmware marker in local CSV rows, while leaving richer version/uptime payloads available in Google Sheets and Telegram.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.45-EXP+99 - 2026-05-20
+
+1. Added a lightweight web clear flow for the current compact log: `/clear-log` asks for confirmation and `/clear-log-confirm` recreates `/sound_log.csv` with only the active header.
+2. Kept `/sound_log_legacy.csv` untouched during clear operations so old-format backup data is not deleted accidentally.
+3. Reduced SHT31 reads from every `5 sec` to every `15 sec`, which is enough for balcony temperature/humidity while saving I2C work.
+4. Split OLED refresh timing by page: `DEBUG` refreshes quickly at `250 ms`, while the calmer pages refresh at `1000 ms`.
+5. Kept Serial `[STAT]` at `5 sec`; verbose ON/OFF remains a later step, not part of this change.
+6. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.44-EXP+98 - 2026-05-20
 
 1. Removed the duplicate Wi-Fi line from the OLED `ENV` page so that page stays focused on temperature and humidity only.

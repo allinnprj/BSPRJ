@@ -9,7 +9,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.44-EXP` build `98`.
+- Current firmware marker: `0.1.46-EXP` build `100`.
 
 ## Important Decisions
 
@@ -58,17 +58,22 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - another long press while pinned: return to normal auto-off timing
 - Build `96` adds an OLED `RANGE` page and Serial `range=min/max` output for finding quiet baseline and loud reference from session `P2P`.
 - Build `97` changes local `/log.csv` into a compact 10-minute analysis log instead of a frequent raw stream.
-- New local CSV rows include window time, version/build, average percentages, `P2P avg/min/max`, raw min/max, signal state, environment averages, sample count, quiet/loud counts, Wi-Fi RSSI, battery target, and uptime minutes.
+- New local CSV rows include window time, build, average percentages, `P2P avg/min/max`, session `P2P min/max`, raw min/max, signal state, environment averages, sample count, quiet/loud counts, and Wi-Fi RSSI.
 - If an older `/sound_log.csv` exists on the device, build `97` moves it to `/sound_log_legacy.csv` and starts a clean compact log with the new header.
 - Build `98` adds `session_p2p_min/session_p2p_max` to local `/log.csv` so the sent CSV includes the overall boot-session `RANGE` context.
 - Build `98` makes `http://<device-ip>/` a tiny local page with a direct `/log.csv` download link.
 - Build `98` caches Wi-Fi signal readings and refreshes them every 30 seconds.
+- Build `99` adds a safe web clear flow: `/clear-log` asks for confirmation, `/clear-log-confirm` clears only current `/sound_log.csv` and recreates the active header.
+- Build `99` reads SHT31 every `15 sec` instead of every `5 sec`.
+- Build `99` refreshes OLED by page: `DEBUG` at `250 ms`, calmer pages at `1000 ms`.
+- Serial `[STAT]` remains every `5 sec`; verbose ON/OFF is a future optimization, not implemented yet.
+- Build `100` slims local `/log.csv` by removing `ver`, `power_target`, and `uptime_min`; only `build` remains as the firmware marker.
 - OLED now has four pages: main `Now/H/M`, `DEBUG`, `RANGE`, and `ENV`; `ENV` shows only temperature and humidity.
 - Non-main OLED pages show a small `PIN` marker when long-press pinned display mode is active.
 
 ## Next Best Steps
 
-- Flash `0.1.44-EXP` build `98` if it is not already on the device.
+- Flash `0.1.46-EXP` build `100` if it is not already on the device.
 - Reboot before measuring a new quiet/loud range, then use the `RANGE` page to read session `MIN` and `MAX` `P2P`.
 - Run a new battery-powered balcony test with the retuned scale and range page.
 - Download `/log.csv` after the run; it is now the preferred compact file to send for analysis instead of a full Google Sheets export.

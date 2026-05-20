@@ -28,4 +28,5 @@
 18. Add acoustic event markers or threshold counters for louder periods.
 19. Harden MQTT retained/live freshness behavior for desktop dashboards so clients open with immediately usable last-known values.
 20. Add level-2 power-saving optimizations: slower OLED refresh, less frequent `SHT31` reads, and less frequent non-critical live telemetry.
-21. Add daily Google Sheets rotation so each day can write into a date-named sheet automatically.
+21. Research deeper energy-saving modes (`Light Sleep` / `Deep Sleep`) for battery operation, but design them around the city-noise monitoring goal so sleep intervals do not hide important noise events or corrupt day-part conclusions.
+22. Add daily Google Sheets rotation so each day can write into a date-named sheet automatically.

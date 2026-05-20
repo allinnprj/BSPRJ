@@ -8,9 +8,9 @@ class LogService {
  public:
   void begin();
   void update(bool wifiConnected, const String &ipAddress);
-  void appendWindowAggregate(const GoogleSheetsWindowRecord &record, const char *versionText,
-                             uint32_t buildNumber, int32_t wifiRssiDbm,
-                             const char *powerTargetText);
+  void clearCurrentLog();
+  void appendWindowAggregate(const GoogleSheetsWindowRecord &record, uint32_t buildNumber,
+                             int32_t wifiRssiDbm);
 
   bool isReady() const;
   bool webServerStarted() const;
