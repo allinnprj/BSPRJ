@@ -52,8 +52,6 @@ class AudioSampler {
   uint64_t totalLevelSum_ = 0;
   uint32_t totalLevelCount_ = 0;
   uint16_t smoothedLevel_ = 0;
-  uint16_t noiseFloorLevel_ = 0;
-  uint16_t referenceLevel_ = 80;
   uint16_t lowSignalHoldSeconds_ = 0;
   uint16_t clipSignalHoldSeconds_ = 0;
   unsigned long lastStatsAt_ = 0;

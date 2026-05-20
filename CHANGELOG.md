@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## 0.1.41-EXP+95 - 2026-05-20
+
+1. Retuned the live `INMP441` percent scale from the balcony `log.xlsx` run so `P2P` windows around `1200 / 1800 / 2400` now map near the useful `SILENT / NORMAL / LOUD / PEAK` boundaries instead of compressing the whole day into `1..9%`.
+2. Made `CLIP` detection resistant to single raw sample extremes by requiring a meaningful clipped-sample share inside the current `I2S` read window.
+3. Lowered the technical `LOW` threshold so ordinary quiet balcony ambience is not treated as a persistent input failure.
+4. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.40-EXP+94 - 2026-05-19
 
 1. Reworked the display button logic for microphone observation sessions: long press now enables a pinned-on display mode that disables idle blanking, and another long press turns the display back off.

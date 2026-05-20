@@ -8,13 +8,16 @@ constexpr i2s_port_t kI2sPort = I2S_NUM_0;
 constexpr uint32_t kI2sSampleRate = 16000;
 constexpr size_t kI2sReadSampleCount = 256;
 constexpr int32_t kI2sClipThreshold = 30000;
-constexpr uint16_t kPeakToPeakLowThreshold = 200;
-constexpr uint16_t kPercentHeadroom = 4000;
-constexpr uint16_t kMinReferenceSpan = 2500;
+constexpr uint8_t kClipPercentThreshold = 15;
+constexpr uint16_t kPeakToPeakLowThreshold = 30;
+constexpr uint16_t kPercentFloorLevel = 600;
+constexpr uint16_t kPercentReferenceSpan = 3000;
 
 struct RawWindow {
   int32_t minValue;
   int32_t maxValue;
+  uint16_t sampleCount;
+  uint16_t clippedSampleCount;
 };
 
 int32_t normalizeI2sSample(int32_t rawSample) {
@@ -22,7 +25,7 @@ int32_t normalizeI2sSample(int32_t rawSample) {
 }
 
 RawWindow readWindow(uint16_t sampleWindowMs) {
-  RawWindow window{32767, -32768};
+  RawWindow window{32767, -32768, 0, 0};
   unsigned long startMs = millis();
   int32_t sampleBuffer[kI2sReadSampleCount];
   bool captured = false;
@@ -45,6 +48,10 @@ RawWindow readWindow(uint16_t sampleWindowMs) {
       if (sample > window.maxValue) {
         window.maxValue = sample;
       }
+      if (sample <= -kI2sClipThreshold || sample >= kI2sClipThreshold) {
+        window.clippedSampleCount++;
+      }
+      window.sampleCount++;
       captured = true;
     }
 
@@ -52,14 +59,17 @@ RawWindow readWindow(uint16_t sampleWindowMs) {
   }
 
   if (!captured) {
-    return RawWindow{0, 0};
+    return RawWindow{0, 0, 0, 0};
   }
 
   return window;
 }
 
 SignalState detectSignalState(const RawWindow &window, uint16_t peakToPeak) {
-  if (window.minValue <= -kI2sClipThreshold || window.maxValue >= kI2sClipThreshold) {
+  uint8_t clippedPercent = window.sampleCount == 0
+      ? 0
+      : static_cast<uint8_t>((window.clippedSampleCount * 100UL) / window.sampleCount);
+  if (clippedPercent >= kClipPercentThreshold) {
     return SignalState::Clip;
   }
 
@@ -70,19 +80,12 @@ SignalState detectSignalState(const RawWindow &window, uint16_t peakToPeak) {
   return SignalState::Ok;
 }
 
-uint8_t percentFromLevel(uint32_t level, uint16_t floorLevel, uint16_t referenceLevel) {
-  uint16_t effectiveReference = referenceLevel;
-  if (effectiveReference <= floorLevel + kMinReferenceSpan) {
-    effectiveReference = floorLevel + kMinReferenceSpan;
-  }
-
-  if (level <= floorLevel) {
+uint8_t percentFromLevel(uint32_t level) {
+  if (level <= kPercentFloorLevel) {
     return 0;
   }
 
-  uint32_t adjustedLevel = level - floorLevel;
-  uint32_t adjustedReference = effectiveReference - floorLevel;
-  uint32_t percent = (adjustedLevel * 100UL) / adjustedReference;
+  uint32_t percent = ((level - kPercentFloorLevel) * 100UL) / kPercentReferenceSpan;
   if (percent > 100UL) {
     percent = 100UL;
   }
@@ -126,8 +129,6 @@ bool AudioSampler::begin(uint8_t bclkPin, uint8_t wsPin, uint8_t dataPin) {
 
   started_ = true;
   smoothedLevel_ = 0;
-  noiseFloorLevel_ = 0;
-  referenceLevel_ = kMinReferenceSpan;
   lowSignalHoldSeconds_ = 0;
   clipSignalHoldSeconds_ = 0;
   lastStatsAt_ = 0;
@@ -160,25 +161,6 @@ AudioSnapshot AudioSampler::sample() {
   SignalState detectedSignalState = detectSignalState(window, peakToPeak);
 
   smoothedLevel_ = static_cast<uint16_t>((smoothedLevel_ * 3U + level) / 4U);
-  if (noiseFloorLevel_ == 0) {
-    noiseFloorLevel_ = smoothedLevel_;
-  } else if (smoothedLevel_ <= noiseFloorLevel_) {
-    noiseFloorLevel_ = static_cast<uint16_t>((noiseFloorLevel_ * 15U + smoothedLevel_) / 16U);
-  } else {
-    noiseFloorLevel_ = static_cast<uint16_t>((noiseFloorLevel_ * 255U + smoothedLevel_) / 256U);
-  }
-
-  uint16_t targetReference = smoothedLevel_ + kPercentHeadroom;
-  if (targetReference > referenceLevel_) {
-    referenceLevel_ = targetReference;
-  } else {
-    uint16_t decayedReference =
-        static_cast<uint16_t>((referenceLevel_ * 63U + targetReference) / 64U);
-    if (decayedReference < noiseFloorLevel_ + kMinReferenceSpan) {
-      decayedReference = noiseFloorLevel_ + kMinReferenceSpan;
-    }
-    referenceLevel_ = decayedReference;
-  }
 
   unsigned long nowMs = millis();
   if (nowMs - lastStatsAt_ >= kStatsIntervalMs) {
@@ -220,11 +202,9 @@ AudioSnapshot AudioSampler::sample() {
       hourSamplesCollected_ == 0 ? 0 : rollingHourSum_ / hourSamplesCollected_;
   snapshot.totalAverage =
       totalLevelCount_ == 0 ? 0 : static_cast<uint32_t>(totalLevelSum_ / totalLevelCount_);
-  snapshot.currentPercent =
-      percentFromLevel(snapshot.currentLevel, noiseFloorLevel_, referenceLevel_);
-  snapshot.hourPercent = percentFromLevel(snapshot.hourAverage, noiseFloorLevel_, referenceLevel_);
-  snapshot.totalPercent =
-      percentFromLevel(snapshot.totalAverage, noiseFloorLevel_, referenceLevel_);
+  snapshot.currentPercent = percentFromLevel(snapshot.currentLevel);
+  snapshot.hourPercent = percentFromLevel(snapshot.hourAverage);
+  snapshot.totalPercent = percentFromLevel(snapshot.totalAverage);
   snapshot.lowSignalHoldSeconds = lowSignalHoldSeconds_;
   snapshot.clipSignalHoldSeconds = clipSignalHoldSeconds_;
   snapshot.lowSignalWarning = lowSignalHoldSeconds_ >= kLowSignalWarnThresholdSeconds;
