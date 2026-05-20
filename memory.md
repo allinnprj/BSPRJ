@@ -9,7 +9,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.42-EXP` build `96`.
+- Current firmware marker: `0.1.44-EXP` build `98`.
 
 ## Important Decisions
 
@@ -55,15 +55,23 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - short press while display is on: next page
   - short press while display is off: display on with auto-off
   - long press: pin display on without idle blanking
-  - another long press: display off
+  - another long press while pinned: return to normal auto-off timing
 - Build `96` adds an OLED `RANGE` page and Serial `range=min/max` output for finding quiet baseline and loud reference from session `P2P`.
+- Build `97` changes local `/log.csv` into a compact 10-minute analysis log instead of a frequent raw stream.
+- New local CSV rows include window time, version/build, average percentages, `P2P avg/min/max`, raw min/max, signal state, environment averages, sample count, quiet/loud counts, Wi-Fi RSSI, battery target, and uptime minutes.
+- If an older `/sound_log.csv` exists on the device, build `97` moves it to `/sound_log_legacy.csv` and starts a clean compact log with the new header.
+- Build `98` adds `session_p2p_min/session_p2p_max` to local `/log.csv` so the sent CSV includes the overall boot-session `RANGE` context.
+- Build `98` makes `http://<device-ip>/` a tiny local page with a direct `/log.csv` download link.
+- Build `98` caches Wi-Fi signal readings and refreshes them every 30 seconds.
+- OLED now has four pages: main `Now/H/M`, `DEBUG`, `RANGE`, and `ENV`; `ENV` shows only temperature and humidity.
+- Non-main OLED pages show a small `PIN` marker when long-press pinned display mode is active.
 
 ## Next Best Steps
 
-- Flash `0.1.42-EXP` build `96` if it is not already on the device.
+- Flash `0.1.44-EXP` build `98` if it is not already on the device.
 - Reboot before measuring a new quiet/loud range, then use the `RANGE` page to read session `MIN` and `MAX` `P2P`.
 - Run a new battery-powered balcony test with the retuned scale and range page.
-- Download `/log.csv` or export the Google Sheets `log` after the run.
+- Download `/log.csv` after the run; it is now the preferred compact file to send for analysis instead of a full Google Sheets export.
 - Analyze whether the new `NOW %` and `SILENT / NORMAL / LOUD / PEAK` buckets now match real balcony perception.
 - If `CLIP` still appears too often, inspect clipped-sample behavior before changing user-facing levels.
 - If the new scale feels reasonable, update Google Sheets/AppSheet analytics to rely on the improved values.

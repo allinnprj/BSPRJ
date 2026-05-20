@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 0.1.44-EXP+98 - 2026-05-20
+
+1. Removed the duplicate Wi-Fi line from the OLED `ENV` page so that page stays focused on temperature and humidity only.
+2. Made the root log page at `http://<device-ip>/` a tiny HTML page with a direct clickable `Download log.csv` link to `/log.csv`.
+3. Added `session_p2p_min` and `session_p2p_max` to the compact local CSV so each file carries the overall boot-session `RANGE` context.
+4. Cached Wi-Fi RSSI/percentage and refresh it every 30 seconds instead of reading RSSI from every display/MQTT/log call.
+5. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.43-EXP+97 - 2026-05-20
+
+1. Reworked local `/log.csv` into a compact 10-minute analysis log instead of a minute-by-minute raw stream, with window fields for `P2P avg/min/max`, raw range, signal state, environment averages, samples, quiet/loud counts, Wi-Fi RSSI, battery target, and uptime minutes.
+2. Added automatic legacy handling for older local CSV files: an existing old-format `/sound_log.csv` is moved to `/sound_log_legacy.csv` before the new compact header is created.
+3. Added a fourth OLED page, `ENV`, for temperature and humidity, plus Wi-Fi percentage at the bottom.
+4. Added a small `PIN` marker on non-main OLED pages when long-press pinned display mode is active.
+5. Changed the second long press while pinned so it returns the display to normal auto-off timing instead of immediately blanking the OLED.
+6. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.42-EXP+96 - 2026-05-20
 
 1. Added a third OLED page, `RANGE`, that shows the minimum and maximum `P2P` seen since boot so quiet baseline and loud reference can be measured directly on the device.

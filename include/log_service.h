@@ -2,15 +2,15 @@
 
 #include <Arduino.h>
 
-#include "audio_sampler.h"
+#include "google_sheets_service.h"
 
 class LogService {
  public:
   void begin();
   void update(bool wifiConnected, const String &ipAddress);
-  void appendMinuteSample(const String &minuteKey, const String &dateText, const String &timeText,
-                          const char *dayPart, const AudioSnapshot &snapshot,
-                          uint32_t partAverage, uint32_t quietCount, uint32_t loudCount);
+  void appendWindowAggregate(const GoogleSheetsWindowRecord &record, const char *versionText,
+                             uint32_t buildNumber, int32_t wifiRssiDbm,
+                             const char *powerTargetText);
 
   bool isReady() const;
   bool webServerStarted() const;
@@ -20,5 +20,5 @@ class LogService {
   bool serverStarted_ = false;
   bool lastWifiConnected_ = false;
   String lastIpAddress_;
-  String lastMinuteKey_;
+  String lastWindowKey_;
 };

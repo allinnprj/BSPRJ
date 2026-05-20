@@ -12,7 +12,7 @@ class DisplayView {
   bool begin(TwoWire *wire, uint8_t sdaPin, uint8_t sclPin, uint8_t address);
   void render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
               const char *versionText, uint32_t buildNumber, bool timeSynced, bool wifiConnected,
-              uint8_t wifiPercent);
+              uint8_t wifiPercent, bool pinnedOn);
   void showBootMessage(const char *line1, const char *line2);
   void nextPage();
   void setEnabled(bool enabled);
@@ -24,7 +24,7 @@ class DisplayView {
   static constexpr uint8_t kScreenWidth = 128;
   static constexpr uint8_t kScreenHeight = 64;
   static constexpr uint32_t kHourWarmupCount = 3600;
-  static constexpr uint8_t kPageCount = 3;
+  static constexpr uint8_t kPageCount = 4;
 
   Adafruit_SSD1306 display_{kScreenWidth, kScreenHeight, nullptr, -1};
   bool initialized_ = false;
@@ -36,5 +36,7 @@ class DisplayView {
                        bool timeSynced, bool wifiConnected, uint8_t wifiPercent);
   void renderDebugPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading);
   void renderRangePage(const AudioSnapshot &snapshot);
+  void renderEnvironmentPage(const Sht31Reading &sht31Reading);
+  void drawPinnedIndicator(bool pinnedOn);
   void drawCenteredText(const String &text, int16_t topY, uint8_t textSize);
 };

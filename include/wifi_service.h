@@ -18,9 +18,15 @@ class WifiService {
 
  private:
   static constexpr unsigned long kReconnectIntervalMs = 15000UL;
+  static constexpr unsigned long kSignalRefreshIntervalMs = 30000UL;
 
   bool configured_ = false;
   int lastStatusCode_ = -1;
   bool announcedIp_ = false;
   unsigned long lastReconnectAttemptAt_ = 0;
+  unsigned long lastSignalRefreshAt_ = 0;
+  int cachedRssiDbm_ = -127;
+  uint8_t cachedSignalPercent_ = 0;
+
+  void refreshSignalCache(bool connected, bool force);
 };

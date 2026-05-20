@@ -32,6 +32,9 @@ void WifiService::begin() {
   lastStatusCode_ = -1;
   announcedIp_ = false;
   lastReconnectAttemptAt_ = 0;
+  lastSignalRefreshAt_ = 0;
+  cachedRssiDbm_ = -127;
+  cachedSignalPercent_ = 0;
 
   if (!configured_) {
     Serial.println(F("[WF] OFF -> WIFI_SSID is empty in secrets.h"));
@@ -54,7 +57,9 @@ void WifiService::update() {
 
   unsigned long nowMs = millis();
   wl_status_t status = WiFi.status();
-  if (status != lastStatusCode_) {
+  const bool connected = status == WL_CONNECTED;
+  const bool statusChanged = status != lastStatusCode_;
+  if (statusChanged) {
     lastStatusCode_ = status;
     Serial.print(F("[WF] status -> "));
     Serial.print(wifiStatusText(status));
@@ -63,12 +68,16 @@ void WifiService::update() {
     Serial.println(')');
   }
 
-  if (status == WL_CONNECTED && !announcedIp_) {
+  refreshSignalCache(connected, statusChanged);
+
+  if (connected && !announcedIp_) {
     announcedIp_ = true;
     Serial.print(F("[WF] ip -> "));
     Serial.println(WiFi.localIP());
-  } else if (status != WL_CONNECTED) {
+    refreshSignalCache(true, true);
+  } else if (!connected) {
     announcedIp_ = false;
+    refreshSignalCache(false, true);
     if (nowMs - lastReconnectAttemptAt_ >= kReconnectIntervalMs &&
         (status == WL_DISCONNECTED || status == WL_CONNECTION_LOST ||
          status == WL_CONNECT_FAILED || status == WL_NO_SSID_AVAIL)) {
@@ -122,7 +131,7 @@ int WifiService::rssiDbm() const {
   if (!isConnected()) {
     return -127;
   }
-  return WiFi.RSSI();
+  return cachedRssiDbm_;
 }
 
 uint8_t WifiService::signalPercent() const {
@@ -130,14 +139,33 @@ uint8_t WifiService::signalPercent() const {
     return 0;
   }
 
+  return cachedSignalPercent_;
+}
+
+void WifiService::refreshSignalCache(bool connected, bool force) {
+  unsigned long nowMs = millis();
+  if (!connected) {
+    cachedRssiDbm_ = -127;
+    cachedSignalPercent_ = 0;
+    lastSignalRefreshAt_ = nowMs;
+    return;
+  }
+
+  if (!force && lastSignalRefreshAt_ != 0 &&
+      nowMs - lastSignalRefreshAt_ < kSignalRefreshIntervalMs) {
+    return;
+  }
+
   int rssi = WiFi.RSSI();
+  cachedRssiDbm_ = rssi;
   if (rssi <= -100) {
-    return 0;
+    cachedSignalPercent_ = 0;
+  } else if (rssi >= -50) {
+    cachedSignalPercent_ = 100;
+  } else {
+    cachedSignalPercent_ = static_cast<uint8_t>((rssi + 100) * 2);
   }
-  if (rssi >= -50) {
-    return 100;
-  }
-  return static_cast<uint8_t>((rssi + 100) * 2);
+  lastSignalRefreshAt_ = nowMs;
 }
 
 int WifiService::statusCode() const {

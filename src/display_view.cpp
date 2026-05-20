@@ -150,10 +150,44 @@ void DisplayView::renderRangePage(const AudioSnapshot &snapshot) {
   drawCenteredText(String(maxLine), 44, 2);
 }
 
+void DisplayView::renderEnvironmentPage(const Sht31Reading &sht31Reading) {
+  display_.setFont(nullptr);
+  display_.setTextColor(SSD1306_WHITE);
+  drawCenteredText(F("ENV"), 0, 2);
+
+  char tempLine[18];
+  if (sht31Reading.available) {
+    snprintf(tempLine, sizeof(tempLine), "T %.1f C", sht31Reading.temperatureC);
+  } else {
+    snprintf(tempLine, sizeof(tempLine), "T --.- C");
+  }
+  drawCenteredText(String(tempLine), 20, 2);
+
+  char humLine[18];
+  if (sht31Reading.available) {
+    snprintf(humLine, sizeof(humLine), "H %.1f%%", sht31Reading.humidityPct);
+  } else {
+    snprintf(humLine, sizeof(humLine), "H --.-%%");
+  }
+  drawCenteredText(String(humLine), 42, 2);
+}
+
+void DisplayView::drawPinnedIndicator(bool pinnedOn) {
+  if (!pinnedOn || currentPage_ == 0) {
+    return;
+  }
+
+  display_.setFont(nullptr);
+  display_.setTextColor(SSD1306_WHITE);
+  display_.setTextSize(1);
+  display_.setCursor(108, 0);
+  display_.print(F("PIN"));
+}
+
 void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
                          const char *versionText, uint32_t buildNumber, bool timeSynced,
                          bool wifiConnected,
-                         uint8_t wifiPercent) {
+                         uint8_t wifiPercent, bool pinnedOn) {
   if (!initialized_) {
     return;
   }
@@ -179,9 +213,13 @@ void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht3
       renderDebugPage(snapshot, sht31Reading);
       break;
     case 2:
-    default:
       renderRangePage(snapshot);
       break;
+    case 3:
+    default:
+      renderEnvironmentPage(sht31Reading);
+      break;
   }
+  drawPinnedIndicator(pinnedOn);
   display_.display();
 }

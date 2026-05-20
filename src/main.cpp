@@ -58,6 +58,8 @@ struct GoogleSheetsAccumulator {
   uint32_t hourPercentSum = 0;
   uint32_t totalPercentSum = 0;
   uint32_t peakToPeakSum = 0;
+  uint16_t minPeakToPeak = UINT16_MAX;
+  uint16_t maxPeakToPeak = 0;
   int32_t minRaw = INT32_MAX;
   int32_t maxRaw = INT32_MIN;
   uint32_t quietCount = 0;
@@ -245,6 +247,8 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.hourPercentSum = 0;
   window.totalPercentSum = 0;
   window.peakToPeakSum = 0;
+  window.minPeakToPeak = UINT16_MAX;
+  window.maxPeakToPeak = 0;
   window.minRaw = INT32_MAX;
   window.maxRaw = INT32_MIN;
   window.quietCount = 0;
@@ -279,6 +283,8 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
+  record.minPeakToPeak = window.minPeakToPeak == UINT16_MAX ? 0 : window.minPeakToPeak;
+  record.maxPeakToPeak = window.maxPeakToPeak;
   record.signalText =
       signalQualityText(window.worstSignalState, window.lowSignalWarning, window.clipSignalWarning);
   if (window.environmentSampleCount > 0) {
@@ -344,6 +350,8 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   } else if (activeSheetsWindow.windowKey != currentWindowKey) {
     GoogleSheetsWindowRecord completedRecord = buildGoogleSheetsRecord(activeSheetsWindow);
+    completedRecord.sessionMinPeakToPeak = snapshot.sessionMinPeakToPeak;
+    completedRecord.sessionMaxPeakToPeak = snapshot.sessionMaxPeakToPeak;
     if (enqueueGoogleSheetsUpload(completedRecord)) {
       Serial.print(F("[GS] queued window -> "));
       Serial.print(completedRecord.timeFromText);
@@ -356,6 +364,8 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
       Serial.print(F(" queue="));
       Serial.println(pendingSheetsCount);
     }
+    logService.appendWindowAggregate(completedRecord, PROJECT_VERSION, PROJECT_BUILD,
+                                     wifiService.rssiDbm(), "BAT");
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   }
 
@@ -363,6 +373,12 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   activeSheetsWindow.hourPercentSum += snapshot.hourPercent;
   activeSheetsWindow.totalPercentSum += snapshot.totalPercent;
   activeSheetsWindow.peakToPeakSum += snapshot.peakToPeak;
+  if (snapshot.peakToPeak < activeSheetsWindow.minPeakToPeak) {
+    activeSheetsWindow.minPeakToPeak = snapshot.peakToPeak;
+  }
+  if (snapshot.peakToPeak > activeSheetsWindow.maxPeakToPeak) {
+    activeSheetsWindow.maxPeakToPeak = snapshot.peakToPeak;
+  }
   if (snapshot.rawMin < activeSheetsWindow.minRaw) {
     activeSheetsWindow.minRaw = snapshot.rawMin;
   }
@@ -434,20 +450,6 @@ void updateDayPartStats(const AudioSnapshot &snapshot, const TimeService &timeSe
   if (snapshot.currentPercent >= 70) {
     stats.loudCount++;
   }
-}
-
-void appendLogSample(const AudioSnapshot &snapshot, const TimeService &timeService) {
-  if (!snapshot.statsUpdated || !timeService.isSynced()) {
-    return;
-  }
-
-  DayPart currentDayPart = dayPartFromHour(timeService.hour());
-  DayPartStats &stats = dayPartStats[dayPartIndex(currentDayPart)];
-  uint32_t partAverage = dayPartAverageLevel(stats);
-  String minuteKey = timeService.dateString() + " " + timeService.timeString().substring(0, 5);
-  logService.appendMinuteSample(minuteKey, timeService.dateString(), timeService.timeString(),
-                                dayPartText(currentDayPart), snapshot, partAverage,
-                                stats.quietCount, stats.loudCount);
 }
 
 void updateMqttState(const AudioSnapshot &snapshot) {
@@ -597,8 +599,8 @@ void loop() {
       Serial.println(F("[BTN] long press -> display pinned ON"));
     } else {
       displayPinnedOn = false;
-      displayView.setEnabled(false);
-      Serial.println(F("[BTN] long press -> display OFF"));
+      lastDisplayInteractionAt = nowMs;
+      Serial.println(F("[BTN] long press -> display auto-off enabled"));
     }
   }
 
@@ -609,7 +611,6 @@ void loop() {
   latestSnapshot = audioSampler.sample();
   updateDayPartStats(latestSnapshot, timeService);
   updateGoogleSheetsWindow(latestSnapshot, timeService);
-  appendLogSample(latestSnapshot, timeService);
   uploadPendingGoogleSheetsWindow();
   updateMqttState(latestSnapshot);
   telegramAlertService.update(wifiService.isConnected(), wifiService.ipAddressString(),
@@ -632,7 +633,7 @@ void loop() {
     lastDisplayAt = nowMs;
     displayView.render(latestSnapshot, latestSht31Reading, PROJECT_VERSION, PROJECT_BUILD,
                        timeService.isSynced(), wifiService.isConnected(),
-                       wifiService.signalPercent());
+                       wifiService.signalPercent(), displayPinnedOn);
   }
 
   if (nowMs - lastSerialLogAt >= SERIAL_LOG_INTERVAL_MS) {
