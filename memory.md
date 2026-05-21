@@ -9,7 +9,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.46-EXP` build `100`.
+- Current firmware marker: `0.1.47-EXP` build `101`.
 
 ## Important Decisions
 
@@ -70,16 +70,20 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `100` slims local `/log.csv` by removing `ver`, `power_target`, and `uptime_min`; only `build` remains as the firmware marker.
 - OLED now has four pages: main `Now/H/M`, `DEBUG`, `RANGE`, and `ENV`; `ENV` shows only temperature and humidity.
 - Non-main OLED pages show a small `PIN` marker when long-press pinned display mode is active.
+- Build `101` makes the local `/log.csv` diagnostic again for the breadboard test stage: rows now include `event`, `boot_seq`, `reset_reason`, continuous power-session `uptime_min`/`uptime_text`, `p2p_stable_max`, `session_p2p_stable_max`, and SHT31 `env_ok_count/env_fail_count`.
+- Build `101` adds `BOOT` and `SCHEDULED_RESTART` rows so restarts are visible in the log timeline.
+- Build `101` schedules a daily soft restart and keeps power-session uptime across soft resets using RTC memory; physical power-on starts a new session.
+- Build `101` changes OLED `RANGE` to show `MIN`, stable `STB`, and technical `RAW MAX` so random digital spikes do not dominate the main range interpretation.
 
 ## Next Best Steps
 
-- Flash `0.1.46-EXP` build `100` if it is not already on the device.
-- Reboot before measuring a new quiet/loud range, then use the `RANGE` page to read session `MIN` and `MAX` `P2P`.
-- Run a new battery-powered balcony test with the retuned scale and range page.
+- Flash `0.1.47-EXP` build `101`.
+- Reboot or power-cycle before the multi-day balcony run; a physical power cycle starts a fresh power-session uptime and `boot_seq=1`.
+- Use the `RANGE` page during the run: `STB` is the stable practical maximum, while `RAW MAX` is only the technical peak.
+- Run a multi-day battery-powered balcony test with the diagnostic log.
 - Download `/log.csv` after the run; it is now the preferred compact file to send for analysis instead of a full Google Sheets export.
-- Analyze whether the new `NOW %` and `SILENT / NORMAL / LOUD / PEAK` buckets now match real balcony perception.
-- If `CLIP` still appears too often, inspect clipped-sample behavior before changing user-facing levels.
-- If the new scale feels reasonable, update Google Sheets/AppSheet analytics to rely on the improved values.
+- Analyze `p2p_avg`, `p2p_stable_max`, `session_p2p_stable_max`, `env_ok_count/env_fail_count`, `boot_seq`, and `reset_reason` before changing user-facing `SILENT / NORMAL / LOUD / PEAK` levels.
+- If SHT31 data still disappears, use `env_fail_count` and restart rows to decide whether the issue is sensor/I2C/power/contact related before soldering.
 - Use `DATA_DICTIONARY.md` or `DATA_DICTIONARY_RU.md` when the user asks what a column, status, verdict, flag, or Telegram line means.
 
 ## Quick Commands

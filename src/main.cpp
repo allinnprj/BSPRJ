@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <esp_system.h>
 #include <limits.h>
 #include <Wire.h>
 
@@ -32,7 +33,15 @@ static constexpr unsigned long MEAN_PERSIST_INTERVAL_MS = 600000UL;
 static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 60000UL;
 static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
 static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
+static constexpr unsigned long SCHEDULED_RESTART_INTERVAL_MS = 86400000UL;
+static constexpr unsigned long UPTIME_RTC_SAVE_INTERVAL_MS = 60000UL;
 static constexpr bool STARTUP_I2C_SCAN_ENABLED = false;
+static constexpr uint32_t POWER_SESSION_MAGIC = 0xB510B510UL;
+
+RTC_DATA_ATTR uint32_t rtcPowerSessionMagic = 0;
+RTC_DATA_ATTR uint32_t rtcBootSequence = 0;
+RTC_DATA_ATTR uint64_t rtcPowerUptimeBaseMs = 0;
+RTC_DATA_ATTR uint64_t rtcLastKnownPowerUptimeMs = 0;
 
 enum class DayPart : uint8_t {
   Night,
@@ -61,6 +70,7 @@ struct GoogleSheetsAccumulator {
   uint32_t peakToPeakSum = 0;
   uint16_t minPeakToPeak = UINT16_MAX;
   uint16_t maxPeakToPeak = 0;
+  uint16_t stableMaxPeakToPeak = 0;
   int32_t minRaw = INT32_MAX;
   int32_t maxRaw = INT32_MIN;
   uint32_t quietCount = 0;
@@ -68,6 +78,7 @@ struct GoogleSheetsAccumulator {
   float temperatureSum = 0.0f;
   float humiditySum = 0.0f;
   uint32_t environmentSampleCount = 0;
+  uint32_t environmentFailCount = 0;
   uint32_t sampleCount = 0;
   SignalState worstSignalState = SignalState::Low;
   bool lowSignalWarning = false;
@@ -92,7 +103,11 @@ unsigned long lastSerialLogAt = 0;
 unsigned long lastGoogleSheetsAttemptAt = 0;
 unsigned long lastDisplayInteractionAt = 0;
 unsigned long lastMeanPersistAt = 0;
+unsigned long lastRtcUptimeSaveAt = 0;
 bool displayPinnedOn = false;
+bool scheduledRestartStarted = false;
+uint32_t currentBootSequence = 0;
+String currentResetReason;
 DayPartStats dayPartStats[3];
 GoogleSheetsAccumulator activeSheetsWindow;
 GoogleSheetsWindowRecord pendingSheetsUploads[GOOGLE_SHEETS_QUEUE_SIZE];
@@ -211,13 +226,60 @@ String twoDigitText(uint8_t value) {
   return String(buffer);
 }
 
-String formatCompactUptime(unsigned long uptimeMs) {
-  uint32_t totalMinutes = static_cast<uint32_t>(uptimeMs / 60000UL);
+String formatCompactUptime(uint64_t uptimeMs) {
+  uint32_t totalMinutes = static_cast<uint32_t>(uptimeMs / 60000ULL);
   uint32_t days = totalMinutes / 1440UL;
   uint32_t hours = (totalMinutes % 1440UL) / 60UL;
   uint32_t minutes = totalMinutes % 60UL;
 
-  return String(days) + F(" d, ") + String(hours) + F(" h, ") + String(minutes) + F(" m");
+  return String(days) + F(" d ") + String(hours) + F(" h ") + String(minutes) + F(" m");
+}
+
+uint64_t powerUptimeMs() {
+  return rtcPowerUptimeBaseMs + static_cast<uint64_t>(millis());
+}
+
+uint32_t powerUptimeMinutes() {
+  return static_cast<uint32_t>(powerUptimeMs() / 60000ULL);
+}
+
+void savePowerUptimeCheckpoint() {
+  rtcLastKnownPowerUptimeMs = powerUptimeMs();
+}
+
+String resetReasonText(esp_reset_reason_t reason) {
+  switch (reason) {
+    case ESP_RST_POWERON:
+      return F("POWERON");
+    case ESP_RST_SW:
+      return F("SOFT");
+    case ESP_RST_PANIC:
+      return F("PANIC");
+    case ESP_RST_INT_WDT:
+      return F("INT_WDT");
+    case ESP_RST_TASK_WDT:
+      return F("TASK_WDT");
+    case ESP_RST_WDT:
+      return F("WDT");
+    case ESP_RST_DEEPSLEEP:
+      return F("DEEPSLEEP");
+    case ESP_RST_BROWNOUT:
+      return F("BROWNOUT");
+    case ESP_RST_SDIO:
+      return F("SDIO");
+    case ESP_RST_EXT:
+      return F("EXT");
+    default:
+      return F("UNKNOWN");
+  }
+}
+
+String currentDateText() {
+  return timeService.isSynced() ? timeService.dateString() : String();
+}
+
+String currentTimeText() {
+  return timeService.isSynced() ? timeService.timeString() : String();
 }
 
 String googleSheetsWindowKey(const TimeService &timeService) {
@@ -254,6 +316,7 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.peakToPeakSum = 0;
   window.minPeakToPeak = UINT16_MAX;
   window.maxPeakToPeak = 0;
+  window.stableMaxPeakToPeak = 0;
   window.minRaw = INT32_MAX;
   window.maxRaw = INT32_MIN;
   window.quietCount = 0;
@@ -261,6 +324,7 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.temperatureSum = 0.0f;
   window.humiditySum = 0.0f;
   window.environmentSampleCount = 0;
+  window.environmentFailCount = 0;
   window.sampleCount = 0;
   window.worstSignalState = SignalState::Low;
   window.lowSignalWarning = false;
@@ -290,6 +354,7 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
   record.minPeakToPeak = window.minPeakToPeak == UINT16_MAX ? 0 : window.minPeakToPeak;
   record.maxPeakToPeak = window.maxPeakToPeak;
+  record.stableMaxPeakToPeak = window.stableMaxPeakToPeak;
   record.signalText =
       signalQualityText(window.worstSignalState, window.lowSignalWarning, window.clipSignalWarning);
   if (window.environmentSampleCount > 0) {
@@ -299,12 +364,16 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
         window.humiditySum / static_cast<float>(window.environmentSampleCount);
     record.environmentAvailable = true;
   }
+  record.environmentOkCount = window.environmentSampleCount;
+  record.environmentFailCount = window.environmentFailCount;
   record.quietCount = window.quietCount;
   record.loudCount = window.loudCount;
   record.sampleCount = window.sampleCount;
   record.windowMinutes = GOOGLE_SHEETS_WINDOW_MINUTES;
-  record.uptimeMinutes = static_cast<uint32_t>(millis() / 60000UL);
-  record.uptimeText = formatCompactUptime(millis());
+  record.uptimeMinutes = powerUptimeMinutes();
+  record.uptimeText = formatCompactUptime(powerUptimeMs());
+  record.bootSequence = currentBootSequence;
+  record.resetReason = currentResetReason;
   return record;
 }
 
@@ -357,6 +426,7 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
     GoogleSheetsWindowRecord completedRecord = buildGoogleSheetsRecord(activeSheetsWindow);
     completedRecord.sessionMinPeakToPeak = snapshot.sessionMinPeakToPeak;
     completedRecord.sessionMaxPeakToPeak = snapshot.sessionMaxPeakToPeak;
+    completedRecord.sessionStableMaxPeakToPeak = snapshot.sessionStableMaxPeakToPeak;
     if (enqueueGoogleSheetsUpload(completedRecord)) {
       Serial.print(F("[GS] queued window -> "));
       Serial.print(completedRecord.timeFromText);
@@ -383,6 +453,9 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   if (snapshot.peakToPeak > activeSheetsWindow.maxPeakToPeak) {
     activeSheetsWindow.maxPeakToPeak = snapshot.peakToPeak;
   }
+  if (snapshot.currentLevel > activeSheetsWindow.stableMaxPeakToPeak) {
+    activeSheetsWindow.stableMaxPeakToPeak = snapshot.currentLevel;
+  }
   if (snapshot.rawMin < activeSheetsWindow.minRaw) {
     activeSheetsWindow.minRaw = snapshot.rawMin;
   }
@@ -399,6 +472,8 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
     activeSheetsWindow.temperatureSum += latestSht31Reading.temperatureC;
     activeSheetsWindow.humiditySum += latestSht31Reading.humidityPct;
     activeSheetsWindow.environmentSampleCount++;
+  } else {
+    activeSheetsWindow.environmentFailCount++;
   }
   if (signalStateSeverity(snapshot.signalState) >
       signalStateSeverity(activeSheetsWindow.worstSignalState)) {
@@ -510,12 +585,29 @@ void setup() {
   Serial.begin(115200);
   delay(STARTUP_SERIAL_DELAY_MS);
 
+  currentResetReason = resetReasonText(esp_reset_reason());
+  if (rtcPowerSessionMagic != POWER_SESSION_MAGIC || esp_reset_reason() == ESP_RST_POWERON) {
+    rtcPowerSessionMagic = POWER_SESSION_MAGIC;
+    rtcBootSequence = 0;
+    rtcPowerUptimeBaseMs = 0;
+    rtcLastKnownPowerUptimeMs = 0;
+  } else if (rtcLastKnownPowerUptimeMs > rtcPowerUptimeBaseMs) {
+    rtcPowerUptimeBaseMs = rtcLastKnownPowerUptimeMs;
+  }
+  rtcBootSequence++;
+  currentBootSequence = rtcBootSequence;
+  savePowerUptimeCheckpoint();
+
   Serial.println();
   Serial.println(F("ESP32 sound statistics clean restart"));
   Serial.print(F("Version: "));
   Serial.print(F(PROJECT_VERSION));
   Serial.print(F(" build "));
   Serial.println(PROJECT_BUILD);
+  Serial.print(F("Boot sequence: "));
+  Serial.print(currentBootSequence);
+  Serial.print(F(" reset="));
+  Serial.println(currentResetReason);
   Serial.println(F("Display contract: Now / H / M"));
   Serial.println(F("Time and WiFi will activate when the network is available."));
   Serial.print(F("[BTN] pin="));
@@ -541,6 +633,9 @@ void setup() {
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
+  logService.appendRuntimeEvent(F("BOOT"), String(), String(), PROJECT_BUILD, currentBootSequence,
+                                currentResetReason, powerUptimeMinutes(),
+                                formatCompactUptime(powerUptimeMs()), wifiService.rssiDbm());
   meanPersistenceService.begin();
   mqttService.begin();
   telegramAlertService.begin();
@@ -625,11 +720,15 @@ void loop() {
   telegramAlertService.update(wifiService.isConnected(), wifiService.ipAddressString(),
                               wifiService.rssiDbm(), wifiService.signalPercent(),
                               timeService.isSynced(), PROJECT_VERSION, PROJECT_BUILD,
-                              formatCompactUptime(millis()));
+                              formatCompactUptime(powerUptimeMs()));
   if (latestSnapshot.statsUpdated && nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
     if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {
       lastMeanPersistAt = nowMs;
     }
+  }
+  if (nowMs - lastRtcUptimeSaveAt >= UPTIME_RTC_SAVE_INTERVAL_MS) {
+    savePowerUptimeCheckpoint();
+    lastRtcUptimeSaveAt = nowMs;
   }
 
   if (displayView.isEnabled() && !displayPinnedOn &&
@@ -675,6 +774,8 @@ void loop() {
     Serial.print(latestSnapshot.sessionMinPeakToPeak);
     Serial.print('/');
     Serial.print(latestSnapshot.sessionMaxPeakToPeak);
+    Serial.print(F(" stable="));
+    Serial.print(latestSnapshot.sessionStableMaxPeakToPeak);
     Serial.print(F(" sig="));
     Serial.print(signalStateText(latestSnapshot.signalState));
     if (latestSnapshot.clipSignalWarning) {
@@ -711,6 +812,18 @@ void loop() {
       Serial.print(F("%"));
     }
     Serial.println();
+  }
+
+  if (!scheduledRestartStarted && nowMs >= SCHEDULED_RESTART_INTERVAL_MS) {
+    scheduledRestartStarted = true;
+    savePowerUptimeCheckpoint();
+    logService.appendRuntimeEvent(F("SCHEDULED_RESTART"), currentDateText(), currentTimeText(),
+                                  PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                  powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                  wifiService.rssiDbm());
+    Serial.println(F("[SYS] scheduled restart -> keeping power-session uptime"));
+    delay(150);
+    ESP.restart();
   }
 
   delay(20);

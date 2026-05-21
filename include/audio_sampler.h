@@ -15,6 +15,7 @@ struct AudioSnapshot {
   uint16_t peakToPeak = 0;
   uint16_t sessionMinPeakToPeak = 0;
   uint16_t sessionMaxPeakToPeak = 0;
+  uint16_t sessionStableMaxPeakToPeak = 0;
   uint16_t statsLevel = 0;
   uint8_t currentPercent = 0;
   uint8_t hourPercent = 0;
@@ -56,6 +57,7 @@ class AudioSampler {
   uint16_t smoothedLevel_ = 0;
   uint16_t sessionMinPeakToPeak_ = 0;
   uint16_t sessionMaxPeakToPeak_ = 0;
+  uint16_t sessionStableMaxPeakToPeak_ = 0;
   uint16_t lowSignalHoldSeconds_ = 0;
   uint16_t clipSignalHoldSeconds_ = 0;
   unsigned long lastStatsAt_ = 0;

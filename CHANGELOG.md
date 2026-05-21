@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.1.47-EXP+101 - 2026-05-21
+
+1. Added diagnostic local `/log.csv` columns for `event`, `boot_seq`, `reset_reason`, continuous power-session `uptime_min`/`uptime_text`, stable P2P maximum, and SHT31 ok/fail sample counts.
+2. Added `BOOT` and `SCHEDULED_RESTART` log events so controller restarts are visible in the same CSV timeline as measurement windows.
+3. Added a daily scheduled soft restart while preserving power-session uptime across soft resets; physical power-on starts a new session.
+4. Added a stable session P2P maximum based on the smoothed live level and changed OLED `RANGE` to show `MIN`, `STB`, and technical `RAW MAX`.
+5. Updated the English and Russian data dictionaries for the new diagnostic local-log fields.
+6. Validation: `pio run -e esp32dev` -> SUCCESS (RAM 17.9%, Flash 29.8%).
+
 ## 0.1.46-EXP+100 - 2026-05-20
 
 1. Slimmed the compact local `/log.csv` schema by removing `ver`, `power_target`, and `uptime_min`.

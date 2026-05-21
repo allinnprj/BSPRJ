@@ -8,9 +8,10 @@ namespace {
 constexpr char kLogPath[] = "/sound_log.csv";
 constexpr char kLegacyLogPath[] = "/sound_log_legacy.csv";
 constexpr char kLogHeader[] =
-    "date,time_from,time_to,part,build,now_avg_pct,hour_pct,total_pct,"
-    "p2p_avg,p2p_min,p2p_max,session_p2p_min,session_p2p_max,raw_min,raw_max,"
-    "signal,temp_c,hum_pct,samples,quiet_count,loud_count,wifi_dbm";
+    "event,date,time_from,time_to,part,build,boot_seq,reset_reason,uptime_min,uptime_text,"
+    "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_min,p2p_max,p2p_stable_max,"
+    "session_p2p_min,session_p2p_max,session_p2p_stable_max,raw_min,raw_max,signal,"
+    "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,wifi_dbm";
 WebServer logServer(80);
 bool logClearedByWeb = false;
 
@@ -187,6 +188,8 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
     return;
   }
 
+  file.print(F("WINDOW"));
+  file.print(',');
   file.print(record.dateText);
   file.print(',');
   file.print(record.timeFromText);
@@ -196,6 +199,14 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   file.print(record.dayPartText);
   file.print(',');
   file.print(buildNumber);
+  file.print(',');
+  file.print(record.bootSequence);
+  file.print(',');
+  file.print(record.resetReason);
+  file.print(',');
+  file.print(record.uptimeMinutes);
+  file.print(',');
+  file.print(record.uptimeText);
   file.print(',');
   file.print(record.averageNowPercent);
   file.print(',');
@@ -209,9 +220,13 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   file.print(',');
   file.print(record.maxPeakToPeak);
   file.print(',');
+  file.print(record.stableMaxPeakToPeak);
+  file.print(',');
   file.print(record.sessionMinPeakToPeak);
   file.print(',');
   file.print(record.sessionMaxPeakToPeak);
+  file.print(',');
+  file.print(record.sessionStableMaxPeakToPeak);
   file.print(',');
   file.print(record.minRaw);
   file.print(',');
@@ -227,6 +242,10 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
     file.print(record.averageHumidityPct, 2);
   }
   file.print(',');
+  file.print(record.environmentOkCount);
+  file.print(',');
+  file.print(record.environmentFailCount);
+  file.print(',');
   file.print(record.sampleCount);
   file.print(',');
   file.print(record.quietCount);
@@ -237,6 +256,47 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   file.close();
 
   lastWindowKey_ = record.windowKey;
+}
+
+void LogService::appendRuntimeEvent(const String &eventText, const String &dateText,
+                                    const String &timeText, uint32_t buildNumber,
+                                    uint32_t bootSequence, const String &resetReason,
+                                    uint32_t uptimeMinutes, const String &uptimeText,
+                                    int32_t wifiRssiDbm) {
+  if (!ready_ || eventText.isEmpty()) {
+    return;
+  }
+
+  File file = LittleFS.open(kLogPath, FILE_APPEND);
+  if (!file) {
+    Serial.println(F("[LOG] event append failed"));
+    return;
+  }
+
+  file.print(eventText);
+  file.print(',');
+  file.print(dateText);
+  file.print(',');
+  file.print(timeText);
+  file.print(',');
+  file.print(timeText);
+  file.print(',');
+  file.print(F("SYS"));
+  file.print(',');
+  file.print(buildNumber);
+  file.print(',');
+  file.print(bootSequence);
+  file.print(',');
+  file.print(resetReason);
+  file.print(',');
+  file.print(uptimeMinutes);
+  file.print(',');
+  file.print(uptimeText);
+  for (uint8_t index = 0; index < 20; ++index) {
+    file.print(',');
+  }
+  file.println(wifiRssiDbm);
+  file.close();
 }
 
 bool LogService::isReady() const {

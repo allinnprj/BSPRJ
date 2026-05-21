@@ -11,6 +11,10 @@ class LogService {
   void clearCurrentLog();
   void appendWindowAggregate(const GoogleSheetsWindowRecord &record, uint32_t buildNumber,
                              int32_t wifiRssiDbm);
+  void appendRuntimeEvent(const String &eventText, const String &dateText, const String &timeText,
+                          uint32_t buildNumber, uint32_t bootSequence,
+                          const String &resetReason, uint32_t uptimeMinutes,
+                          const String &uptimeText, int32_t wifiRssiDbm);
 
   bool isReady() const;
   bool webServerStarted() const;

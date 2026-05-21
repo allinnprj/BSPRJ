@@ -143,11 +143,15 @@ void DisplayView::renderRangePage(const AudioSnapshot &snapshot) {
 
   char minLine[18];
   snprintf(minLine, sizeof(minLine), "MIN %u", snapshot.sessionMinPeakToPeak);
-  drawCenteredText(String(minLine), 20, 2);
+  drawCenteredText(String(minLine), 17, 2);
 
-  char maxLine[18];
-  snprintf(maxLine, sizeof(maxLine), "MAX %u", snapshot.sessionMaxPeakToPeak);
-  drawCenteredText(String(maxLine), 44, 2);
+  char stableLine[18];
+  snprintf(stableLine, sizeof(stableLine), "STB %u", snapshot.sessionStableMaxPeakToPeak);
+  drawCenteredText(String(stableLine), 34, 2);
+
+  char maxLine[20];
+  snprintf(maxLine, sizeof(maxLine), "RAW MAX %u", snapshot.sessionMaxPeakToPeak);
+  drawCenteredText(String(maxLine), 52, 1);
 }
 
 void DisplayView::renderEnvironmentPage(const Sht31Reading &sht31Reading) {

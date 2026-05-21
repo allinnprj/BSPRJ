@@ -18,18 +18,24 @@ struct GoogleSheetsWindowRecord {
   uint16_t averagePeakToPeak = 0;
   uint16_t minPeakToPeak = 0;
   uint16_t maxPeakToPeak = 0;
+  uint16_t stableMaxPeakToPeak = 0;
   uint16_t sessionMinPeakToPeak = 0;
   uint16_t sessionMaxPeakToPeak = 0;
+  uint16_t sessionStableMaxPeakToPeak = 0;
   String signalText;
   float averageTemperatureC = 0.0f;
   float averageHumidityPct = 0.0f;
   bool environmentAvailable = false;
+  uint32_t environmentOkCount = 0;
+  uint32_t environmentFailCount = 0;
   uint32_t quietCount = 0;
   uint32_t loudCount = 0;
   uint32_t sampleCount = 0;
   uint8_t windowMinutes = 0;
   String uptimeText;
   uint32_t uptimeMinutes = 0;
+  uint32_t bootSequence = 0;
+  String resetReason;
 };
 
 class GoogleSheetsService {

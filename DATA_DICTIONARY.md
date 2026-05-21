@@ -240,6 +240,18 @@ Average humidity percentage for the window.
 
 Useful for environmental context. It may matter later if weather or dampness affects the balcony setup.
 
+### `ENV OK COUNT`
+
+How many internal window updates had a valid SHT31 temperature/humidity reading.
+
+Use it together with `ENV FAIL COUNT` to see whether missing environment data is occasional or persistent.
+
+### `ENV FAIL COUNT`
+
+How many internal window updates did not have a valid SHT31 reading.
+
+Useful during the breadboard stage because it can point to I2C, power, contact, or sensor stability issues.
+
 ## Window And Sample Terms
 
 ### `WIN MIN`
@@ -275,6 +287,44 @@ Useful for detecting whether a window had repeated loud moments, not just one sp
 How long the device had been running when the row was sent.
 
 Useful for diagnosing resets and power stability.
+
+In local `/log.csv`, `uptime_min` is the analysis-friendly numeric value and `uptime_text` is the human-readable form. After build `101`, this is power-session uptime: a soft restart continues it, while a physical power-on starts a fresh session.
+
+### `EVENT`
+
+Type of local log row.
+
+Common values:
+
+- `WINDOW`: a normal measurement window
+- `BOOT`: controller boot marker
+- `SCHEDULED_RESTART`: planned soft restart marker
+
+This helps read the CSV as a timeline, not only as measurement rows.
+
+### `BOOT SEQ`
+
+Boot number inside the current power session.
+
+Usually `1` after physical power-on. It increases after soft restarts while power-session uptime continues.
+
+### `RESET REASON`
+
+ESP32 reset reason for the current boot.
+
+Examples include `POWERON`, `SOFT`, `BROWNOUT`, `WDT`, and `PANIC`. This is mainly diagnostic and helps separate normal scheduled restarts from power or firmware trouble.
+
+### `P2P STABLE MAX`
+
+Highest smoothed P2P-like level seen inside the measurement window.
+
+It is more useful for balcony noise interpretation than raw `P2P MAX`, because raw max can be dominated by one digital spike.
+
+### `SESSION P2P STABLE MAX`
+
+Highest smoothed P2P-like level seen since the current device boot.
+
+On OLED this is shown as `STB` on the `RANGE` page. Treat it as the practical upper range; treat `RAW MAX` as the technical peak.
 
 ## Clean Summary Terms
 
@@ -724,4 +774,3 @@ These columns are likely to remain important:
 - `MAIN SHARE %`
 - `CONFIDENCE`
 - `VERDICT`
-
