@@ -35,13 +35,16 @@ static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
 static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
 static constexpr unsigned long SCHEDULED_RESTART_INTERVAL_MS = 86400000UL;
 static constexpr unsigned long UPTIME_RTC_SAVE_INTERVAL_MS = 60000UL;
+static constexpr uint16_t MAX_WINDOW_LEVEL_SAMPLES = 620;
+static constexpr uint16_t SHT31_LOST_WARN_SECONDS = 120;
+static constexpr unsigned long SHT31_RECOVER_INTERVAL_MS = 60000UL;
 static constexpr bool STARTUP_I2C_SCAN_ENABLED = false;
 static constexpr uint32_t POWER_SESSION_MAGIC = 0xB510B510UL;
 
-RTC_DATA_ATTR uint32_t rtcPowerSessionMagic = 0;
-RTC_DATA_ATTR uint32_t rtcBootSequence = 0;
-RTC_DATA_ATTR uint64_t rtcPowerUptimeBaseMs = 0;
-RTC_DATA_ATTR uint64_t rtcLastKnownPowerUptimeMs = 0;
+RTC_NOINIT_ATTR uint32_t rtcPowerSessionMagic;
+RTC_NOINIT_ATTR uint32_t rtcBootSequence;
+RTC_NOINIT_ATTR uint64_t rtcPowerUptimeBaseMs;
+RTC_NOINIT_ATTR uint64_t rtcLastKnownPowerUptimeMs;
 
 enum class DayPart : uint8_t {
   Night,
@@ -68,6 +71,8 @@ struct GoogleSheetsAccumulator {
   uint32_t hourPercentSum = 0;
   uint32_t totalPercentSum = 0;
   uint32_t peakToPeakSum = 0;
+  uint16_t levelSamples[MAX_WINDOW_LEVEL_SAMPLES] = {};
+  uint16_t levelSampleCount = 0;
   uint16_t minPeakToPeak = UINT16_MAX;
   uint16_t maxPeakToPeak = 0;
   uint16_t stableMaxPeakToPeak = 0;
@@ -104,8 +109,12 @@ unsigned long lastGoogleSheetsAttemptAt = 0;
 unsigned long lastDisplayInteractionAt = 0;
 unsigned long lastMeanPersistAt = 0;
 unsigned long lastRtcUptimeSaveAt = 0;
+unsigned long lastSht31RecoverAttemptAt = 0;
 bool displayPinnedOn = false;
 bool scheduledRestartStarted = false;
+bool sht31LostLogged = false;
+uint16_t sht31UnavailableSeconds = 0;
+uint16_t sht31RecoverCount = 0;
 uint32_t currentBootSequence = 0;
 String currentResetReason;
 DayPartStats dayPartStats[3];
@@ -247,6 +256,35 @@ void savePowerUptimeCheckpoint() {
   rtcLastKnownPowerUptimeMs = powerUptimeMs();
 }
 
+uint16_t percentile95(const uint16_t *values, uint16_t count) {
+  if (count == 0) {
+    return 0;
+  }
+
+  uint16_t sorted[MAX_WINDOW_LEVEL_SAMPLES];
+  uint16_t safeCount = min(count, MAX_WINDOW_LEVEL_SAMPLES);
+  for (uint16_t index = 0; index < safeCount; ++index) {
+    sorted[index] = values[index];
+  }
+
+  for (uint16_t index = 1; index < safeCount; ++index) {
+    uint16_t value = sorted[index];
+    int16_t cursor = static_cast<int16_t>(index) - 1;
+    while (cursor >= 0 && sorted[cursor] > value) {
+      sorted[cursor + 1] = sorted[cursor];
+      cursor--;
+    }
+    sorted[cursor + 1] = value;
+  }
+
+  uint16_t percentileIndex =
+      static_cast<uint16_t>(((static_cast<uint32_t>(safeCount) * 95UL) + 99UL) / 100UL);
+  if (percentileIndex == 0) {
+    percentileIndex = 1;
+  }
+  return sorted[percentileIndex - 1];
+}
+
 String resetReasonText(esp_reset_reason_t reason) {
   switch (reason) {
     case ESP_RST_POWERON:
@@ -314,6 +352,7 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.hourPercentSum = 0;
   window.totalPercentSum = 0;
   window.peakToPeakSum = 0;
+  window.levelSampleCount = 0;
   window.minPeakToPeak = UINT16_MAX;
   window.maxPeakToPeak = 0;
   window.stableMaxPeakToPeak = 0;
@@ -352,6 +391,7 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
+  record.peakToPeakP95 = percentile95(window.levelSamples, window.levelSampleCount);
   record.minPeakToPeak = window.minPeakToPeak == UINT16_MAX ? 0 : window.minPeakToPeak;
   record.maxPeakToPeak = window.maxPeakToPeak;
   record.stableMaxPeakToPeak = window.stableMaxPeakToPeak;
@@ -372,6 +412,8 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.windowMinutes = GOOGLE_SHEETS_WINDOW_MINUTES;
   record.uptimeMinutes = powerUptimeMinutes();
   record.uptimeText = formatCompactUptime(powerUptimeMs());
+  record.freeHeap = ESP.getFreeHeap();
+  record.minFreeHeap = ESP.getMinFreeHeap();
   record.bootSequence = currentBootSequence;
   record.resetReason = currentResetReason;
   return record;
@@ -447,6 +489,10 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   activeSheetsWindow.hourPercentSum += snapshot.hourPercent;
   activeSheetsWindow.totalPercentSum += snapshot.totalPercent;
   activeSheetsWindow.peakToPeakSum += snapshot.peakToPeak;
+  if (activeSheetsWindow.levelSampleCount < MAX_WINDOW_LEVEL_SAMPLES) {
+    activeSheetsWindow.levelSamples[activeSheetsWindow.levelSampleCount] = snapshot.currentLevel;
+    activeSheetsWindow.levelSampleCount++;
+  }
   if (snapshot.peakToPeak < activeSheetsWindow.minPeakToPeak) {
     activeSheetsWindow.minPeakToPeak = snapshot.peakToPeak;
   }
@@ -581,17 +627,68 @@ void scanI2cBus(TwoWire *wire) {
   }
 }
 
+void updateSht31Health(const AudioSnapshot &snapshot) {
+  if (!snapshot.statsUpdated) {
+    return;
+  }
+
+  if (latestSht31Reading.available) {
+    if (sht31LostLogged) {
+      sht31LostLogged = false;
+      logService.appendRuntimeEvent(F("SHT31_RECOVER"), currentDateText(), currentTimeText(),
+                                    PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                    powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                    wifiService.rssiDbm());
+    }
+    sht31UnavailableSeconds = 0;
+    return;
+  }
+
+  if (sht31UnavailableSeconds < UINT16_MAX) {
+    sht31UnavailableSeconds++;
+  }
+
+  if (!sht31LostLogged && sht31UnavailableSeconds >= SHT31_LOST_WARN_SECONDS) {
+    sht31LostLogged = true;
+    logService.appendRuntimeEvent(F("SHT31_LOST"), currentDateText(), currentTimeText(),
+                                  PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                  powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                  wifiService.rssiDbm());
+  }
+
+  unsigned long nowMs = millis();
+  if (sht31UnavailableSeconds >= SHT31_LOST_WARN_SECONDS &&
+      (lastSht31RecoverAttemptAt == 0 ||
+       nowMs - lastSht31RecoverAttemptAt >= SHT31_RECOVER_INTERVAL_MS)) {
+    lastSht31RecoverAttemptAt = nowMs;
+    sht31RecoverCount++;
+    Wire.end();
+    delay(20);
+    Wire.begin(SDA_PIN, SCL_PIN);
+    bool recovered = sht31Service.recover();
+    Serial.print(F("[SHT31] recover attempt "));
+    Serial.print(sht31RecoverCount);
+    Serial.print(F(" -> "));
+    Serial.println(recovered ? F("reinit OK") : F("reinit failed"));
+    logService.appendRuntimeEvent(F("SHT31_REINIT"), currentDateText(), currentTimeText(),
+                                  PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                  powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                  wifiService.rssiDbm());
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(STARTUP_SERIAL_DELAY_MS);
 
-  currentResetReason = resetReasonText(esp_reset_reason());
-  if (rtcPowerSessionMagic != POWER_SESSION_MAGIC || esp_reset_reason() == ESP_RST_POWERON) {
+  esp_reset_reason_t resetReason = esp_reset_reason();
+  currentResetReason = resetReasonText(resetReason);
+  if (rtcPowerSessionMagic != POWER_SESSION_MAGIC || resetReason == ESP_RST_POWERON) {
     rtcPowerSessionMagic = POWER_SESSION_MAGIC;
     rtcBootSequence = 0;
     rtcPowerUptimeBaseMs = 0;
     rtcLastKnownPowerUptimeMs = 0;
-  } else if (rtcLastKnownPowerUptimeMs > rtcPowerUptimeBaseMs) {
+  } else {
     rtcPowerUptimeBaseMs = rtcLastKnownPowerUptimeMs;
   }
   rtcBootSequence++;
@@ -713,6 +810,7 @@ void loop() {
   timeService.update(wifiService.isConnected());
   latestSht31Reading = sht31Service.update();
   latestSnapshot = audioSampler.sample();
+  updateSht31Health(latestSnapshot);
   updateDayPartStats(latestSnapshot, timeService);
   updateGoogleSheetsWindow(latestSnapshot, timeService);
   uploadPendingGoogleSheetsWindow();

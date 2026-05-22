@@ -9,9 +9,10 @@ constexpr char kLogPath[] = "/sound_log.csv";
 constexpr char kLegacyLogPath[] = "/sound_log_legacy.csv";
 constexpr char kLogHeader[] =
     "event,date,time_from,time_to,part,build,boot_seq,reset_reason,uptime_min,uptime_text,"
-    "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_min,p2p_max,p2p_stable_max,"
+    "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_p95,p2p_min,p2p_max,p2p_stable_max,"
     "session_p2p_min,session_p2p_max,session_p2p_stable_max,raw_min,raw_max,signal,"
-    "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,wifi_dbm";
+    "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,"
+    "free_heap,min_free_heap,wifi_dbm";
 WebServer logServer(80);
 bool logClearedByWeb = false;
 
@@ -216,6 +217,8 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   file.print(',');
   file.print(record.averagePeakToPeak);
   file.print(',');
+  file.print(record.peakToPeakP95);
+  file.print(',');
   file.print(record.minPeakToPeak);
   file.print(',');
   file.print(record.maxPeakToPeak);
@@ -251,6 +254,10 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   file.print(record.quietCount);
   file.print(',');
   file.print(record.loudCount);
+  file.print(',');
+  file.print(record.freeHeap);
+  file.print(',');
+  file.print(record.minFreeHeap);
   file.print(',');
   file.println(wifiRssiDbm);
   file.close();
@@ -292,7 +299,7 @@ void LogService::appendRuntimeEvent(const String &eventText, const String &dateT
   file.print(uptimeMinutes);
   file.print(',');
   file.print(uptimeText);
-  for (uint8_t index = 0; index < 20; ++index) {
+  for (uint8_t index = 0; index < 23; ++index) {
     file.print(',');
   }
   file.println(wifiRssiDbm);

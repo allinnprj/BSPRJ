@@ -13,6 +13,22 @@ void Sht31Service::begin(TwoWire *wire) {
   lastReading_ = {};
 }
 
+bool Sht31Service::recover() {
+  if (!started_) {
+    return false;
+  }
+
+  available_ = sensor_.begin(kPrimaryAddress);
+  activeAddress_ = available_ ? kPrimaryAddress : 0;
+  if (!available_) {
+    available_ = sensor_.begin(kAlternateAddress);
+    activeAddress_ = available_ ? kAlternateAddress : 0;
+  }
+  lastReadAt_ = 0;
+  lastReading_ = {};
+  return available_;
+}
+
 Sht31Reading Sht31Service::update() {
   if (!started_ || !available_) {
     return lastReading_;

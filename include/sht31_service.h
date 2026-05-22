@@ -14,6 +14,7 @@ class Sht31Service {
  public:
   void begin(TwoWire *wire);
   Sht31Reading update();
+  bool recover();
   bool isAvailable() const;
   uint8_t address() const;
 

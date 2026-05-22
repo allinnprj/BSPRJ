@@ -299,6 +299,9 @@ Common values:
 - `WINDOW`: a normal measurement window
 - `BOOT`: controller boot marker
 - `SCHEDULED_RESTART`: planned soft restart marker
+- `SHT31_LOST`: environment sensor readings stayed missing long enough to matter
+- `SHT31_REINIT`: firmware tried to reinitialize I2C/SHT31
+- `SHT31_RECOVER`: valid SHT31 readings returned
 
 This helps read the CSV as a timeline, not only as measurement rows.
 
@@ -320,11 +323,29 @@ Highest smoothed P2P-like level seen inside the measurement window.
 
 It is more useful for balcony noise interpretation than raw `P2P MAX`, because raw max can be dominated by one digital spike.
 
+### `P2P P95`
+
+95th percentile of the smoothed one-second sound levels inside the measurement window.
+
+This is the preferred stable upper-noise indicator for the multi-day balcony test. It should ignore the worst few digital spikes better than `P2P MAX` and should be more representative than one raw peak.
+
 ### `SESSION P2P STABLE MAX`
 
 Highest smoothed P2P-like level seen since the current device boot.
 
 On OLED this is shown as `STB` on the `RANGE` page. Treat it as the practical upper range; treat `RAW MAX` as the technical peak.
+
+### `FREE HEAP`
+
+Free ESP32 heap memory when the row was written.
+
+Useful for checking whether the firmware is slowly losing memory during a multi-day run.
+
+### `MIN FREE HEAP`
+
+Lowest free heap observed by the ESP32 runtime since boot.
+
+If this keeps falling over days, it may point to a leak, fragmentation, or a network/library path that needs attention.
 
 ## Clean Summary Terms
 

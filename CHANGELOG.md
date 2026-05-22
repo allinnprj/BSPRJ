@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.1.48-EXP+102 - 2026-05-22
+
+1. Added `p2p_p95` to local `/log.csv` as a stable percentile-based sound indicator for multi-day balcony analysis.
+2. Fixed runtime event rows so `BOOT`, `SCHEDULED_RESTART`, `SHT31_LOST`, `SHT31_REINIT`, and `SHT31_RECOVER` stay aligned with the CSV header.
+3. Changed power-session uptime tracking to use RTC no-init memory so soft restarts should preserve `uptime_min` and increment `boot_seq`, while physical power-on starts a fresh session.
+4. Added SHT31 health handling: long missing environment reads are logged, the I2C bus and SHT31 are periodically reinitialized, and recovery is logged when valid readings return.
+5. Added `free_heap` and `min_free_heap` to the local log for two-day memory stability checks.
+6. Validation: `pio run -e esp32dev` -> SUCCESS (RAM 18.3%, Flash 29.8%).
+
 ## 0.1.47-EXP+101 - 2026-05-21
 
 1. Added diagnostic local `/log.csv` columns for `event`, `boot_seq`, `reset_reason`, continuous power-session `uptime_min`/`uptime_text`, stable P2P maximum, and SHT31 ok/fail sample counts.

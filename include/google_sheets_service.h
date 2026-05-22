@@ -16,6 +16,7 @@ struct GoogleSheetsWindowRecord {
   int32_t minRaw = 0;
   int32_t maxRaw = 0;
   uint16_t averagePeakToPeak = 0;
+  uint16_t peakToPeakP95 = 0;
   uint16_t minPeakToPeak = 0;
   uint16_t maxPeakToPeak = 0;
   uint16_t stableMaxPeakToPeak = 0;
@@ -34,6 +35,8 @@ struct GoogleSheetsWindowRecord {
   uint8_t windowMinutes = 0;
   String uptimeText;
   uint32_t uptimeMinutes = 0;
+  uint32_t freeHeap = 0;
+  uint32_t minFreeHeap = 0;
   uint32_t bootSequence = 0;
   String resetReason;
 };
