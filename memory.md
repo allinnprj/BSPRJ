@@ -80,7 +80,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `103` adds minimal ArduinoOTA with hostname/password from `include/secrets.h`; OTA lifecycle events are logged as `OTA_START`, `OTA_END`, and `OTA_ERROR`.
 - Build `103` adds a local web archive flow at `/archive-log` so the current `/sound_log.csv` can be preserved before clearing, schema changes, OTA, or test resets.
 - Build `103` keeps the Telegram supergroup chat id fix in local secrets for controller-side `Device Online` alerts.
-- OTA helper tooling is configured with PlatformIO env `esp32dev_ota` and `scripts/ota_upload.ps1`; the helper reads `OTA_HOSTNAME` and `OTA_PASSWORD` from ignored `include/secrets.h`.
+- OTA helper tooling is configured with PlatformIO env `esp32dev_ota` and `scripts/ota_upload.ps1`; default OTA target is the fixed IP `192.168.11.124`, and the helper reads `OTA_PASSWORD` from ignored `include/secrets.h`.
 
 ## Next Best Steps
 
@@ -99,7 +99,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 - Build: `pio run`
 - Upload: `pio run -e esp32dev -t upload`
-- OTA upload by hostname: `.\scripts\ota_upload.ps1`
+- OTA upload by fixed IP: `.\scripts\ota_upload.ps1`
 - OTA upload by IP: `.\scripts\ota_upload.ps1 -Port <device-ip>`
 - Monitor: `pio device monitor -e esp32dev -b 115200`
 - Local device log URL pattern: `http://<device-ip>/log.csv`

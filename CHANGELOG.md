@@ -6,7 +6,7 @@
 2. Added OTA lifecycle diagnostics to Serial and local `/log.csv` events: `OTA_START`, `OTA_END`, and `OTA_ERROR`.
 3. Added a web log archive flow: `/archive-log` asks for confirmation and `/archive-log-confirm` renames the current log to an archive file before creating a fresh active log.
 4. Kept the Telegram supergroup `chat_id` fix in local secrets for controller-side `Device Online` alerts.
-5. Added PlatformIO OTA env `esp32dev_ota` and `scripts/ota_upload.ps1`, which reads OTA hostname/password from ignored `include/secrets.h`.
+5. Added PlatformIO OTA env `esp32dev_ota` and `scripts/ota_upload.ps1`, defaulting to fixed OTA IP `192.168.11.124` and reading the OTA password from ignored `include/secrets.h`.
 6. Validation: `pio run -e esp32dev` -> SUCCESS.
 
 ## 0.1.48-EXP+102 - 2026-05-22
