@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.1.49-EXP+103 - 2026-05-23
+
+1. Added minimal ArduinoOTA support with local hostname/password configuration from `include/secrets.h`.
+2. Added OTA lifecycle diagnostics to Serial and local `/log.csv` events: `OTA_START`, `OTA_END`, and `OTA_ERROR`.
+3. Added a web log archive flow: `/archive-log` asks for confirmation and `/archive-log-confirm` renames the current log to an archive file before creating a fresh active log.
+4. Kept the Telegram supergroup `chat_id` fix in local secrets for controller-side `Device Online` alerts.
+5. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.48-EXP+102 - 2026-05-22
 
 1. Added `p2p_p95` to local `/log.csv` as a stable percentile-based sound indicator for multi-day balcony analysis.

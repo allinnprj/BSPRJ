@@ -9,7 +9,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.48-EXP` build `102`.
+- Current firmware marker: `0.1.49-EXP` build `103`.
 
 ## Important Decisions
 
@@ -77,14 +77,19 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `102` fixes the diagnostic log shape after the first 101 run: event rows now align with the CSV header, `p2p_p95` was added as the main stable upper sound indicator, and `free_heap/min_free_heap` were added for memory stability checks.
 - Build `102` changes power-session uptime to RTC no-init memory so soft restart should preserve `uptime_min` and increment `boot_seq`; physical power-on should start a fresh session.
 - Build `102` adds SHT31 health events and recovery: `SHT31_LOST`, periodic `SHT31_REINIT`, and `SHT31_RECOVER` when valid temperature/humidity returns.
+- Build `103` adds minimal ArduinoOTA with hostname/password from `include/secrets.h`; OTA lifecycle events are logged as `OTA_START`, `OTA_END`, and `OTA_ERROR`.
+- Build `103` adds a local web archive flow at `/archive-log` so the current `/sound_log.csv` can be preserved before clearing, schema changes, OTA, or test resets.
+- Build `103` keeps the Telegram supergroup chat id fix in local secrets for controller-side `Device Online` alerts.
 
 ## Next Best Steps
 
-- Flash `0.1.48-EXP` build `102`.
+- Flash `0.1.49-EXP` build `103` by USB.
+- Before starting the next clean run, download the current `/log.csv`; optionally use `/archive-log` after download to preserve the on-device file and start a fresh active log.
 - Reboot or power-cycle before the multi-day balcony run; a physical power cycle starts a fresh power-session uptime and `boot_seq=1`.
 - Use the `RANGE` page during the run: `STB` is the stable practical maximum, while `RAW MAX` is only the technical peak.
 - Run a `48..72 h` battery-powered balcony test with the diagnostic log.
 - Download `/log.csv` after the run; it is now the preferred compact file to send for analysis instead of a full Google Sheets export.
+- For future firmware updates, use OTA when the device is reachable on the local network; keep USB as the recovery path.
 - Analyze `p2p_avg`, `p2p_p95`, `p2p_stable_max`, `session_p2p_stable_max`, `env_ok_count/env_fail_count`, `SHT31_*` events, `boot_seq`, `reset_reason`, and heap fields before changing user-facing `SILENT / NORMAL / LOUD / PEAK` levels.
 - If SHT31 data still disappears, use `env_fail_count`, `SHT31_LOST/SHT31_REINIT/SHT31_RECOVER`, and restart rows to decide whether the issue is sensor/I2C/power/contact related before soldering.
 - Use `DATA_DICTIONARY.md` or `DATA_DICTIONARY_RU.md` when the user asks what a column, status, verdict, flag, or Telegram line means.

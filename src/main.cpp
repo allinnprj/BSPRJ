@@ -1,4 +1,5 @@
 #include <Arduino.h>
+#include <ArduinoOTA.h>
 #include <esp_system.h>
 #include <limits.h>
 #include <Wire.h>
@@ -12,6 +13,7 @@
 #include "mqtt_service.h"
 #include "project_version.h"
 #include "sht31_service.h"
+#include "secrets.h"
 #include "telegram_alert_service.h"
 #include "time_service.h"
 #include "wifi_service.h"
@@ -113,6 +115,7 @@ unsigned long lastSht31RecoverAttemptAt = 0;
 bool displayPinnedOn = false;
 bool scheduledRestartStarted = false;
 bool sht31LostLogged = false;
+bool otaStarted = false;
 uint16_t sht31UnavailableSeconds = 0;
 uint16_t sht31RecoverCount = 0;
 uint32_t currentBootSequence = 0;
@@ -677,6 +680,51 @@ void updateSht31Health(const AudioSnapshot &snapshot) {
   }
 }
 
+void beginOta() {
+  ArduinoOTA.setHostname(OTA_HOSTNAME);
+  ArduinoOTA.setPassword(OTA_PASSWORD);
+  ArduinoOTA
+      .onStart([]() {
+        otaStarted = true;
+        String type = ArduinoOTA.getCommand() == U_FLASH ? F("sketch") : F("filesystem");
+        Serial.print(F("[OTA] start -> "));
+        Serial.println(type);
+        logService.appendRuntimeEvent(F("OTA_START"), currentDateText(), currentTimeText(),
+                                      PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                      powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                      wifiService.rssiDbm());
+      })
+      .onEnd([]() {
+        Serial.println(F("[OTA] end"));
+        logService.appendRuntimeEvent(F("OTA_END"), currentDateText(), currentTimeText(),
+                                      PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                      powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                      wifiService.rssiDbm());
+      })
+      .onProgress([](unsigned int progress, unsigned int total) {
+        static uint8_t lastPrintedPct = 255;
+        uint8_t pct = total == 0 ? 0 : static_cast<uint8_t>((progress * 100U) / total);
+        if (pct != lastPrintedPct && pct % 10 == 0) {
+          lastPrintedPct = pct;
+          Serial.print(F("[OTA] progress -> "));
+          Serial.print(pct);
+          Serial.println('%');
+        }
+      })
+      .onError([](ota_error_t error) {
+        Serial.print(F("[OTA] error -> "));
+        Serial.println(static_cast<int>(error));
+        logService.appendRuntimeEvent(F("OTA_ERROR"), currentDateText(), currentTimeText(),
+                                      PROJECT_BUILD, currentBootSequence, currentResetReason,
+                                      powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
+                                      wifiService.rssiDbm());
+        otaStarted = false;
+      });
+  ArduinoOTA.begin();
+  Serial.print(F("[OTA] ready -> "));
+  Serial.println(OTA_HOSTNAME);
+}
+
 void setup() {
   Serial.begin(115200);
   delay(STARTUP_SERIAL_DELAY_MS);
@@ -737,6 +785,7 @@ void setup() {
   mqttService.begin();
   telegramAlertService.begin();
   timeService.begin();
+  beginOta();
   uint64_t restoredMeanSum = 0;
   uint32_t restoredMeanCount = 0;
   if (meanPersistenceService.load(restoredMeanSum, restoredMeanCount)) {
@@ -806,6 +855,7 @@ void loop() {
   }
 
   wifiService.update();
+  ArduinoOTA.handle();
   logService.update(wifiService.isConnected(), wifiService.ipAddressString());
   timeService.update(wifiService.isConnected());
   latestSht31Reading = sht31Service.update();
@@ -819,7 +869,8 @@ void loop() {
                               wifiService.rssiDbm(), wifiService.signalPercent(),
                               timeService.isSynced(), PROJECT_VERSION, PROJECT_BUILD,
                               formatCompactUptime(powerUptimeMs()));
-  if (latestSnapshot.statsUpdated && nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
+  if (!otaStarted && latestSnapshot.statsUpdated &&
+      nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
     if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {
       lastMeanPersistAt = nowMs;
     }
@@ -912,7 +963,7 @@ void loop() {
     Serial.println();
   }
 
-  if (!scheduledRestartStarted && nowMs >= SCHEDULED_RESTART_INTERVAL_MS) {
+  if (!otaStarted && !scheduledRestartStarted && nowMs >= SCHEDULED_RESTART_INTERVAL_MS) {
     scheduledRestartStarted = true;
     savePowerUptimeCheckpoint();
     logService.appendRuntimeEvent(F("SCHEDULED_RESTART"), currentDateText(), currentTimeText(),

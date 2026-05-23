@@ -16,6 +16,10 @@ constexpr char kLogHeader[] =
 WebServer logServer(80);
 bool logClearedByWeb = false;
 
+String archivePathFromMillis() {
+  return String(F("/sound_log_archive_")) + String(millis()) + F(".csv");
+}
+
 bool createFreshLogFile() {
   File file = LittleFS.open(kLogPath, FILE_WRITE);
   if (!file) {
@@ -56,12 +60,64 @@ void ensureHeader() {
 
 void handleRoot() {
   String body;
-  body.reserve(360);
+  body.reserve(520);
   body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
   body += F("<title>BS Noise Log</title></head><body>");
   body += F("<h3>BS Noise Log</h3>");
   body += F("<p><a href=\"/log.csv\" download>Download log.csv</a></p>");
+  body += F("<p><a href=\"/archive-log\">Archive current log</a></p>");
   body += F("<p><a href=\"/clear-log\">Clear log</a></p>");
+  body += F("</body></html>");
+  logServer.send(200, "text/html", body);
+}
+
+void handleArchiveLogConfirm() {
+  String body;
+  body.reserve(500);
+  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+  body += F("<title>Archive BS Noise Log</title></head><body>");
+  body += F("<h3>Archive current log?</h3>");
+  body += F("<p>This renames the current log.csv to an archive file and starts a new active log.</p>");
+  body += F("<p><a href=\"/archive-log-confirm\">Confirm archive</a></p>");
+  body += F("<p><a href=\"/\">Cancel</a></p>");
+  body += F("</body></html>");
+  logServer.send(200, "text/html", body);
+}
+
+void handleArchiveLogAction() {
+  if (!LittleFS.exists(kLogPath)) {
+    if (!createFreshLogFile()) {
+      logServer.send(500, "text/plain", "failed to create log\n");
+      return;
+    }
+    logClearedByWeb = true;
+    logServer.send(200, "text/plain", "no existing log; new active log created\n");
+    return;
+  }
+
+  String archivePath = archivePathFromMillis();
+  if (!LittleFS.rename(kLogPath, archivePath)) {
+    logServer.send(500, "text/plain", "failed to archive log\n");
+    return;
+  }
+  if (!createFreshLogFile()) {
+    logServer.send(500, "text/plain", "archived, but failed to create new log\n");
+    return;
+  }
+  logClearedByWeb = true;
+
+  Serial.print(F("[LOG] current log archived -> "));
+  Serial.println(archivePath);
+  String body;
+  body.reserve(420);
+  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+  body += F("<title>BS Noise Log Archived</title></head><body>");
+  body += F("<h3>Current log archived.</h3>");
+  body += F("<p>Archive: ");
+  body += archivePath;
+  body += F("</p>");
+  body += F("<p><a href=\"/log.csv\" download>Download new log.csv</a></p>");
+  body += F("<p><a href=\"/\">Back</a></p>");
   body += F("</body></html>");
   logServer.send(200, "text/html", body);
 }
@@ -138,6 +194,8 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
   if (wifiConnected && (!serverStarted_ || ipAddress != lastIpAddress_)) {
     logServer.on("/", handleRoot);
     logServer.on("/log.csv", HTTP_GET, handleLogDownload);
+    logServer.on("/archive-log", HTTP_GET, handleArchiveLogConfirm);
+    logServer.on("/archive-log-confirm", HTTP_GET, handleArchiveLogAction);
     logServer.on("/clear-log", HTTP_GET, handleClearLogConfirm);
     logServer.on("/clear-log-confirm", HTTP_GET, handleClearLogAction);
     logServer.begin();
