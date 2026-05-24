@@ -33,6 +33,7 @@
 - Keep `memory.md` concise and update it only with durable context that helps a future chat continue the project quickly.
 - After meaningful project decisions, hardware changes, log-analysis conclusions, or end-of-session handoff points, update `memory.md` so `Продолжаем проект` works in a new chat without requiring a fresh manual `СОС`.
 - Use `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` as the human-readable references for Google Sheets, Telegram, AppSheet, log, and analytics term meanings.
+- Use `progress.md` as the rulebook for the overall project readiness percentage.
 - Keep the project incremental: one hardware check or one behavior change per step.
 - Prefer the smallest safe edit for the current task.
 - Validate firmware changes with `pio run` for `env:esp32dev`.
@@ -45,6 +46,9 @@
 - At the end of each completed task, include an estimated overall project readiness percentage in the final response only.
 - This readiness percentage refers to the whole current prototype goal, not only the current task.
 - Treat the percentage as an expert estimate based on firmware stability, logging quality, sensor reliability, calibration readiness, OTA/serviceability, and confidence in multi-day data.
+- Change the readiness percentage only when there is confirmed project-level progress; useful diagnostics, unvalidated fixes, and build-only changes do not automatically increase readiness.
+- If a hidden blocker is discovered, keep the readiness percentage unchanged or lower it when that better reflects project risk.
+- Consider `memory.md`, `CHANGELOG.md`, `PROJECT_TASKS.md`, real device tests, open risks, and the main project goal before changing the percentage.
 - If there is not enough data for a confident estimate, give a cautious estimate and briefly state why.
 
 ## Versioning Rules

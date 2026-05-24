@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.1.54-EXP+108 - 2026-05-24
+
+1. Changed the ESP32 partition table from a single factory app slot to OTA-capable `otadata`, `ota_0`, and `ota_1` slots.
+2. Reduced the local LittleFS area to keep two firmware slots available; this build must be flashed once over USB before OTA uploads can work.
+3. Validation: `pio run -e esp32dev` -> SUCCESS; `pio run -e esp32dev_ota` -> SUCCESS.
+
 ## 0.1.53-EXP+107 - 2026-05-24
 
 1. Changed the archived log list to display compact filenames as readable date/time labels such as `24.05.2026 16:42`, while keeping downloaded CSV filenames short and sortable.
