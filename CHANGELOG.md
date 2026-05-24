@@ -4,7 +4,7 @@
 
 1. Changed the ESP32 partition table from a single factory app slot to OTA-capable `otadata`, `ota_0`, and `ota_1` slots.
 2. Reduced the local LittleFS area to keep two firmware slots available; this build must be flashed once over USB before OTA uploads can work.
-3. Validation: `pio run -e esp32dev` -> SUCCESS; `pio run -e esp32dev_ota` -> SUCCESS.
+3. Validation: `pio run -e esp32dev` -> SUCCESS; `pio run -e esp32dev_ota` -> SUCCESS; real device OTA upload confirmed after one USB flash installed the OTA-capable partition layout.
 
 ## 0.1.53-EXP+107 - 2026-05-24
 

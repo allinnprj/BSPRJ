@@ -19,7 +19,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Keep changes incremental: one behavior or one hardware check per step.
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
 - `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` are the practical references for table, Telegram, AppSheet, log, and analytics terms.
-- `progress.md` defines the readiness percentage method; current baseline is `49%` until build `108` is USB-flashed and a real OTA upload succeeds.
+- `progress.md` defines the readiness percentage method; current baseline is `52%` after build `108` was USB-flashed and OTA upload succeeded end-to-end.
 
 ## Hardware Notes
 
@@ -86,13 +86,13 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `105` shortens archived log filenames to `DDMMYYYY_HHMM.csv` when time is synced and changes the local log web UI to a dark theme.
 - Build `106` fixes browser download names for active and archived CSV logs using explicit CSV filenames, and makes same-minute archive names unique with suffixes such as `_2`.
 - Build `107` changes the archived-log web list to show readable date/time labels such as `24.05.2026 16:42`, while keeping downloaded filenames in `DDMMYYYY_HHMM.csv` format.
-- Build `108` changes the partition table to add `otadata`, `ota_0`, and `ota_1`; this fixes OTA error `Partition Could Not be Found`, but must be flashed once over USB and can reset the on-device LittleFS log storage.
-- OTA auth is confirmed working when PlatformIO shows `Authenticating...OK`; if Serial shows `Partition Could Not be Found`, the device is still on a non-OTA partition table and needs the USB-flashed OTA partition layout.
+- Build `108` changes the partition table to add `otadata`, `ota_0`, and `ota_1`; after one USB flash, a real OTA upload was confirmed working end-to-end.
+- OTA is now considered serviceable for future firmware updates when the device is reachable on the local network; keep USB as the recovery path.
 - `esp32dev_ota` currently pins the PC-side OTA callback to `host_ip=192.168.11.135`, `host_port=3233`, and `timeout=30` so the ESP32 can connect back to the correct Windows Wi-Fi interface.
 
 ## Next Best Steps
 
-- Flash `0.1.54-EXP` build `108` once over USB to install the OTA-capable partition table, then use OTA for future updates.
+- Use OTA for future firmware updates when the device is reachable on the local network; USB remains the recovery path.
 - Before starting the next clean run, download the current `/log.csv`; optionally use `/archive-log` after download to preserve the on-device file and start a fresh active log.
 - Reboot or power-cycle before the multi-day balcony run; a physical power cycle starts a fresh power-session uptime and `boot_seq=1`.
 - Use the `RANGE` page during the run: `STB` is the stable practical maximum, while `RAW MAX` is only the technical peak.

@@ -33,5 +33,5 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current readiness estimate: `49%`.
-- Reason: build `108` prepares an OTA-capable partition layout, but it still needs one USB flash and a real successful OTA upload before OTA/serviceability can count as closed.
+- Current readiness estimate: `52%`.
+- Reason: build `108` was USB-flashed and OTA upload was confirmed end-to-end, closing the main serviceability blocker. The estimate stays cautious because the project still needs a fresh multi-day battery balcony run, SHT31 reliability confirmation, and final validation of `SILENT / NORMAL / LOUD / PEAK` thresholds against real logs.
