@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.1.51-EXP+105 - 2026-05-24
+
+1. Shortened archived log filenames to date/time format such as `24052026_1435.csv` when wall-clock time is synced, with an uptime-based fallback before sync.
+2. Changed the local log web UI to a dark theme for easier viewing.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
+## 0.1.50-EXP+104 - 2026-05-24
+
+1. Added archive download support to the local web log page so preserved `/sound_log_archive_*.csv` and `/sound_log_legacy.csv` files can be downloaded after archiving.
+2. Added a direct `Download archived log` link on the archive confirmation result page.
+3. Validation: `pio run -e esp32dev` -> SUCCESS.
+
 ## 0.1.49-EXP+103 - 2026-05-23
 
 1. Added minimal ArduinoOTA support with local hostname/password configuration from `include/secrets.h`.

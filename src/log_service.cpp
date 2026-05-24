@@ -15,9 +15,50 @@ constexpr char kLogHeader[] =
     "free_heap,min_free_heap,wifi_dbm";
 WebServer logServer(80);
 bool logClearedByWeb = false;
+String currentDateText;
+String currentTimeText;
+
+String pageStart(const String &title) {
+  String body;
+  body.reserve(600);
+  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
+  body += F("<title>");
+  body += title;
+  body += F("</title><style>");
+  body += F("body{margin:0;padding:22px;font-family:Arial,sans-serif;background:#111827;color:#e5e7eb;line-height:1.45}");
+  body += F("main{max-width:760px;margin:0 auto;background:#172033;border:1px solid #2f3b52;border-radius:18px;padding:22px;box-shadow:0 18px 50px #0007}");
+  body += F("h3,h4{margin:0 0 14px;color:#f8fafc}p{color:#cbd5e1}.btn,a{color:#93c5fd}.btn{display:inline-block;margin:6px 8px 6px 0;padding:10px 14px;border-radius:12px;background:#1d4ed8;text-decoration:none;color:white;font-weight:700}");
+  body += F(".danger{background:#b91c1c}.ghost{background:#334155}.list{padding-left:18px}.muted{color:#94a3b8}.ok{color:#86efac}");
+  body += F("</style></head><body><main>");
+  return body;
+}
+
+void pageEnd(String &body) {
+  body += F("</main></body></html>");
+}
+
+String compactDateTimeForFile() {
+  if (currentDateText.length() >= 10 && currentTimeText.length() >= 5) {
+    String date = currentDateText;
+    String time = currentTimeText;
+    date.replace("-", "");
+    time.replace(":", "");
+    if (date.length() == 8 && time.length() >= 4) {
+      return date.substring(6, 8) + date.substring(4, 6) + date.substring(0, 4) +
+             F("_") + time.substring(0, 4);
+    }
+  }
+  return String(F("uptime_")) + String(millis());
+}
 
 String archivePathFromMillis() {
-  return String(F("/sound_log_archive_")) + String(millis()) + F(".csv");
+  return String(F("/")) + compactDateTimeForFile() + F(".csv");
+}
+
+bool isDownloadableLogPath(const String &path) {
+  return path == kLegacyLogPath ||
+         (path.length() == 18 && path.endsWith(F(".csv")) && path.charAt(9) == '_') ||
+         (path.startsWith(F("/sound_log_archive_")) && path.endsWith(F(".csv")));
 }
 
 bool createFreshLogFile() {
@@ -59,28 +100,47 @@ void ensureHeader() {
 }
 
 void handleRoot() {
-  String body;
-  body.reserve(520);
-  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
-  body += F("<title>BS Noise Log</title></head><body>");
+  String body = pageStart(F("BS Noise Log"));
   body += F("<h3>BS Noise Log</h3>");
-  body += F("<p><a href=\"/log.csv\" download>Download log.csv</a></p>");
-  body += F("<p><a href=\"/archive-log\">Archive current log</a></p>");
-  body += F("<p><a href=\"/clear-log\">Clear log</a></p>");
-  body += F("</body></html>");
+  body += F("<p class=\"muted\">Active log: <b>/log.csv</b></p>");
+  body += F("<p><a class=\"btn\" href=\"/log.csv\" download>Download active log</a>");
+  body += F("<a class=\"btn ghost\" href=\"/archive-log\">Archive current log</a>");
+  body += F("<a class=\"btn danger\" href=\"/clear-log\">Clear log</a></p>");
+  body += F("<h4>Archived logs</h4><ul>");
+  File root = LittleFS.open("/");
+  File file = root.openNextFile();
+  bool foundArchive = false;
+  while (file) {
+    String path = file.name();
+    if (!path.startsWith("/")) {
+      path = String("/") + path;
+    }
+    if (isDownloadableLogPath(path)) {
+      foundArchive = true;
+      String url = String(F("/download-archive?file=")) + path;
+      body += F("<li class=\"list\"><a href=\"");
+      body += url;
+      body += F("\" download>");
+      body += path.substring(1);
+      body += F("</a></li>");
+    }
+    file = root.openNextFile();
+  }
+  if (!foundArchive) {
+    body += F("<li class=\"muted\">No archived logs yet.</li>");
+  }
+  body += F("</ul>");
+  pageEnd(body);
   logServer.send(200, "text/html", body);
 }
 
 void handleArchiveLogConfirm() {
-  String body;
-  body.reserve(500);
-  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
-  body += F("<title>Archive BS Noise Log</title></head><body>");
+  String body = pageStart(F("Archive BS Noise Log"));
   body += F("<h3>Archive current log?</h3>");
-  body += F("<p>This renames the current log.csv to an archive file and starts a new active log.</p>");
-  body += F("<p><a href=\"/archive-log-confirm\">Confirm archive</a></p>");
-  body += F("<p><a href=\"/\">Cancel</a></p>");
-  body += F("</body></html>");
+  body += F("<p>This renames the current log.csv to a dated archive file and starts a new active log.</p>");
+  body += F("<p><a class=\"btn\" href=\"/archive-log-confirm\">Confirm archive</a>");
+  body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
+  pageEnd(body);
   logServer.send(200, "text/html", body);
 }
 
@@ -108,30 +168,27 @@ void handleArchiveLogAction() {
 
   Serial.print(F("[LOG] current log archived -> "));
   Serial.println(archivePath);
-  String body;
-  body.reserve(420);
-  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
-  body += F("<title>BS Noise Log Archived</title></head><body>");
-  body += F("<h3>Current log archived.</h3>");
+  String body = pageStart(F("BS Noise Log Archived"));
+  body += F("<h3 class=\"ok\">Current log archived.</h3>");
   body += F("<p>Archive: ");
   body += archivePath;
   body += F("</p>");
-  body += F("<p><a href=\"/log.csv\" download>Download new log.csv</a></p>");
-  body += F("<p><a href=\"/\">Back</a></p>");
-  body += F("</body></html>");
+  body += F("<p><a class=\"btn\" href=\"/download-archive?file=");
+  body += archivePath;
+  body += F("\" download>Download archived log</a></p>");
+  body += F("<p><a class=\"btn ghost\" href=\"/log.csv\" download>Download new active log</a>");
+  body += F("<a class=\"btn ghost\" href=\"/\">Back</a></p>");
+  pageEnd(body);
   logServer.send(200, "text/html", body);
 }
 
 void handleClearLogConfirm() {
-  String body;
-  body.reserve(420);
-  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
-  body += F("<title>Clear BS Noise Log</title></head><body>");
+  String body = pageStart(F("Clear BS Noise Log"));
   body += F("<h3>Clear current log?</h3>");
   body += F("<p>This clears only the current compact log.csv. Legacy log is not touched.</p>");
-  body += F("<p><a href=\"/clear-log-confirm\">Confirm clear</a></p>");
-  body += F("<p><a href=\"/\">Cancel</a></p>");
-  body += F("</body></html>");
+  body += F("<p><a class=\"btn danger\" href=\"/clear-log-confirm\">Confirm clear</a>");
+  body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
+  pageEnd(body);
   logServer.send(200, "text/html", body);
 }
 
@@ -146,14 +203,11 @@ void handleClearLogAction() {
   logClearedByWeb = true;
 
   Serial.println(F("[LOG] current log cleared from web UI"));
-  String body;
-  body.reserve(260);
-  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
-  body += F("<title>BS Noise Log Cleared</title></head><body>");
-  body += F("<h3>Current log cleared.</h3>");
-  body += F("<p><a href=\"/log.csv\" download>Download new log.csv</a></p>");
-  body += F("<p><a href=\"/\">Back</a></p>");
-  body += F("</body></html>");
+  String body = pageStart(F("BS Noise Log Cleared"));
+  body += F("<h3 class=\"ok\">Current log cleared.</h3>");
+  body += F("<p><a class=\"btn ghost\" href=\"/log.csv\" download>Download new log.csv</a>");
+  body += F("<a class=\"btn ghost\" href=\"/\">Back</a></p>");
+  pageEnd(body);
   logServer.send(200, "text/html", body);
 }
 
@@ -166,6 +220,30 @@ void handleLogDownload() {
   File file = LittleFS.open(kLogPath, FILE_READ);
   if (!file) {
     logServer.send(500, "text/plain", "failed to open log\n");
+    return;
+  }
+
+  logServer.streamFile(file, "text/csv");
+  file.close();
+}
+
+void handleArchiveDownload() {
+  String path = logServer.arg("file");
+  if (!path.startsWith("/")) {
+    path = String("/") + path;
+  }
+  if (!isDownloadableLogPath(path)) {
+    logServer.send(400, "text/plain", "invalid archive path\n");
+    return;
+  }
+  if (!LittleFS.exists(path)) {
+    logServer.send(404, "text/plain", "archive not found\n");
+    return;
+  }
+
+  File file = LittleFS.open(path, FILE_READ);
+  if (!file) {
+    logServer.send(500, "text/plain", "failed to open archive\n");
     return;
   }
 
@@ -196,6 +274,7 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     logServer.on("/log.csv", HTTP_GET, handleLogDownload);
     logServer.on("/archive-log", HTTP_GET, handleArchiveLogConfirm);
     logServer.on("/archive-log-confirm", HTTP_GET, handleArchiveLogAction);
+    logServer.on("/download-archive", HTTP_GET, handleArchiveDownload);
     logServer.on("/clear-log", HTTP_GET, handleClearLogConfirm);
     logServer.on("/clear-log-confirm", HTTP_GET, handleClearLogAction);
     logServer.begin();
@@ -219,6 +298,15 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
   }
 
   lastWifiConnected_ = wifiConnected;
+}
+
+void LogService::setClock(const String &dateText, const String &timeText) {
+  if (dateText.length() > 0) {
+    currentDateText = dateText;
+  }
+  if (timeText.length() > 0) {
+    currentTimeText = timeText;
+  }
 }
 
 void LogService::clearCurrentLog() {

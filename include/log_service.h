@@ -8,6 +8,7 @@ class LogService {
  public:
   void begin();
   void update(bool wifiConnected, const String &ipAddress);
+  void setClock(const String &dateText, const String &timeText);
   void clearCurrentLog();
   void appendWindowAggregate(const GoogleSheetsWindowRecord &record, uint32_t buildNumber,
                              int32_t wifiRssiDbm);

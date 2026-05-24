@@ -858,6 +858,9 @@ void loop() {
   ArduinoOTA.handle();
   logService.update(wifiService.isConnected(), wifiService.ipAddressString());
   timeService.update(wifiService.isConnected());
+  if (timeService.isSynced()) {
+    logService.setClock(timeService.dateString(), timeService.timeString());
+  }
   latestSht31Reading = sht31Service.update();
   latestSnapshot = audioSampler.sample();
   updateSht31Health(latestSnapshot);
