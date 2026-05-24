@@ -42,6 +42,10 @@
 - Secrets, passwords, tokens, and chat identifiers must live in `include/secrets.h`, not in `src/main.cpp` or committed docs.
 - Network features should be introduced in modules such as `wifi_service` and `time_service`, not embedded directly into `main.cpp`.
 - A clean restart is preferred over carrying ESP8266-specific workarounds into the ESP32 codebase.
+- At the end of each completed task, include an estimated overall project readiness percentage in the final response only.
+- This readiness percentage refers to the whole current prototype goal, not only the current task.
+- Treat the percentage as an expert estimate based on firmware stability, logging quality, sensor reliability, calibration readiness, OTA/serviceability, and confidence in multi-day data.
+- If there is not enough data for a confident estimate, give a cautious estimate and briefly state why.
 
 ## Versioning Rules
 

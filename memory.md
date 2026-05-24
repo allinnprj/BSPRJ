@@ -83,6 +83,8 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - OTA helper tooling is configured with PlatformIO env `esp32dev_ota` and `scripts/ota_upload.ps1`; default OTA target is the fixed IP `192.168.11.124`, and the helper reads `OTA_PASSWORD` from ignored `include/secrets.h`.
 - Build `104` adds archive download links to the local web log page, including `/sound_log_archive_*.csv` and `/sound_log_legacy.csv`, so preserved logs can be downloaded after archiving.
 - Build `105` shortens archived log filenames to `DDMMYYYY_HHMM.csv` when time is synced and changes the local log web UI to a dark theme.
+- OTA auth is confirmed working when PlatformIO shows `Authenticating...OK`; if upload then fails with `No response from device`, treat it as the OTA reverse TCP channel rather than a password problem.
+- `esp32dev_ota` currently pins the PC-side OTA callback to `host_ip=192.168.11.135`, `host_port=3233`, and `timeout=30` so the ESP32 can connect back to the correct Windows Wi-Fi interface.
 
 ## Next Best Steps
 
@@ -103,5 +105,6 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Upload: `pio run -e esp32dev -t upload`
 - OTA upload by fixed IP: `.\scripts\ota_upload.ps1`
 - OTA upload by IP: `.\scripts\ota_upload.ps1 -Port <device-ip>`
+- VS Code OTA env: `esp32dev_ota`
 - Monitor: `pio device monitor -e esp32dev -b 115200`
 - Local device log URL pattern: `http://<device-ip>/log.csv`
