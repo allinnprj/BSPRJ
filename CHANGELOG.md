@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## 0.1.53-EXP+107 - 2026-05-24
+
+1. Changed the archived log list to display compact filenames as readable date/time labels such as `24.05.2026 16:42`, while keeping downloaded CSV filenames short and sortable.
+2. Marked old non-dated archive names as legacy in the web UI instead of pretending they have a known date/time.
+3. Validation: `pio run -e esp32dev` -> SUCCESS; `pio run -e esp32dev_ota` -> SUCCESS.
+
+## 0.1.52-EXP+106 - 2026-05-24
+
+1. Added explicit CSV download filenames through `Content-Disposition`, so active and archived log downloads save as date/time names instead of browser-generated names like `download-archive.csv`.
+2. Made archive filenames unique when multiple archives are created in the same minute by appending suffixes such as `_2`.
+3. Validation: `pio run -e esp32dev` -> SUCCESS; `pio run -e esp32dev_ota` -> SUCCESS.
+
 ## 0.1.51-EXP+105 - 2026-05-24
 
 1. Shortened archived log filenames to date/time format such as `24052026_1435.csv` when wall-clock time is synced, with an uptime-based fallback before sync.

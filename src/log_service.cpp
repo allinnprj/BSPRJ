@@ -55,10 +55,83 @@ String archivePathFromMillis() {
   return String(F("/")) + compactDateTimeForFile() + F(".csv");
 }
 
+bool isCompactArchivePath(const String &path) {
+  if (!path.startsWith("/") || !path.endsWith(F(".csv")) || path.length() < 18) {
+    return false;
+  }
+  if (path.charAt(9) != '_') {
+    return false;
+  }
+  for (uint8_t index = 1; index <= 8; ++index) {
+    if (!isDigit(path.charAt(index))) {
+      return false;
+    }
+  }
+  for (uint8_t index = 10; index <= 13; ++index) {
+    if (!isDigit(path.charAt(index))) {
+      return false;
+    }
+  }
+  if (path.length() == 18) {
+    return true;
+  }
+  if (path.charAt(14) != '_') {
+    return false;
+  }
+  for (uint8_t index = 15; index < path.length() - 4; ++index) {
+    if (!isDigit(path.charAt(index))) {
+      return false;
+    }
+  }
+  return true;
+}
+
 bool isDownloadableLogPath(const String &path) {
-  return path == kLegacyLogPath ||
-         (path.length() == 18 && path.endsWith(F(".csv")) && path.charAt(9) == '_') ||
+  return path == kLegacyLogPath || isCompactArchivePath(path) ||
          (path.startsWith(F("/sound_log_archive_")) && path.endsWith(F(".csv")));
+}
+
+String uniqueArchivePath() {
+  String base = compactDateTimeForFile();
+  String path = String(F("/")) + base + F(".csv");
+  uint8_t suffix = 2;
+  while (LittleFS.exists(path) && suffix < 100) {
+    path = String(F("/")) + base + F("_") + String(suffix) + F(".csv");
+    suffix++;
+  }
+  return path;
+}
+
+String fileNameFromPath(const String &path) {
+  int slashIndex = path.lastIndexOf('/');
+  return slashIndex >= 0 ? path.substring(slashIndex + 1) : path;
+}
+
+String displayNameForLogPath(const String &path) {
+  String fileName = fileNameFromPath(path);
+  if (isCompactArchivePath(path)) {
+    String day = fileName.substring(0, 2);
+    String month = fileName.substring(2, 4);
+    String year = fileName.substring(4, 8);
+    String hour = fileName.substring(9, 11);
+    String minute = fileName.substring(11, 13);
+    String suffix;
+    int dotIndex = fileName.lastIndexOf('.');
+    if (dotIndex > 13) {
+      suffix = fileName.substring(13, dotIndex);
+    }
+    return day + F(".") + month + F(".") + year + F(" ") + hour + F(":") + minute + suffix;
+  }
+  if (fileName == F("sound_log_legacy.csv")) {
+    return F("Legacy log: sound_log_legacy.csv");
+  }
+  return String(F("Legacy archive: ")) + fileName;
+}
+
+void sendCsvDownloadHeader(const String &fileName) {
+  logServer.sendHeader(F("Content-Disposition"),
+                       String(F("attachment; filename=\"")) + fileName + F("\""));
+  logServer.sendHeader(F("Cache-Control"), F("no-store"));
 }
 
 bool createFreshLogFile() {
@@ -121,7 +194,7 @@ void handleRoot() {
       body += F("<li class=\"list\"><a href=\"");
       body += url;
       body += F("\" download>");
-      body += path.substring(1);
+      body += displayNameForLogPath(path);
       body += F("</a></li>");
     }
     file = root.openNextFile();
@@ -155,7 +228,7 @@ void handleArchiveLogAction() {
     return;
   }
 
-  String archivePath = archivePathFromMillis();
+  String archivePath = uniqueArchivePath();
   if (!LittleFS.rename(kLogPath, archivePath)) {
     logServer.send(500, "text/plain", "failed to archive log\n");
     return;
@@ -171,7 +244,10 @@ void handleArchiveLogAction() {
   String body = pageStart(F("BS Noise Log Archived"));
   body += F("<h3 class=\"ok\">Current log archived.</h3>");
   body += F("<p>Archive: ");
-  body += archivePath;
+  body += displayNameForLogPath(archivePath);
+  body += F("<br><span class=\"muted\">File: ");
+  body += fileNameFromPath(archivePath);
+  body += F("</span>");
   body += F("</p>");
   body += F("<p><a class=\"btn\" href=\"/download-archive?file=");
   body += archivePath;
@@ -223,6 +299,7 @@ void handleLogDownload() {
     return;
   }
 
+  sendCsvDownloadHeader(compactDateTimeForFile() + F(".csv"));
   logServer.streamFile(file, "text/csv");
   file.close();
 }
@@ -247,6 +324,7 @@ void handleArchiveDownload() {
     return;
   }
 
+  sendCsvDownloadHeader(fileNameFromPath(path));
   logServer.streamFile(file, "text/csv");
   file.close();
 }

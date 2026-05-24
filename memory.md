@@ -9,7 +9,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.51-EXP` build `105`.
+- Current firmware marker: `0.1.53-EXP` build `107`.
 
 ## Important Decisions
 
@@ -83,12 +83,14 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - OTA helper tooling is configured with PlatformIO env `esp32dev_ota` and `scripts/ota_upload.ps1`; default OTA target is the fixed IP `192.168.11.124`, and the helper reads `OTA_PASSWORD` from ignored `include/secrets.h`.
 - Build `104` adds archive download links to the local web log page, including `/sound_log_archive_*.csv` and `/sound_log_legacy.csv`, so preserved logs can be downloaded after archiving.
 - Build `105` shortens archived log filenames to `DDMMYYYY_HHMM.csv` when time is synced and changes the local log web UI to a dark theme.
+- Build `106` fixes browser download names for active and archived CSV logs using explicit CSV filenames, and makes same-minute archive names unique with suffixes such as `_2`.
+- Build `107` changes the archived-log web list to show readable date/time labels such as `24.05.2026 16:42`, while keeping downloaded filenames in `DDMMYYYY_HHMM.csv` format.
 - OTA auth is confirmed working when PlatformIO shows `Authenticating...OK`; if upload then fails with `No response from device`, treat it as the OTA reverse TCP channel rather than a password problem.
 - `esp32dev_ota` currently pins the PC-side OTA callback to `host_ip=192.168.11.135`, `host_port=3233`, and `timeout=30` so the ESP32 can connect back to the correct Windows Wi-Fi interface.
 
 ## Next Best Steps
 
-- Flash or OTA `0.1.51-EXP` build `105`.
+- Flash or OTA `0.1.53-EXP` build `107`.
 - Before starting the next clean run, download the current `/log.csv`; optionally use `/archive-log` after download to preserve the on-device file and start a fresh active log.
 - Reboot or power-cycle before the multi-day balcony run; a physical power cycle starts a fresh power-session uptime and `boot_seq=1`.
 - Use the `RANGE` page during the run: `STB` is the stable practical maximum, while `RAW MAX` is only the technical peak.
