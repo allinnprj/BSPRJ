@@ -42,6 +42,13 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - median area: around `1700`
   - strong windows: around `2300+`
   - observed maximum: around `2903`
+- Analysis of logs from `D:\MD\Downloads\newlog` on 2026-05-25/26:
+  - Several downloaded CSV files are duplicates; do not count duplicate archives as separate runs.
+  - Manual/user-caused sections to filter: the 2026-05-24 evening power/reset interruption around `20:00..22:49`, the 2026-05-25 full restart around `09:40`, and the 2026-05-24 OTA experiments with `OTA_ERROR`.
+  - Weather/hardware-risk sections to treat cautiously: 2026-05-25 `08:30..09:39` had many `BROWNOUT` boots and wild `boot_seq` jumps after rain/wetness; 2026-05-25 `17:50..19:09` also had an unplanned gap/restart during light rain while the user was away.
+  - A non-user suspicious section remains around 2026-05-25 `15:10..15:20` with nearby `BOOT` rows and higher sound values; keep it as a real field anomaly until more logs clarify it.
+  - The 2026-05-24 `23:00..00:40` high sound/p2p spike may be a real peak or an electrical/contact/post-restart artifact; do not use it yet for `LOUD/PEAK` threshold decisions.
+  - Current expert direction: collect a couple more days of battery balcony logs before deciding; do not rush soldering to a board until power/moisture/contact behavior is clearer.
 
 ## Current Firmware Behavior
 
