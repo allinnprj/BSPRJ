@@ -53,7 +53,8 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - During this run the battery disconnected after the `08:29:59` window.
   - A different battery was installed around `12:30:00`, and the run continued.
   - The battery was changed again at `22:02`.
-  - For later analysis, split this run into `01:00..08:29:59` as the first valid segment, `08:30..12:29:59` as a power-gap/non-measurement interval, `12:30..22:01` as a second segment on another battery, and `22:02+` as a third segment after the later battery change.
+  - Due to the battery/user handling, the controller stopped around `22:19` and resumed around `22:57`; treat this as a user-caused power interruption, not a firmware or normal hardware fault.
+  - For later analysis, split this run into `01:00..08:29:59` as the first valid segment, `08:30..12:29:59` as a power-gap/non-measurement interval, `12:30..22:01` as a second segment on another battery, `22:02..22:18` as a short post-change segment, `22:19..22:56` as a user-caused power interruption, and `22:57+` as the resumed segment.
 
 ## Current Firmware Behavior
 
