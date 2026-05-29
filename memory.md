@@ -49,6 +49,11 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - A non-user suspicious section remains around 2026-05-25 `15:10..15:20` with nearby `BOOT` rows and higher sound values; keep it as a real field anomaly until more logs clarify it.
   - The 2026-05-24 `23:00..00:40` high sound/p2p spike may be a real peak or an electrical/contact/post-restart artifact; do not use it yet for `LOUD/PEAK` threshold decisions.
   - Current expert direction: collect a couple more days of battery balcony logs before deciding; do not rush soldering to a board until power/moisture/contact behavior is clearer.
+- Current clean physical-construction run started on 2026-05-29 around `01:00` after clearing the log and rebooting the controller.
+  - During this run the battery disconnected after the `08:29:59` window.
+  - A different battery was installed around `12:30:00`, and the run continued.
+  - The battery was changed again at `22:02`.
+  - For later analysis, split this run into `01:00..08:29:59` as the first valid segment, `08:30..12:29:59` as a power-gap/non-measurement interval, `12:30..22:01` as a second segment on another battery, and `22:02+` as a third segment after the later battery change.
 
 ## Current Firmware Behavior
 
