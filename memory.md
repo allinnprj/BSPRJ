@@ -131,6 +131,8 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - On 2026-05-30, moderate but not heavy rain started approximately around `19:24..19:29` local time (`+04:00`). Treat this as a weather-context boundary when comparing microphone behavior, SHT31 readings, and any later anomalies.
   - On 2026-05-30 around `20:05` local time, a nearby car alarm sounded roughly once per second. The user observed live OLED `P2P` reacting approximately in the `500..1024` range.
   - During the same wet-road period, passing-car tire noise on wet asphalt also produced visible live `P2P` changes. Exact values were not captured. Use the nearby CSV windows around `20:00..20:09` and subsequent rainy-road windows as real-world acoustic-response evidence.
+  - The approximate distance from the external microphone to the road opposite the installation is `8.5 m`.
+  - Preliminary live OLED `DEBUG` observations on build `109`: ordinary quiet is around `P2P 300..400`, while medium road noise including tire noise on wet asphalt is around `P2P 700..800`. Treat these as live-response anchors and compare them with the final local CSV aggregates before fixing user-facing thresholds.
 
 ## Next Best Steps
 
