@@ -4,7 +4,7 @@
 
 namespace {
 
-constexpr char kNamespace[] = "bs-mean";
+constexpr char kNamespace[] = "bs-mean-r2";
 constexpr char kKeySum[] = "sum";
 constexpr char kKeyCount[] = "count";
 

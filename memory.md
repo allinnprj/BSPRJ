@@ -9,7 +9,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.54-EXP` build `108`.
+- Current firmware marker: `0.1.55-EXP` build `109`.
 
 ## Important Decisions
 
@@ -115,6 +115,9 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `108` changes the partition table to add `otadata`, `ota_0`, and `ota_1`; after one USB flash, a real OTA upload was confirmed working end-to-end.
 - OTA is now considered serviceable for future firmware updates when the device is reachable on the local network; keep USB as the recovery path.
 - `esp32dev_ota` currently pins the PC-side OTA callback to `host_ip=192.168.11.135`, `host_port=3233`, and `timeout=30` so the ESP32 can connect back to the correct Windows Wi-Fi interface.
+- Build `109` marks the protected external-microphone construction as `acoustic_rev=2`, retunes the relative percent scale for its lower but useful `P2P` range, and starts a fresh persistent `M` baseline without deleting the older revision's NVS data.
+- Build `109` also sends the final-run diagnostics to Google Sheets: `P2P P95`, window/session P2P ranges, SHT31 counters, heap values, boot/reset context, and acoustic revision.
+- Build `109` was uploaded successfully by OTA on 2026-05-30; the device recreated active `/log.csv` with the new `acoustic_rev` column. The updated local `google_sheets/Code.gs` must be deployed in Google Apps Script before the final run if the expanded cloud-table columns are required.
 
 ## Next Best Steps
 
@@ -122,7 +125,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Before starting the next clean run, download the current `/log.csv`; optionally use `/archive-log` after download to preserve the on-device file and start a fresh active log.
 - Reboot or power-cycle before the multi-day balcony run; a physical power cycle starts a fresh power-session uptime and `boot_seq=1`.
 - Use the `RANGE` page during the run: `STB` is the stable practical maximum, while `RAW MAX` is only the technical peak.
-- Run a `48..72 h` battery-powered balcony test with the diagnostic log.
+- Run a final `48..72 h` battery-powered balcony test on build `109` without changing the microphone mechanics.
 - Download `/log.csv` after the run; it is now the preferred compact file to send for analysis instead of a full Google Sheets export.
 - For future firmware updates, use OTA when the device is reachable on the local network; keep USB as the recovery path.
 - Analyze `p2p_avg`, `p2p_p95`, `p2p_stable_max`, `session_p2p_stable_max`, `env_ok_count/env_fail_count`, `SHT31_*` events, `boot_seq`, `reset_reason`, and heap fields before changing user-facing `SILENT / NORMAL / LOUD / PEAK` levels.

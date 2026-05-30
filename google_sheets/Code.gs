@@ -19,7 +19,21 @@ const HEADERS = [
   'QUIET',
   'LOUD',
   'SAMPLES',
-  'UPTIME'
+  'UPTIME',
+  'P2P P95',
+  'P2P MIN',
+  'P2P MAX',
+  'P2P STB MAX',
+  'SESSION P2P MIN',
+  'SESSION P2P MAX',
+  'SESSION P2P STB MAX',
+  'ENV OK',
+  'ENV FAIL',
+  'FREE HEAP',
+  'MIN FREE HEAP',
+  'BOOT SEQ',
+  'RESET REASON',
+  'ACOUSTIC REV'
 ];
 
 const ACTIVE_LOG_SHEET_NAME = 'log';
@@ -423,6 +437,20 @@ const HEADER_WIDTH_OVERRIDES = {
   'IS VALID': 80,
   'GAP BEFORE': 90,
   'QUALITY': 95,
+  'P2P P95': 90,
+  'P2P MIN': 90,
+  'P2P MAX': 90,
+  'P2P STB MAX': 105,
+  'SESSION P2P MIN': 120,
+  'SESSION P2P MAX': 120,
+  'SESSION P2P STB MAX': 145,
+  'ENV OK': 80,
+  'ENV FAIL': 85,
+  'FREE HEAP': 100,
+  'MIN FREE HEAP': 115,
+  'BOOT SEQ': 90,
+  'RESET REASON': 115,
+  'ACOUSTIC REV': 115,
   'MAIN LEVEL': 115,
   'MAIN SHARE %': 110,
   'READING': 260
@@ -435,7 +463,12 @@ const HEADER_COLORS = [
   '#d9b8f0',
   '#b7ead7', '#b7ead7',
   '#d9d2e9',
-  '#ead1dc', '#f4cccc', '#d9d9d9', '#d9d9d9'
+  '#ead1dc', '#f4cccc', '#d9d9d9', '#d9d9d9',
+  '#f9cb9c', '#f9cb9c', '#f9cb9c', '#f9cb9c',
+  '#f9cb9c', '#f9cb9c', '#f9cb9c',
+  '#b7ead7', '#b7ead7',
+  '#d9d9d9', '#d9d9d9',
+  '#d9d2e9', '#d9d2e9', '#d9ead3'
 ];
 const DATA_COLORS_ODD = [
   '#eef7f1', '#eef7f1', '#eef7f1',
@@ -445,7 +478,12 @@ const DATA_COLORS_ODD = [
   '#f8f1fc',
   '#eefaf5', '#eefaf5',
   '#f5f3fb',
-  '#fbf3f7', '#fdf1f1', '#f5f5f5', '#f5f5f5'
+  '#fbf3f7', '#fdf1f1', '#f5f5f5', '#f5f5f5',
+  '#fef5ec', '#fef5ec', '#fef5ec', '#fef5ec',
+  '#fef5ec', '#fef5ec', '#fef5ec',
+  '#eefaf5', '#eefaf5',
+  '#f5f5f5', '#f5f5f5',
+  '#f5f3fb', '#f5f3fb', '#eef7f1'
 ];
 const DATA_COLORS_EVEN = [
   '#f7fbf8', '#f7fbf8', '#f7fbf8',
@@ -455,7 +493,12 @@ const DATA_COLORS_EVEN = [
   '#fbf7fe',
   '#f6fcf9', '#f6fcf9',
   '#faf8fd',
-  '#fdf8fb', '#fef7f7', '#fafafa', '#fafafa'
+  '#fdf8fb', '#fef7f7', '#fafafa', '#fafafa',
+  '#fff9f4', '#fff9f4', '#fff9f4', '#fff9f4',
+  '#fff9f4', '#fff9f4', '#fff9f4',
+  '#f6fcf9', '#f6fcf9',
+  '#fafafa', '#fafafa',
+  '#faf8fd', '#faf8fd', '#f7fbf8'
 ];
 
 function buildDataBackgrounds_(rowCount) {
@@ -2412,7 +2455,21 @@ function doPost(e) {
     valueOrBlank(data.quiet_count),
     valueOrBlank(data.loud_count),
     valueOrBlank(data.samples),
-    valueOrBlank(data.uptime)
+    valueOrBlank(data.uptime),
+    valueOrBlank(data.p2p_p95),
+    valueOrBlank(data.p2p_min),
+    valueOrBlank(data.p2p_max),
+    valueOrBlank(data.p2p_stable_max),
+    valueOrBlank(data.session_p2p_min),
+    valueOrBlank(data.session_p2p_max),
+    valueOrBlank(data.session_p2p_stable_max),
+    valueOrBlank(data.env_ok_count),
+    valueOrBlank(data.env_fail_count),
+    valueOrBlank(data.free_heap),
+    valueOrBlank(data.min_free_heap),
+    valueOrBlank(data.boot_seq),
+    valueOrBlank(data.reset_reason),
+    valueOrBlank(data.acoustic_rev)
   ]]);
   ensureHeaderRowValues_(sheet);
   applyLogRowFormatting_(sheet, targetRow, 1);

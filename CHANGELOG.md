@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.1.55-EXP+109 - 2026-05-30
+
+1. Retuned the relative `INMP441` percent scale for the protected external-microphone construction after the clean field run showed useful `P2P` separation but compressed `NOW/H` percentages.
+2. Added `PROJECT_ACOUSTIC_REV=2` to mark the protected microphone geometry in local CSV and Google Sheets rows so incompatible physical revisions are not mixed during final analysis.
+3. Started a fresh persistent `M` baseline in a new NVS namespace for acoustic revision `2`, preserving the old stored baseline without reusing it.
+4. Expanded Google Sheets raw-log telemetry with `P2P P95`, P2P ranges, session ranges, SHT31 counters, heap values, boot/reset context, and acoustic revision for the final microphone-validation run.
+5. Validation: `pio run -e esp32dev` -> SUCCESS (RAM 19.8%, Flash 83.9%); `pio run -e esp32dev_ota` -> SUCCESS (RAM 19.8%, Flash 83.9%); real device OTA upload -> SUCCESS; active device `/log.csv` header confirmed with `acoustic_rev`; Google Apps Script syntax and 35-column formatting arrays checked locally.
+
 ## 0.1.54-EXP+108 - 2026-05-24
 
 1. Changed the ESP32 partition table from a single factory app slot to OTA-capable `otadata`, `ota_0`, and `ota_1` slots.

@@ -3,6 +3,7 @@
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
 
+#include "project_version.h"
 #include "secrets.h"
 
 void GoogleSheetsService::begin() {
@@ -36,7 +37,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   http.addHeader(F("Content-Type"), F("application/json"));
 
   String payload;
-  payload.reserve(640);
+  payload.reserve(1024);
   payload += F("{\"device_id\":\"");
   payload += DEVICE_ID;
   payload += F("\",\"fw_version\":\"");
@@ -85,6 +86,34 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   payload += record.uptimeText;
   payload += F("\",\"uptime_min\":");
   payload += String(record.uptimeMinutes);
+  payload += F(",\"p2p_p95\":");
+  payload += String(record.peakToPeakP95);
+  payload += F(",\"p2p_min\":");
+  payload += String(record.minPeakToPeak);
+  payload += F(",\"p2p_max\":");
+  payload += String(record.maxPeakToPeak);
+  payload += F(",\"p2p_stable_max\":");
+  payload += String(record.stableMaxPeakToPeak);
+  payload += F(",\"session_p2p_min\":");
+  payload += String(record.sessionMinPeakToPeak);
+  payload += F(",\"session_p2p_max\":");
+  payload += String(record.sessionMaxPeakToPeak);
+  payload += F(",\"session_p2p_stable_max\":");
+  payload += String(record.sessionStableMaxPeakToPeak);
+  payload += F(",\"env_ok_count\":");
+  payload += String(record.environmentOkCount);
+  payload += F(",\"env_fail_count\":");
+  payload += String(record.environmentFailCount);
+  payload += F(",\"free_heap\":");
+  payload += String(record.freeHeap);
+  payload += F(",\"min_free_heap\":");
+  payload += String(record.minFreeHeap);
+  payload += F(",\"boot_seq\":");
+  payload += String(record.bootSequence);
+  payload += F(",\"reset_reason\":\"");
+  payload += record.resetReason;
+  payload += F("\",\"acoustic_rev\":");
+  payload += String(PROJECT_ACOUSTIC_REV);
   payload += '}';
 
   int httpCode = http.POST(payload);

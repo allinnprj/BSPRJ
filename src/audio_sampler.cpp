@@ -10,8 +10,8 @@ constexpr size_t kI2sReadSampleCount = 256;
 constexpr int32_t kI2sClipThreshold = 30000;
 constexpr uint8_t kClipPercentThreshold = 15;
 constexpr uint16_t kPeakToPeakLowThreshold = 30;
-constexpr uint16_t kPercentFloorLevel = 600;
-constexpr uint16_t kPercentReferenceSpan = 3000;
+constexpr uint16_t kPercentFloorLevel = 150;
+constexpr uint16_t kPercentReferenceSpan = 1800;
 
 struct RawWindow {
   int32_t minValue;

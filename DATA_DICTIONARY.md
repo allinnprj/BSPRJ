@@ -78,6 +78,12 @@ Firmware build number.
 
 More specific than version. If two rows have different builds, they may use slightly different logic.
 
+### `ACOUSTIC REV`
+
+Physical microphone-construction revision.
+
+Use it to avoid mixing measurements from mechanically different microphone layouts. Revision `2` is the protected external `INMP441` construction used for the final microphone-validation run.
+
 ## Sound Terms
 
 ### `NOW %`
@@ -157,6 +163,24 @@ Practical current anchors from the balcony run:
 - around `2900`: observed high peak in that run
 
 Possible future simplification: `AVG P2P` may remain a technical column while `NOW %` and `LEVEL` become the normal user-facing values.
+
+### `P2P P95`
+
+Stable high-end `P2P` reference for the window. It is the 95th percentile, so it shows stronger sound activity without letting one random digital spike dominate the conclusion.
+
+### `P2P MIN`, `P2P MAX`, `P2P STB MAX`
+
+Technical window range:
+
+- `P2P MIN`: quietest observed sample window
+- `P2P MAX`: raw technical maximum
+- `P2P STB MAX`: smoothed practical maximum
+
+For normal analysis, prefer `AVG P2P` and `P2P P95`.
+
+### `SESSION P2P MIN`, `SESSION P2P MAX`, `SESSION P2P STB MAX`
+
+Boot-session range context. These values help distinguish normal window behavior from rare technical peaks accumulated since the last restart.
 
 ### `LEVEL`
 

@@ -3,6 +3,8 @@
 #include <LittleFS.h>
 #include <WebServer.h>
 
+#include "project_version.h"
+
 namespace {
 
 constexpr char kLogPath[] = "/sound_log.csv";
@@ -12,7 +14,7 @@ constexpr char kLogHeader[] =
     "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_p95,p2p_min,p2p_max,p2p_stable_max,"
     "session_p2p_min,session_p2p_max,session_p2p_stable_max,raw_min,raw_max,signal,"
     "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,"
-    "free_heap,min_free_heap,wifi_dbm";
+    "free_heap,min_free_heap,wifi_dbm,acoustic_rev";
 WebServer logServer(80);
 bool logClearedByWeb = false;
 String currentDateText;
@@ -483,7 +485,9 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   file.print(',');
   file.print(record.minFreeHeap);
   file.print(',');
-  file.println(wifiRssiDbm);
+  file.print(wifiRssiDbm);
+  file.print(',');
+  file.println(PROJECT_ACOUSTIC_REV);
   file.close();
 
   lastWindowKey_ = record.windowKey;
@@ -526,7 +530,9 @@ void LogService::appendRuntimeEvent(const String &eventText, const String &dateT
   for (uint8_t index = 0; index < 23; ++index) {
     file.print(',');
   }
-  file.println(wifiRssiDbm);
+  file.print(wifiRssiDbm);
+  file.print(',');
+  file.println(PROJECT_ACOUSTIC_REV);
   file.close();
 }
 
