@@ -28,7 +28,9 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - `470 uF` for the display/environment branch.
   - Local capacitor at the `INMP441` `3.3V` input.
 - The microphone has a sponge/wind filter for balcony use.
-- The current assembly is on a breadboard; the external microphone-on-wires plan is paused for now.
+- The current assembly is still on breadboards inside a metal enclosure.
+- The `INMP441` is now outside the enclosure on a separate cable, close to the outer end of a short plastic support tube. A thin sponge layer and enlarged outer opening provide wind/rain protection without the earlier narrow acoustic restriction.
+- A second test-stage controller for solar-charge management shares the battery supply. Its own connectivity/reboot issues must be treated as separate background evidence unless the noise-monitoring ESP32 shows matching failures.
 
 ## Recent Findings
 
@@ -54,7 +56,18 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - A different battery was installed around `12:30:00`, and the run continued.
   - The battery was changed again at `22:02`.
   - Due to the battery/user handling, the controller stopped around `22:19` and resumed around `22:57`; treat this as a user-caused power interruption, not a firmware or normal hardware fault.
-  - For later analysis, split this run into `01:00..08:29:59` as the first valid segment, `08:30..12:29:59` as a power-gap/non-measurement interval, `12:30..22:01` as a second segment on another battery, `22:02..22:18` as a short post-change segment, `22:19..22:56` as a user-caused power interruption, and `22:57+` as the resumed segment.
+  - On 2026-05-30 around `11:11`, the battery discharged and was changed; allow about `5 min` for this user-caused replacement interruption.
+  - A second controller for solar-charge management is running in parallel on the same battery supply during this test. That controller is itself in a test stage and sometimes reboots or loses connectivity. During later log analysis, consider shared-supply voltage dips or electrical interference from this controller before attributing anomalies to the noise-monitoring ESP32, microphone construction, or firmware.
+  - For later analysis, split this run into `01:00..08:29:59` as the first valid segment, `08:30..12:29:59` as a power-gap/non-measurement interval, `12:30..22:01` as a second segment on another battery, `22:02..22:18` as a short post-change segment, `22:19..22:56` as a user-caused power interruption, `22:57..2026-05-30 11:10` as the resumed segment, and about `11:11..11:16` as another battery-replacement interruption.
+- Analysis of the clean protected-construction run from `D:\MD\Downloads\newlog\30052026_1327.csv` and Telegram export on 2026-05-30:
+  - Use the latest CSV snapshot only for the clean run; intermediate downloaded CSV files are growing snapshots and must not be counted as separate runs.
+  - The local CSV contains `191` measurement windows. Outside the known user-caused battery interruptions, the timeline is complete with no unexplained missing windows.
+  - Treat the first window after each power restart as partial and exclude it from precise threshold calibration, even though it remains useful for continuity checks.
+  - All `191` windows report `signal=OK`; `env_fail_count=0` throughout; no `SHT31_LOST`, `SHT31_REINIT`, or `SHT31_RECOVER` events appeared.
+  - The protected microphone construction preserves useful relative separation: `NGT p2p_avg` is around `235`, while `DAY` and `EVE` are around `528..532`.
+  - Current percent scaling is now too conservative for the protected microphone geometry: average `now_avg_pct` is below `1%`, and `hour_pct` is almost always `0`. Retune only after enough clean logs are collected.
+  - Persisted `M` is contaminated by earlier physical revisions and must be reset or deliberately re-baselined when the new acoustic scale is finalized.
+  - Telegram export contains many `INA3221 Online` / `INA3221 Solar Summary` entries from the separate solar controller. Exclude them from noise-controller stability conclusions. The noise-monitoring ESP32 showed only expected `Device Online` messages near manual battery changes.
 
 ## Current Firmware Behavior
 

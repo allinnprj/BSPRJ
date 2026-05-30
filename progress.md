@@ -33,5 +33,5 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current readiness estimate: `52%`.
-- Reason: build `108` was USB-flashed and OTA upload was confirmed end-to-end, closing the main serviceability blocker. The estimate stays cautious because the project still needs a fresh multi-day battery balcony run, SHT31 reliability confirmation, and final validation of `SILENT / NORMAL / LOUD / PEAK` thresholds against real logs.
+- Current readiness estimate: `62%`.
+- Reason: build `108` remains OTA-serviceable, and the protected external-microphone construction completed a useful battery balcony run with `191` local measurement windows. Outside known manual battery interruptions, the local timeline is complete; all windows report `signal=OK`, and SHT31 produced no failed samples or recovery events. The estimate stays cautious because the new physical microphone geometry needs percent-scale retuning, persisted `M` needs a deliberate re-baseline, final `SILENT / NORMAL / LOUD / PEAK` thresholds still need validation, and battery/runtime behavior remains part of the field-test stage.
