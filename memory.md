@@ -30,7 +30,8 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - The microphone has a sponge/wind filter for balcony use.
 - The current assembly is still on breadboards inside a metal enclosure.
 - The `INMP441` is now outside the enclosure on a separate cable, close to the outer end of a short plastic support tube. A thin sponge layer and enlarged outer opening provide wind/rain protection without the earlier narrow acoustic restriction.
-- A second test-stage controller for solar-charge management shares the battery supply. Its own connectivity/reboot issues must be treated as separate background evidence unless the noise-monitoring ESP32 shows matching failures.
+- A second controller for solar-charge management is an intentional required part of the target system. It shares the battery supply with the noise-monitoring ESP32 and exists to keep solar charging, discharging, and power monitoring work off the main controller. Final field validation must run with both controllers powered together. Its own connectivity/reboot issues must still be analyzed separately unless the noise-monitoring ESP32 shows matching failures.
+- The solar-charge controller is developed in a separate project/branch with its own runtime contract. Its normal design may include frequent `Light Sleep` and `Deep Sleep` periods. Do not treat its expected sleep-related connectivity gaps as evidence of a noise-monitoring ESP32 failure or shared-power instability unless the noise controller shows matching local-log gaps, reset events, or other correlated anomalies.
 
 ## Recent Findings
 
@@ -118,6 +119,11 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `109` marks the protected external-microphone construction as `acoustic_rev=2`, retunes the relative percent scale for its lower but useful `P2P` range, and starts a fresh persistent `M` baseline without deleting the older revision's NVS data.
 - Build `109` also sends the final-run diagnostics to Google Sheets: `P2P P95`, window/session P2P ranges, SHT31 counters, heap values, boot/reset context, and acoustic revision.
 - Build `109` was uploaded successfully by OTA on 2026-05-30; the device recreated active `/log.csv` with the new `acoustic_rev` column. The updated local `google_sheets/Code.gs` must be deployed in Google Apps Script before the final run if the expanded cloud-table columns are required.
+- Final-run preparation checkpoint on 2026-05-30:
+  - Updated `google_sheets/Code.gs` has been deployed in Google Apps Script.
+  - The noise-monitoring ESP32 is running `0.1.55-EXP` build `109`.
+  - The previous active `/log.csv` and `/sound_log_legacy.csv` were downloaded and preserved before the clean final run.
+  - The remaining clean-start steps will happen when the user explicitly starts the final run: clear the active log, physical power-cycle, record the exact start time, and keep both controllers running together.
 
 ## Next Best Steps
 
