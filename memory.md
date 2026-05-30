@@ -127,6 +127,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Final-run field-event notes:
   - A preliminary build `109` observation run started on 2026-05-30 around `16:02` without a physical power-cycle. Its accumulated log is useful for context and live-response checks, but it is not the final clean multi-day run.
   - The user plans to start the final clean multi-day run around `2026-05-31 00:00`: clear the active log, physical power-cycle the noise-monitoring ESP32, record the exact start time, and then keep the system unchanged for several days.
+  - Final clean multi-day run actually started on `2026-05-31 00:00`. The active local log and Telegram chat were cleared before the run, and power was physically disconnected/reconnected for a clean session start.
   - Perform the controlled acoustic events at the end of the final clean run, not at the beginning, so they do not distort the natural multi-day statistics. Record exact times for: `1 min` ordinary quiet, `1 min` conversation at `0.5..1 m`, and `3..5` claps at a known distance.
   - On 2026-05-30, moderate but not heavy rain started approximately around `19:24..19:29` local time (`+04:00`). Treat this as a weather-context boundary when comparing microphone behavior, SHT31 readings, and any later anomalies.
   - On 2026-05-30 around `20:05` local time, a nearby car alarm sounded roughly once per second. The user observed live OLED `P2P` reacting approximately in the `500..1024` range.
