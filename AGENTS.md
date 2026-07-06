@@ -33,19 +33,22 @@
 - Keep `memory.md` concise and update it only with durable context that helps a future chat continue the project quickly.
 - After meaningful project decisions, hardware changes, log-analysis conclusions, or end-of-session handoff points, update `memory.md` so `Продолжаем проект` works in a new chat without requiring a fresh manual `СОС`.
 - Use `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` as the human-readable references for Google Sheets, Telegram, AppSheet, log, and analytics term meanings.
-- Use `progress.md` as the rulebook for the overall project readiness percentage.
+- Use `progress.md` as the rulebook for subsystem readiness and the weighted overall project readiness percentage.
 - Keep the project incremental: one hardware check or one behavior change per step.
 - Prefer the smallest safe edit for the current task.
 - Validate firmware changes with `pio run` for `env:esp32dev`.
 - Do not present relative microphone levels as real `dB` until a calibration step is explicitly added.
 - Keep display layouts simple and readable on `128x64`.
 - GitHub flow is intentionally out of scope for this repository unless the user explicitly changes that decision.
+- Treat `zaexp` and `devlop` as separate project lines, not merge targets: `zaexp` lives in its own folder only for microphone workability tests, while `devlop` is the full project line. Do not merge, rebase, cherry-pick, or otherwise blend `zaexp` into `devlop` unless the user explicitly changes this rule.
 - Secrets, passwords, tokens, and chat identifiers must live in `include/secrets.h`, not in `src/main.cpp` or committed docs.
 - Network features should be introduced in modules such as `wifi_service` and `time_service`, not embedded directly into `main.cpp`.
 - A clean restart is preferred over carrying ESP8266-specific workarounds into the ESP32 codebase.
-- At the end of each completed task, include an estimated overall project readiness percentage in the final response only.
-- This readiness percentage refers to the whole current prototype goal, not only the current task.
-- Treat the percentage as an expert estimate based on firmware stability, logging quality, sensor reliability, calibration readiness, OTA/serviceability, and confidence in multi-day data.
+- At the end of each completed task, include the relevant subsystem readiness percentages and the weighted overall project readiness percentage in the final response only.
+- Show only the subsystems affected by the task plus the overall percentage unless a full progress review was requested.
+- Keep subsystem names flexible as the architecture becomes clearer. Split or rename a subsystem when that makes completed work and remaining work easier to understand, for example `Microphone and mechanics` separately from `Sound statistics` and `dB calibration`.
+- The overall percentage refers to the complete target system, including sound measurement, dB calibration, solar-controller integration, GPS, GSM, autonomous power, final assembly, and end-to-end field validation.
+- Treat percentages as expert estimates based on validated evidence. Do not use a simple arithmetic average when subsystems differ in importance.
 - Change the readiness percentage only when there is confirmed project-level progress; useful diagnostics, unvalidated fixes, and build-only changes do not automatically increase readiness.
 - If a hidden blocker is discovered, keep the readiness percentage unchanged or lower it when that better reflects project risk.
 - Consider `memory.md`, `CHANGELOG.md`, `PROJECT_TASKS.md`, real device tests, open risks, and the main project goal before changing the percentage.

@@ -3,13 +3,14 @@
 ## Purpose
 
 This file defines how to estimate the overall project readiness percentage.
-The percentage is not a reward for activity. It is a cautious expert estimate of how close the current prototype is to the project goal: trustworthy single-device noise monitoring with useful day-part conclusions.
+The percentage is not a reward for activity. It is a cautious expert estimate of how close the whole target system is to an autonomous noise-monitoring platform, not only how mature the current microphone prototype is.
 
 ## Scope
 
-- The percentage refers to the whole current prototype goal, not the current task.
-- The main goal is trustworthy `DAY / EVE / NGT` noise conclusions with usable `SILENT / NORMAL / LOUD / PEAK` interpretation.
-- Future expansion ideas such as GPS, mobile network, mapping, and multi-device analytics do not raise the current readiness unless they directly improve the current prototype goal.
+- The percentage refers to the whole target project, not only the current task or microphone subsystem.
+- The target includes trustworthy noise measurement, real-world dB calibration, `DAY / EVE / NGT` conclusions, and usable `SILENT / NORMAL / LOUD / PEAK` interpretation.
+- It also includes communication with the solar-charge controller, shared-power integration, GPS, GSM/mobile connectivity, autonomous operation, final hardware integration, and end-to-end field validation.
+- A subsystem may be considered complete without implying that the whole project is close to completion.
 
 ## Evidence To Consider
 
@@ -24,6 +25,11 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Update Rules
 
+- Track readiness by subsystem, with a short statement of validated evidence and remaining work for each subsystem.
+- Subsystem names may be renamed, split, or merged as the architecture evolves, but preserve the history and reasoning behind material percentage changes.
+- Raise a subsystem percentage only after confirmed progress in that subsystem. Code completion without relevant build, device, integration, or field validation is not automatically sufficient.
+- The overall percentage is a weighted expert estimate. It must account for subsystem importance, dependencies, integration risk, and final validation; it is not the arithmetic mean of subsystem percentages.
+- After a completed task, report the affected subsystem percentages and the overall percentage. Provide the full subsystem table when requested or after a major milestone.
 - Change the percentage only when there is confirmed project-level progress.
 - Finding a cause is not enough by itself; the fix must be validated on the device or in the relevant field test.
 - If a hidden blocker is found, the percentage can stay unchanged or go down.
@@ -33,5 +39,19 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current readiness estimate: `72%`.
-- Reason: build `109` / `acoustic_rev=2` completed a multi-day final field run with `654` unique final-run measurement windows after deduplicating the log package. Known data gaps align with user-reported battery or charging interventions, while the 2026-06-02 and 2026-06-03 `Device Online` events are confirmed scheduled soft restarts. All final-run windows report `signal=OK`; SHT31 has `env_fail_count=0`; heap and Wi-Fi evidence do not show systemic instability. The protected external INMP441 construction now has enough evidence to close the microphone/mechanical stage and use preliminary relative `SILENT / NORMAL / LOUD / PEAK` thresholds. The estimate remains below a higher readiness level because autonomous power continuity is still the main field risk, one `WDT` restart occurred adjacent to a known battery/charging gap, and the thresholds are still relative rather than calibrated dB.
+- Current whole-project readiness estimate: `38%`.
+
+| Subsystem | Readiness | Confirmed state | Main remaining work |
+| --- | ---: | --- | --- |
+| Microphone and mechanical assembly | `80%` | Protected external `INMP441` passed a multi-day build `109` field run with clear day-part separation and stable signal. Hardware geometry is accepted and will remain unchanged. | Controlled reference events and later confirmation that dB calibration works across the useful range. |
+| Relative sound statistics and classification | `60%` | Clean logs support preliminary `SILENT / NORMAL / LOUD / PEAK` boundaries and separate `p2p_avg` background from transient metrics. | Implement the accepted classes consistently in firmware, local CSV, Google Sheets, summaries, and graphs; validate the resulting outputs. |
+| Real dB calibration | `0%` | A reference sound-level meter is available, but no calibration dataset or conversion model has been accepted. | Define the calibration protocol, collect paired readings, choose the appropriate acoustic metric and weighting limitations, implement and validate the model. |
+| INA3221 and solar battery charging | `30%` | A separate `ESP32-S3 + INA3221` controller exists and operates in its own test project on the shared supply. | Finish its charging/sleep/reliability logic and validate solar charge/discharge behavior independently. This percentage is partly based on user-reported progress from the separate project. |
+| Communication between controllers | `0%` | Required architecture is known, but no accepted inter-controller data contract or validated link exists in this project. | Select the physical/protocol link, define messages and failure behavior, implement and test both sides. |
+| GPS and location/time context | `5%` | GPS is a defined next subsystem and separate exploratory work exists, but it is not integrated into this controller. | Connect, parse, validate location/time, define logging fields, and integrate without disturbing audio sampling. |
+| GSM/mobile connectivity | `0%` | Required future subsystem only. | Select/finalize the module and power path, implement connectivity and recovery, then validate network behavior and power demand. |
+| Shared power and autonomous operation | `25%` | Battery operation and shared-power field behavior have been observed, and power-related gaps can be distinguished in logs. | Stabilize battery/charging contacts and transitions, prove operation with both controllers, manage GSM current peaks, and complete long autonomous testing. |
+| Core firmware, logging, OTA, and health diagnostics | `75%` | Build `109`, local CSV, Google Sheets diagnostics, Telegram online reporting, SHT31 health fields, and OTA are working on the real device. | Finalize level semantics, investigate remaining power-adjacent `WDT`, harden recovery paths, and adapt telemetry for GPS/GSM/integration. |
+| Permanent assembly and end-to-end field validation | `10%` | Current breadboard system has accumulated useful field evidence inside the enclosure. | Replace temporary contacts where required, complete integrated assembly, weather/power validation, and final multi-day acceptance test. |
+
+The overall estimate remains `38%`: the microphone path and core diagnostics are relatively mature, but dB calibration, controller communication, GPS, GSM, reliable autonomous power, permanent assembly, and complete system validation are still substantial dependencies.

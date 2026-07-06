@@ -15,8 +15,11 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 - `MAX9814` is finished and must not be brought back into the active path.
 - Do not present readings as real `dB`; all sound values are relative until a real calibration step exists.
+- Overall readiness percentage now refers to the complete target system, including dB calibration, solar-controller communication, shared-power integration, GPS, GSM, permanent hardware integration, and end-to-end field validation. Do not use microphone-only maturity as the whole-project percentage.
+- Progress reporting must be subsystem-based. Keep flexible named percentages in `progress.md`, show the subsystem(s) affected by each completed task plus the weighted overall percentage, and use a full table for major milestones or explicit progress reviews. Percentages change only with validated progress; the overall value is weighted, not a simple average.
 - Battery-powered balcony behavior is the reference scenario for tuning.
 - Keep changes incremental: one behavior or one hardware check per step.
+- `zaexp` and `devlop` are separate project lines in separate folders. `zaexp` is only for microphone workability testing; `devlop` is the full project. Do not propose or perform merges/rebases/cherry-picks between them unless the user explicitly changes this rule.
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
 - `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` are the practical references for table, Telegram, AppSheet, log, and analytics terms.
 - `progress.md` defines the readiness percentage method; current baseline is `52%` after build `108` was USB-flashed and OTA upload succeeded end-to-end.
