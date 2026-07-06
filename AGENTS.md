@@ -2,7 +2,8 @@
 
 ## Project Scope
 
-- Project type: local temporary test project, no GitHub publishing required
+- Project type: `BSPRJ` main noise-monitoring firmware project, with GitHub publishing enabled
+- Repository: `https://github.com/allinnprj/BSPRJ`
 - Current device target: `ESP32 DevKit`
 - Current microphone stage: `INMP441` on ESP32 `I2S` as the active relative-level source
 - Current microphone wiring target: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`
@@ -39,8 +40,11 @@
 - Validate firmware changes with `pio run` for `env:esp32dev`.
 - Do not present relative microphone levels as real `dB` until a calibration step is explicitly added.
 - Keep display layouts simple and readable on `128x64`.
-- GitHub flow is intentionally out of scope for this repository unless the user explicitly changes that decision.
-- Treat `zaexp` and `devlop` as separate project lines, not merge targets: `zaexp` lives in its own folder only for microphone workability tests, while `devlop` is the full project line. Do not merge, rebase, cherry-pick, or otherwise blend `zaexp` into `devlop` unless the user explicitly changes this rule.
+- GitHub flow is in scope for `BSPRJ`.
+- Branch model: `main` is the release/stable branch, and `devlop` is the active test/development branch.
+- Normal firmware and documentation work must happen on `devlop`; merge or fast-forward to `main` only when the state is release-ready and validated.
+- `BS Test WPM` is the preserved source/backup of the successful test project. Do not edit `D:\DEV\BS Test WPM` for new `BSPRJ` work unless the user explicitly asks to touch the backup.
+- `zaexp` was an old isolated microphone workability test and is not part of the active `BSPRJ` branch model. Do not use it as a source for `BSPRJ` work unless the user explicitly reopens that old test context.
 - Secrets, passwords, tokens, and chat identifiers must live in `include/secrets.h`, not in `src/main.cpp` or committed docs.
 - Network features should be introduced in modules such as `wifi_service` and `time_service`, not embedded directly into `main.cpp`.
 - A clean restart is preferred over carrying ESP8266-specific workarounds into the ESP32 codebase.
@@ -58,7 +62,7 @@
 
 - Version source of truth: `include/project_version.h`
 - This project uses a lightweight local version format: `MAJOR.MINOR.PATCH-suffix`
-- Increase `PATCH` for each meaningful firmware change in this temporary test project.
+- Increase `PATCH` for each meaningful firmware change in `BSPRJ`.
 - Increase `PROJECT_BUILD` for each tracked firmware step that changes behavior or diagnostics.
 - `CHANGELOG.md` entries must reference the current version and build.
 

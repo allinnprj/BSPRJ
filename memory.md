@@ -4,7 +4,9 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 ## Current Snapshot
 
-- Project: local temporary ESP32 noise-monitoring prototype, no GitHub publishing required.
+- Project: `BSPRJ`, the main ESP32 noise-monitoring firmware project cloned from the successful `BS Test WPM` test project.
+- Repository: `https://github.com/allinnprj/BSPRJ`.
+- Branch model: `main` is release/stable, `devlop` is test/development.
 - Main goal: understand when balcony/noise levels are quiet, normal, loud, or peak across `DAY / EVE / NGT`.
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
@@ -19,10 +21,12 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Progress reporting must be subsystem-based. Keep flexible named percentages in `progress.md`, show the subsystem(s) affected by each completed task plus the weighted overall percentage, and use a full table for major milestones or explicit progress reviews. Percentages change only with validated progress; the overall value is weighted, not a simple average.
 - Battery-powered balcony behavior is the reference scenario for tuning.
 - Keep changes incremental: one behavior or one hardware check per step.
-- `zaexp` and `devlop` are separate project lines in separate folders. `zaexp` is only for microphone workability testing; `devlop` is the full project. Do not propose or perform merges/rebases/cherry-picks between them unless the user explicitly changes this rule.
+- `BS Test WPM` must remain preserved as the old successful test/backup project; all new work should happen in `D:\DEV\BSPRJ`.
+- `zaexp` was an old isolated microphone workability test and is no longer part of the active project model. Do not bring it into `BSPRJ` unless the user explicitly reopens that test context.
+- Use `devlop` for active testing/development and `main` only for release-ready states.
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
 - `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` are the practical references for table, Telegram, AppSheet, log, and analytics terms.
-- `progress.md` defines the readiness percentage method; current baseline is `52%` after build `108` was USB-flashed and OTA upload succeeded end-to-end.
+- `progress.md` defines the readiness percentage method; current whole-project baseline is `38%` after the build `109` field-run analysis broadened the estimate to the complete target system.
 
 ## Hardware Notes
 
@@ -154,6 +158,13 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - During the same wet-road period, passing-car tire noise on wet asphalt also produced visible live `P2P` changes. Exact values were not captured. Use the nearby CSV windows around `20:00..20:09` and subsequent rainy-road windows as real-world acoustic-response evidence.
   - The approximate distance from the external microphone to the road opposite the installation is `8.5 m`.
   - Preliminary live OLED `DEBUG` observations on build `109`: ordinary quiet is around `P2P 300..400`, while medium road noise including tire noise on wet asphalt is around `P2P 700..800`. Treat these as live-response anchors and compare them with the final local CSV aggregates before fixing user-facing thresholds.
+
+## BSPRJ Migration Notes
+
+- `BSPRJ` was created as a full-history clone of `BS Test WPM` into `D:\DEV\BSPRJ`.
+- The new GitHub remote is `https://github.com/allinnprj/BSPRJ`.
+- Only `main` and `devlop` are active project branches in `BSPRJ`: `main` = release, `devlop` = test/development.
+- The old `BS Test WPM` folder is kept as a backup/reference and should not receive normal new work.
 
 ## Next Best Steps
 

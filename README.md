@@ -1,16 +1,17 @@
-# BS Test WPM
+# BSPRJ
 
-Firmware playground for a clean `ESP32` restart with:
+Main ESP32 noise-monitoring firmware project, cloned from the successful `BS Test WPM` test project, with:
 
 - `INMP441` microphone on `I2S` as the current audio source
 - `SSD1306 128x64` OLED on I2C
 
 ## Status
 
-- Type: local temporary test project
-- Current version: `0.1.38-EXP`
-- Current build: `92`
-- GitHub flow: intentionally not used
+- Type: main firmware project
+- Current version: `0.1.55-EXP`
+- Current build: `109`
+- GitHub: `https://github.com/allinnprj/BSPRJ`
+- Branch model: `main` = release/stable, `devlop` = test/development
 - Active microphone path: `INMP441` on `I2S`
 
 ## Main Goal
@@ -43,12 +44,12 @@ All future choices in code, MQTT, Datacake, display layout, and hardware should 
 
 ## Technical Goal Of The Current Stage
 
-Build the project step by step from a clean ESP32 base:
+Continue the project from the validated ESP32 prototype base:
 
 - OLED text output
 - microphone live level
 - short-term and long-term sound statistics
-- Wi-Fi and time modules only after the base runtime is stable
+- Wi-Fi, time, logging, OTA, Telegram, Google Sheets, and health diagnostics are already part of the current validated base
 
 At this stage the project is fully focused on `INMP441`, so the runtime reads digital `I2S` audio directly and treats this as the primary microphone path for further tuning and analytics work.
 
@@ -94,7 +95,7 @@ The firmware currently shows relative sound-level values on the OLED:
 - a warmup message until the hour window is actually filled
 
 These values are relative levels, not calibrated `dB`.
-This restart intentionally leaves Wi-Fi and wall-clock time out of the active runtime until the new base is stable.
+Current firmware already includes Wi-Fi, wall-clock time sync, local logging, OTA serviceability, Telegram online alerts, Google Sheets diagnostics, and SHT31 health tracking.
 
 ## Build
 

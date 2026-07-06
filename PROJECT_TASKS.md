@@ -1,5 +1,13 @@
 # PROJECT TASKS
 
+## Project Identity
+
+- Active project name: `BSPRJ`.
+- Repository: `https://github.com/allinnprj/BSPRJ`.
+- Branch model: `main` is release/stable, `devlop` is test/development.
+- `BS Test WPM` is the preserved old test project and backup reference; new work belongs in `BSPRJ`.
+- `zaexp` is an old isolated microphone test and is not part of active `BSPRJ` planning.
+
 ## Критично
 
 1. Add persistent storage for long-term average so `M` can survive reboot when that behavior is needed.
