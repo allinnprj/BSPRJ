@@ -43,7 +43,7 @@
 - GitHub flow is in scope for `BSPRJ`.
 - Branch model: `main` is the release/stable branch, and `devlop` is the active test/development branch.
 - Normal firmware and documentation work must happen on `devlop`; merge or fast-forward to `main` only when the state is release-ready and validated.
-- `BS Test WPM` is the preserved source/backup of the successful test project. Do not edit `D:\DEV\BS Test WPM` for new `BSPRJ` work unless the user explicitly asks to touch the backup.
+- `BSPRJ` is the active project name. Do not edit old backup/reference folders for new `BSPRJ` work unless the user explicitly asks to touch a backup.
 - `zaexp` was an old isolated microphone workability test and is not part of the active `BSPRJ` branch model. Do not use it as a source for `BSPRJ` work unless the user explicitly reopens that old test context.
 - Secrets, passwords, tokens, and chat identifiers must live in `include/secrets.h`, not in `src/main.cpp` or committed docs.
 - Network features should be introduced in modules such as `wifi_service` and `time_service`, not embedded directly into `main.cpp`.

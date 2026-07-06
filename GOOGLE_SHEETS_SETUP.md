@@ -6,7 +6,7 @@
 
 Сам код `Apps Script` вынесен в отдельный файл:
 
-- [google_sheets/Code.gs](D:/DEV/BS%20Test%20WPM/google_sheets/Code.gs)
+- [google_sheets/Code.gs](D:/DEV/BSPRJ/google_sheets/Code.gs)
 
 Это основной файл, который нужно копировать в `Apps Script`.
 
@@ -28,7 +28,7 @@
 2. Перейди в `Расширения -> Apps Script`.
 3. Открой файл `Код.gs`.
 4. Удали старое содержимое `Код.gs`.
-5. Открой локальный файл [google_sheets/Code.gs](D:/DEV/BS%20Test%20WPM/google_sheets/Code.gs).
+5. Открой локальный файл [google_sheets/Code.gs](D:/DEV/BSPRJ/google_sheets/Code.gs).
 6. Скопируй весь код из `Code.gs`.
 7. Вставь в `Код.gs`.
 8. Нажми `Сохранить`.
@@ -396,7 +396,7 @@
 
 ## Сторона прошивки
 
-В [secrets.h](D:/DEV/BS%20Test%20WPM/include/secrets.h):
+В [secrets.h](D:/DEV/BSPRJ/include/secrets.h):
 
 ```cpp
 #define GOOGLE_SHEETS_SCRIPT_URL "https://script.google.com/macros/s/....../exec"

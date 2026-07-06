@@ -1,6 +1,6 @@
 # Datacake Fields Cheat Sheet
 
-Краткая шпаргалка по сущностям `Datacake` для проекта `BS Test WPM`.
+Краткая шпаргалка по сущностям `Datacake` для проекта `BSPRJ`.
 
 Важно:
 

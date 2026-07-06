@@ -1,6 +1,6 @@
 # BSPRJ
 
-Main ESP32 noise-monitoring firmware project, cloned from the successful `BS Test WPM` test project, with:
+Main ESP32 noise-monitoring firmware project `BSPRJ`, with:
 
 - `INMP441` microphone on `I2S` as the current audio source
 - `SSD1306 128x64` OLED on I2C

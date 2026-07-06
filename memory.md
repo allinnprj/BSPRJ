@@ -4,7 +4,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 ## Current Snapshot
 
-- Project: `BSPRJ`, the main ESP32 noise-monitoring firmware project cloned from the successful `BS Test WPM` test project.
+- Project: `BSPRJ`, the main ESP32 noise-monitoring firmware project.
 - Repository: `https://github.com/allinnprj/BSPRJ`.
 - Branch model: `main` is release/stable, `devlop` is test/development.
 - Main goal: understand when balcony/noise levels are quiet, normal, loud, or peak across `DAY / EVE / NGT`.
@@ -21,7 +21,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Progress reporting must be subsystem-based. Keep flexible named percentages in `progress.md`, show the subsystem(s) affected by each completed task plus the weighted overall percentage, and use a full table for major milestones or explicit progress reviews. Percentages change only with validated progress; the overall value is weighted, not a simple average.
 - Battery-powered balcony behavior is the reference scenario for tuning.
 - Keep changes incremental: one behavior or one hardware check per step.
-- `BS Test WPM` must remain preserved as the old successful test/backup project; all new work should happen in `D:\DEV\BSPRJ`.
+- `BSPRJ` is the active project name; all new work should happen in `D:\DEV\BSPRJ`.
 - `zaexp` was an old isolated microphone workability test and is no longer part of the active project model. Do not bring it into `BSPRJ` unless the user explicitly reopens that test context.
 - Use `devlop` for active testing/development and `main` only for release-ready states.
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
@@ -162,10 +162,10 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 ## BSPRJ Migration Notes
 
-- `BSPRJ` was created as a full-history clone of `BS Test WPM` into `D:\DEV\BSPRJ`.
+- `BSPRJ` is the active project in `D:\DEV\BSPRJ`.
 - The new GitHub remote is `https://github.com/allinnprj/BSPRJ`.
 - Only `main` and `devlop` are active project branches in `BSPRJ`: `main` = release, `devlop` = test/development.
-- The old `BS Test WPM` folder is kept as a backup/reference and should not receive normal new work.
+- Old backup/reference folders should not receive normal new work.
 
 ## Next Best Steps
 
