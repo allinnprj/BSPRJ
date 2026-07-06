@@ -908,15 +908,15 @@ function normalizePartText_(value) {
   return raw || 'NGT';
 }
 
-function noiseLevelFromNowPct_(value) {
-  const nowPct = toNumber_(value);
-  if (nowPct <= 20) {
+function noiseLevelFromP2p_(value) {
+  const p2p = toNumber_(value);
+  if (p2p <= 350) {
     return 'SILENT';
   }
-  if (nowPct <= 40) {
+  if (p2p <= 650) {
     return 'NORMAL';
   }
-  if (nowPct <= 60) {
+  if (p2p <= 850) {
     return 'LOUD';
   }
   return 'PEAK';
@@ -1644,7 +1644,7 @@ function buildCleanSummaryData_(records) {
 
     previousByDeviceDate[previousKey] = record;
     record.gapBefore = gapBefore;
-    record.levelText = noiseLevelFromNowPct_(record.nowPct);
+    record.levelText = noiseLevelFromP2p_(record.avgPeakToPeak);
     record.isDuplicated = record.duplicateCount > 1;
     record.isValid = record.samples >= MIN_VALID_SAMPLES;
     record.qualityText = buildQualityText_(record, record.isValid, gapBefore);

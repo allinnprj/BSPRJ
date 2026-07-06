@@ -11,7 +11,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.55-EXP` build `109`.
+- Current firmware marker: `0.1.56-EXP` build `110`.
 
 ## Important Decisions
 
@@ -127,6 +127,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `109` marks the protected external-microphone construction as `acoustic_rev=2`, retunes the relative percent scale for its lower but useful `P2P` range, and starts a fresh persistent `M` baseline without deleting the older revision's NVS data.
 - Build `109` also sends the final-run diagnostics to Google Sheets: `P2P P95`, window/session P2P ranges, SHT31 counters, heap values, boot/reset context, and acoustic revision.
 - Build `109` was uploaded successfully by OTA on 2026-05-30; the device recreated active `/log.csv` with the new `acoustic_rev` column. The updated local `google_sheets/Code.gs` must be deployed in Google Apps Script before the final run if the expanded cloud-table columns are required.
+- Build `110` applies the accepted protected-microphone relative thresholds to user-facing level classification: `SILENT <=350`, `NORMAL 351..650`, `LOUD 651..850`, `PEAK >850` based on `P2P` level. Firmware MQTT/Datacake `SIGNAL_STATE`, local `quiet_count`/`loud_count`, and Google Sheets `LEVEL` summaries now use this `P2P`-based logic instead of the old `NOW %` buckets.
 - Final-run preparation checkpoint on 2026-05-30:
   - Updated `google_sheets/Code.gs` has been deployed in Google Apps Script.
   - The noise-monitoring ESP32 is running `0.1.55-EXP` build `109`.
@@ -176,7 +177,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Download `/log.csv` after the run; it is now the preferred compact file to send for analysis instead of a full Google Sheets export.
 - For future firmware updates, use OTA when the device is reachable on the local network; keep USB as the recovery path.
 - Microphone/mechanical stage can be treated as complete on build `109` / `acoustic_rev=2`; next practical project stage can move to GPS integration while keeping the current microphone mechanics unchanged.
-- Keep the preliminary relative thresholds under review as field defaults: `SILENT <=350`, `NORMAL 351..650`, `LOUD 651..850`, `PEAK >850` based on `p2p_avg`. Use `p2p_p95` and `p2p_stable_max` to inspect sharp transient events separately.
+- Keep the build `110` relative thresholds under review as field defaults: `SILENT <=350`, `NORMAL 351..650`, `LOUD 651..850`, `PEAK >850` based on `p2p_avg` / stable `P2P` level. Use `p2p_p95` and `p2p_stable_max` to inspect sharp transient events separately.
 - If SHT31 data still disappears, use `env_fail_count`, `SHT31_LOST/SHT31_REINIT/SHT31_RECOVER`, and restart rows to decide whether the issue is sensor/I2C/power/contact related before soldering.
 - Use `DATA_DICTIONARY.md` or `DATA_DICTIONARY_RU.md` when the user asks what a column, status, verdict, flag, or Telegram line means.
 

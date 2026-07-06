@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.1.56-EXP+110 - 2026-07-06
+
+1. Changed live `SILENT / NORMAL / LOUD / PEAK` classification from old `NOW %` buckets to the accepted protected-microphone `P2P` thresholds: `SILENT <=350`, `NORMAL <=650`, `LOUD <=850`, `PEAK >850`.
+2. Changed firmware `quiet_count` to count `SILENT` samples and `loud_count` to count `LOUD` plus `PEAK` samples while keeping the existing log schema.
+3. Updated Google Sheets summary classification to derive `LEVEL` from `AVG P2P` instead of `NOW %`.
+4. Updated English and Russian data dictionaries so `LEVEL` documents the build `110` relative `P2P` rule and does not imply real `dB` calibration.
+5. Validation: `pio run` -> SUCCESS for `esp32dev` and `esp32dev_ota` (RAM 19.8%, Flash 83.9%).
+
 ## 0.1.55-EXP+109 - 2026-05-30
 
 1. Retuned the relative `INMP441` percent scale for the protected external-microphone construction after the clean field run showed useful `P2P` separation but compressed `NOW/H` percentages.

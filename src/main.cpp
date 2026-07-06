@@ -42,6 +42,9 @@ static constexpr uint16_t SHT31_LOST_WARN_SECONDS = 120;
 static constexpr unsigned long SHT31_RECOVER_INTERVAL_MS = 60000UL;
 static constexpr bool STARTUP_I2C_SCAN_ENABLED = false;
 static constexpr uint32_t POWER_SESSION_MAGIC = 0xB510B510UL;
+static constexpr uint16_t NOISE_LEVEL_SILENT_MAX = 350;
+static constexpr uint16_t NOISE_LEVEL_NORMAL_MAX = 650;
+static constexpr uint16_t NOISE_LEVEL_LOUD_MAX = 850;
 
 RTC_NOINIT_ATTR uint32_t rtcPowerSessionMagic;
 RTC_NOINIT_ATTR uint32_t rtcBootSequence;
@@ -149,17 +152,25 @@ String signalQualityText(SignalState state, bool lowSignalWarning, bool clipSign
   return String(signalStateText(state));
 }
 
-const char *mqttNoiseLevelText(uint8_t percent) {
-  if (percent <= 20) {
+const char *noiseLevelText(uint32_t level) {
+  if (level <= NOISE_LEVEL_SILENT_MAX) {
     return "SILENT";
   }
-  if (percent <= 40) {
+  if (level <= NOISE_LEVEL_NORMAL_MAX) {
     return "NORMAL";
   }
-  if (percent <= 60) {
+  if (level <= NOISE_LEVEL_LOUD_MAX) {
     return "LOUD";
   }
   return "PEAK";
+}
+
+bool isSilentNoiseLevel(uint32_t level) {
+  return level <= NOISE_LEVEL_SILENT_MAX;
+}
+
+bool isLoudOrPeakNoiseLevel(uint32_t level) {
+  return level > NOISE_LEVEL_NORMAL_MAX;
 }
 
 uint8_t signalStateSeverity(SignalState state) {
@@ -511,10 +522,10 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   if (snapshot.rawMax > activeSheetsWindow.maxRaw) {
     activeSheetsWindow.maxRaw = snapshot.rawMax;
   }
-  if (snapshot.currentPercent <= 10) {
+  if (isSilentNoiseLevel(snapshot.currentLevel)) {
     activeSheetsWindow.quietCount++;
   }
-  if (snapshot.currentPercent >= 70) {
+  if (isLoudOrPeakNoiseLevel(snapshot.currentLevel)) {
     activeSheetsWindow.loudCount++;
   }
   if (latestSht31Reading.available) {
@@ -572,10 +583,10 @@ void updateDayPartStats(const AudioSnapshot &snapshot, const TimeService &timeSe
   stats.levelSum += snapshot.statsLevel;
   stats.percentSum += snapshot.currentPercent;
   stats.count++;
-  if (snapshot.currentPercent <= 10) {
+  if (isSilentNoiseLevel(snapshot.currentLevel)) {
     stats.quietCount++;
   }
-  if (snapshot.currentPercent >= 70) {
+  if (isLoudOrPeakNoiseLevel(snapshot.currentLevel)) {
     stats.loudCount++;
   }
 }
@@ -583,8 +594,8 @@ void updateDayPartStats(const AudioSnapshot &snapshot, const TimeService &timeSe
 void updateMqttState(const AudioSnapshot &snapshot) {
   MqttRuntimeState state{};
   state.snapshot = snapshot;
-  state.signalText = mqttNoiseLevelText(snapshot.currentPercent);
-  state.mqttSignalText = mqttNoiseLevelText(snapshot.currentPercent);
+  state.signalText = noiseLevelText(snapshot.currentLevel);
+  state.mqttSignalText = noiseLevelText(snapshot.currentLevel);
   state.timeSynced = timeService.isSynced();
   state.wifiStatus = wifiService.statusTextCStr();
   state.wifiSignalPercent = wifiService.signalPercent();

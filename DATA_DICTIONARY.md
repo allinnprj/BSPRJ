@@ -184,7 +184,7 @@ Boot-session range context. These values help distinguish normal window behavior
 
 ### `LEVEL`
 
-Human-readable level derived from `NOW %`.
+Human-readable relative noise level derived from the window average `AVG P2P`.
 
 Current values:
 
@@ -195,14 +195,14 @@ Current values:
 
 This is what the project ultimately wants: simple human language instead of raw numbers.
 
-Current rule in Google Sheets:
+Current rule in firmware and Google Sheets for `acoustic_rev=2`:
 
-- `NOW % <= 20`: `SILENT`
-- `NOW % <= 40`: `NORMAL`
-- `NOW % <= 60`: `LOUD`
-- above `60`: `PEAK`
+- `AVG P2P <= 350`: `SILENT`
+- `AVG P2P <= 650`: `NORMAL`
+- `AVG P2P <= 850`: `LOUD`
+- above `850`: `PEAK`
 
-Important: after build `95`, firmware `NOW %` was retuned to make these buckets more meaningful for `INMP441`.
+Important: these are relative `INMP441` thresholds from the protected external microphone field run. They are not real `dB` values.
 
 ## Signal Quality Terms
 
