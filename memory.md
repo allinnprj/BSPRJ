@@ -27,6 +27,10 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
 - `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` are the practical references for table, Telegram, AppSheet, log, and analytics terms.
 - `progress.md` defines the readiness percentage method; current whole-project baseline is `38%` after the build `109` field-run analysis broadened the estimate to the complete target system.
+- Memory/Flash planning is now an explicit project constraint. Current BSPRJ ESP32 DevKit build `110` evidence: static RAM is about `19.8%`, Flash is about `83.9%`, `firmware.bin` is about `1,319,824` bytes, OTA app slot is `0x180000` / `1,572,864` bytes, leaving roughly `253 KB` inside one OTA slot. RAM is acceptable for the next steps, but Flash must be watched after every added subsystem.
+- Do not treat ESP-NOW as the main memory risk. A compact inter-controller ESP-NOW packet between the BSPRJ noise controller and the solar-charge controller should be feasible. The larger memory risks are duplicated HTTPS/TLS/cloud paths, heavy GSM libraries, large String/JSON buffers, retained diagnostics, and unnecessary web/UI payloads.
+- For future additions, record the build-size baseline after each module: RAM percent, Flash percent, `firmware.bin` size, and remaining bytes in the OTA slot. If the app approaches the OTA slot limit, first remove/trim obsolete diagnostics and cloud/web payloads; later consider resizing partitions by reducing LittleFS and increasing both OTA app slots.
+- Project organization can evolve to one repository/project containing two firmware targets/controllers if that becomes cleaner: the main BSPRJ noise-monitoring ESP32 and the ESP32-C3 Super Mini solar-charge controller. Keep runtime responsibilities separate even if both controllers eventually live in one PlatformIO project.
 
 ## Hardware Notes
 
@@ -178,6 +182,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - For future firmware updates, use OTA when the device is reachable on the local network; keep USB as the recovery path.
 - Microphone/mechanical stage can be treated as complete on build `109` / `acoustic_rev=2`; next practical project stage can move to GPS integration while keeping the current microphone mechanics unchanged.
 - Keep the build `110` relative thresholds under review as field defaults: `SILENT <=350`, `NORMAL 351..650`, `LOUD 651..850`, `PEAK >850` based on `p2p_avg` / stable `P2P` level. Use `p2p_p95` and `p2p_stable_max` to inspect sharp transient events separately.
+- Before integrating larger modules, keep memory decisions incremental: ESP-NOW first is acceptable, GPS should use a compact parser, and GSM needs a separate memory/architecture plan before implementation. A single PlatformIO project with multiple controller environments is allowed later if it helps manage both BSPRJ controllers together.
 - If SHT31 data still disappears, use `env_fail_count`, `SHT31_LOST/SHT31_REINIT/SHT31_RECOVER`, and restart rows to decide whether the issue is sensor/I2C/power/contact related before soldering.
 - Use `DATA_DICTIONARY.md` or `DATA_DICTIONARY_RU.md` when the user asks what a column, status, verdict, flag, or Telegram line means.
 
