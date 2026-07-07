@@ -50,6 +50,32 @@
 - A clean restart is preferred over carrying ESP8266-specific workarounds into the ESP32 codebase.
 - At the end of each completed task, include the relevant subsystem readiness percentages and the weighted overall project readiness percentage in the final response only.
 - Show only the subsystems affected by the task plus the overall percentage unless a full progress review was requested.
+- The readiness block must be in Russian and must start exactly with `Готовность:`.
+- Use Russian subsystem names in the readiness block:
+  - `Микрофон и механическая сборка`
+  - `Относительная статистика шума и классификация`
+  - `Реальная dB-калибровка`
+  - `INA3221 и солнечная зарядка`
+  - `Связь между контроллерами`
+  - `GPS и контекст места/времени`
+  - `GSM/мобильная связь`
+  - `Общее питание и автономная работа`
+  - `Основная прошивка, логи, OTA и диагностика`
+  - `Постоянная сборка и финальная полевая проверка`
+  - `Общая готовность проекта`
+- For a full progress review, use this exact Russian block format and the current percentages from `progress.md`:
+  `Готовность:`
+  `- Микрофон и механическая сборка: 80%`
+  `- Относительная статистика шума и классификация: 60%`
+  `- Реальная dB-калибровка: 0%`
+  `- INA3221 и солнечная зарядка: 30%`
+  `- Связь между контроллерами: 0%`
+  `- GPS и контекст места/времени: 5%`
+  `- GSM/мобильная связь: 0%`
+  `- Общее питание и автономная работа: 25%`
+  `- Основная прошивка, логи, OTA и диагностика: 75%`
+  `- Постоянная сборка и финальная полевая проверка: 10%`
+  `- Общая готовность проекта: 38%`
 - Keep subsystem names flexible as the architecture becomes clearer. Split or rename a subsystem when that makes completed work and remaining work easier to understand, for example `Microphone and mechanics` separately from `Sound statistics` and `dB calibration`.
 - The overall percentage refers to the complete target system, including sound measurement, dB calibration, solar-controller integration, GPS, GSM, autonomous power, final assembly, and end-to-end field validation.
 - Treat percentages as expert estimates based on validated evidence. Do not use a simple arithmetic average when subsystems differ in importance.

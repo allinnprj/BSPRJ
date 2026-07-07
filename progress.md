@@ -41,6 +41,25 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 - Current whole-project readiness estimate: `38%`.
 
+## Russian Report Block
+
+Use this exact Russian format for full progress reviews and in new-chat status summaries:
+
+```text
+Готовность:
+- Микрофон и механическая сборка: 80%
+- Относительная статистика шума и классификация: 60%
+- Реальная dB-калибровка: 0%
+- INA3221 и солнечная зарядка: 30%
+- Связь между контроллерами: 0%
+- GPS и контекст места/времени: 5%
+- GSM/мобильная связь: 0%
+- Общее питание и автономная работа: 25%
+- Основная прошивка, логи, OTA и диагностика: 75%
+- Постоянная сборка и финальная полевая проверка: 10%
+- Общая готовность проекта: 38%
+```
+
 | Subsystem | Readiness | Confirmed state | Main remaining work |
 | --- | ---: | --- | --- |
 | Microphone and mechanical assembly | `80%` | Protected external `INMP441` passed a multi-day build `109` field run with clear day-part separation and stable signal. Hardware geometry is accepted and will remain unchanged. | Controlled reference events and later confirmation that dB calibration works across the useful range. |
