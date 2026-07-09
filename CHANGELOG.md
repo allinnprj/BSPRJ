@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.1.56-EXP+110 analytics alignment - 2026-07-09
+
+1. Updated Google Sheets Telegram latest/summary text to show `AVG P2P` beside the `SILENT / NORMAL / LOUD / PEAK` label, so user-facing reports no longer pair a P2P-derived level with an old `NOW %` average.
+2. Changed `summary_conclusions`, `daily_verdict`, and dashboard chart daypart readings to use `AVG P2P` as the numeric basis next to the P2P-derived level labels.
+3. Added a guarded Google Sheets menu command `Reset for clean run` that clears the active `log`, deletes dated archive sheets, and resets analytics sheets after a `YES / NO` confirmation.
+4. Added `Hide technical columns` and `Show all columns` menu actions so the working Sheets view can stay readable while diagnostic columns remain available for final evidence.
+5. Updated Google Sheets setup notes, data dictionaries, project progress, and continuation memory to document the aligned P2P analytics layer and clean-run reset flow.
+6. Validation: Apps Script syntax check only; firmware was not changed and `pio run` was not required for this analytics/docs step.
+
 ## 0.1.56-EXP+110 - 2026-07-06
 
 1. Changed live `SILENT / NORMAL / LOUD / PEAK` classification from old `NOW %` buckets to the accepted protected-microphone `P2P` thresholds: `SILENT <=350`, `NORMAL <=650`, `LOUD <=850`, `PEAK >850`.

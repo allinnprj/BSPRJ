@@ -19,7 +19,7 @@ function buildChartSourceBlocks_(records) {
       EVE: [],
       NGT: []
     };
-    byDatePart[dateKey][record.partText].push(record.nowPct);
+    byDatePart[dateKey][record.partText].push(record.avgPeakToPeak);
     levelMix[record.levelText] = (levelMix[record.levelText] || 0) + 1;
 
     const coverage = coverageByDate[dateKey] || { validWindows: 0, missingWindows: 0 };
@@ -126,7 +126,7 @@ function rebuildAnalyticsCharts_(options) {
   const records = values.map((row) => ({
     dateText: normalizeDateText_(row[3]),
     partText: normalizePartText_(row[6]),
-    nowPct: toNumber_(row[8]),
+    avgPeakToPeak: toNumber_(row[13]),
     levelText: String(row[7] || ''),
     isValid: toNumber_(row[27]) === 1,
     gapBefore: toNumber_(row[28])
@@ -200,11 +200,11 @@ function rebuildAnalyticsCharts_(options) {
     sheet.getRange(7, 1, 1, 3).setBackground('#eaf4e3').setFontWeight('bold');
     sheet.getRange(8, 1, 1, 3).setBackground('#eff7ea').setFontWeight('bold');
   }
-  sheet.getRange(8, 1, 1, 3).setValues([['PART', 'AVG NOW %', 'DIAGRAM']]);
+  sheet.getRange(8, 1, 1, 3).setValues([['PART', 'AVG P2P', 'DIAGRAM']]);
   const dayPartDisplayRows = chartBlocks.dayPartRows.map((row) => [
     row[0],
-    buildChartCellText_(row[1], '%'),
-    `${buildTextBar_(row[1], 100, 24)} ${buildChartCellText_(row[1], '%')}`
+    buildChartCellText_(row[1]),
+    `${buildTextBar_(row[1], 850, 24)} ${buildChartCellText_(row[1])}`
   ]);
   sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setValues(dayPartDisplayRows);
   if (shouldFormat) {

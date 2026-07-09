@@ -497,7 +497,7 @@ WINDOWS VALID / EXPECTED WINDOWS * 100
 
 Средний `NOW %` за часть суток.
 
-Главный простой числовой ответ: "насколько шумной была эта часть суток в среднем?"
+Старый/упрощенный процентный вид. Для текущих выводов build `110` по уровням использовать в первую очередь `AVG P2P` и `LEVEL`.
 
 ### `AVG H %`
 
@@ -515,7 +515,7 @@ WINDOWS VALID / EXPECTED WINDOWS * 100
 
 Средний `AVG P2P` за часть суток.
 
-Для `INMP441` это сейчас один из лучших технических показателей для сравнения ночи, дня и вечера.
+Для `INMP441` это главный числовой показатель для текущих относительных выводов `SILENT / NORMAL / LOUD / PEAK`.
 
 ### `AVG TEMP C`
 
@@ -661,7 +661,7 @@ WINDOWS VALID / EXPECTED WINDOWS * 100
 Пример:
 
 ```text
-NGT: typical NORMAL, avg 34.2%, mix share 61.9%, good confidence
+NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
 ```
 
 Ее можно читать напрямую или показывать в AppSheet.

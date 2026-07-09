@@ -173,7 +173,7 @@ const CONCLUSION_SUMMARY_HEADERS = [
   'DEV ID',
   'DATE',
   'PART',
-  'AVG NOW %',
+  'AVG P2P',
   'MAIN LEVEL',
   'MAIN SHARE %',
   'VALID WINDOWS',
@@ -823,6 +823,10 @@ function onOpen() {
     .addItem('Show archive sheets', 'showArchiveSheets_')
     .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
     .addItem('Show analytics sheets', 'showAnalyticsSheets_')
+    .addItem('Hide technical columns', 'hideTechnicalColumns_')
+    .addItem('Show all columns', 'showAllColumns_')
+    .addSeparator()
+    .addItem('Reset for clean run', 'resetForCleanRun_')
     .addToUi();
 }
 
@@ -1061,6 +1065,182 @@ function showAnalyticsSheets_() {
   });
 }
 
+const TECHNICAL_COLUMNS_BY_SHEET_NAME = {};
+TECHNICAL_COLUMNS_BY_SHEET_NAME[ACTIVE_LOG_SHEET_NAME] = [
+  'VER', 'BUILD', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX',
+  'QUIET', 'LOUD', 'SAMPLES', 'P2P P95', 'P2P MIN', 'P2P MAX', 'P2P STB MAX',
+  'SESSION P2P MIN', 'SESSION P2P MAX', 'SESSION P2P STB MAX',
+  'ENV OK', 'ENV FAIL', 'FREE HEAP', 'MIN FREE HEAP',
+  'BOOT SEQ', 'RESET REASON', 'ACOUSTIC REV'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[CLEAN_SUMMARY_SHEET_NAME] = [
+  'VER', 'BUILD', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX',
+  'WIN MIN', 'QUIET', 'LOUD', 'SAMPLES', 'SOURCE SHEET', 'DAY STATE',
+  'RECORD KEY', 'DUP COUNT', 'IS DUPLICATED', 'IS VALID', 'GAP BEFORE'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[DAYPART_SUMMARY_SHEET_NAME] = [
+  'WINDOWS TOTAL', 'EXPECTED WINDOWS', 'AVG NOW %', 'AVG H %', 'AVG M %',
+  'QUIET %', 'LOUD %'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[TIMELINE_SUMMARY_SHEET_NAME] = [
+  'TS', 'NOW %', 'SILENT FLAG', 'NORMAL FLAG', 'LOUD FLAG', 'PEAK FLAG'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[LEVEL_SUMMARY_SHEET_NAME] = [
+  'SILENT %', 'NORMAL %', 'LOUD %', 'PEAK %'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[HEALTH_SUMMARY_SHEET_NAME] = [
+  'DUP EXTRA ROWS', 'LOW SAMPLE WIN', 'HAS LOG ROWS'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[DAILY_VERDICT_SHEET_NAME] = [
+  'VERDICT SCORE', 'SILENT FLAG', 'NORMAL FLAG', 'LOUD FLAG', 'PEAK FLAG'
+];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[DAILY_VERDICT_TABLE_SHEET_NAME] = [];
+
+function getTechnicalColumnsForSheet_(sheetName) {
+  if (TECHNICAL_COLUMNS_BY_SHEET_NAME[sheetName]) {
+    return TECHNICAL_COLUMNS_BY_SHEET_NAME[sheetName];
+  }
+  if (isRawDaySheetName_(sheetName) && sheetName !== ACTIVE_LOG_SHEET_NAME) {
+    return TECHNICAL_COLUMNS_BY_SHEET_NAME[ACTIVE_LOG_SHEET_NAME];
+  }
+  return [];
+}
+
+function hideColumnsByHeaderNames_(sheet, headerNames) {
+  if (!sheet || !headerNames.length || sheet.getLastColumn() < 1) {
+    return 0;
+  }
+
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  let hiddenCount = 0;
+  headerNames.forEach((headerName) => {
+    const colIndex = headers.indexOf(headerName) + 1;
+    if (colIndex > 0) {
+      sheet.hideColumns(colIndex);
+      hiddenCount++;
+    }
+  });
+  return hiddenCount;
+}
+
+function hideTechnicalColumns_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  let hiddenCount = 0;
+  spreadsheet.getSheets().forEach((sheet) => {
+    const maxColumns = sheet.getMaxColumns();
+    if (maxColumns > 0) {
+      sheet.showColumns(1, maxColumns);
+    }
+    hiddenCount += hideColumnsByHeaderNames_(sheet, getTechnicalColumnsForSheet_(sheet.getName()));
+  });
+  spreadsheet.toast(`Technical columns hidden: ${hiddenCount}. Use Show all columns to restore them.`, 'BS Noise', 6);
+}
+
+function showAllColumns_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  spreadsheet.getSheets().forEach((sheet) => {
+    const maxColumns = sheet.getMaxColumns();
+    if (maxColumns > 0) {
+      sheet.showColumns(1, maxColumns);
+    }
+  });
+  spreadsheet.toast('All columns shown.', 'BS Noise', 5);
+}
+
+function clearSheetBodyAndFormatting_(sheet, headers) {
+  ensureMinColumnCount_(sheet, headers.length);
+  sheet.clearContents();
+  sheet.clearFormats();
+  sheet.clearConditionalFormatRules();
+  sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
+  sheet.showColumns(1, sheet.getMaxColumns());
+  sheet.setFrozenRows(0);
+  sheet.setFrozenColumns(0);
+  sheet.setHiddenGridlines(false);
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+}
+
+function clearChartsSheetForCleanRun_(spreadsheet) {
+  const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
+  ensureMinColumnCount_(sheet, 6);
+  sheet.clearContents();
+  sheet.clearFormats();
+  sheet.clearConditionalFormatRules();
+  sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).breakApart();
+  sheet.showColumns(1, sheet.getMaxColumns());
+  sheet.setFrozenRows(0);
+  sheet.setFrozenColumns(0);
+  sheet.setHiddenGridlines(true);
+  sheet.getRange(1, 1, 1, 6).merge();
+  sheet.getRange(1, 1).setValue('DASHBOARD · QUICK VIEW');
+  sheet.getRange(2, 1, 1, 6).merge();
+  sheet.getRange(2, 1).setValue('No clean-run data yet.');
+}
+
+function clearAnalyticsForCleanRun_(spreadsheet) {
+  writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(HEALTH_SUMMARY_SHEET_NAME, HEALTH_SUMMARY_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(CONCLUSION_SUMMARY_SHEET_NAME, CONCLUSION_SUMMARY_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(DAILY_VERDICT_SHEET_NAME, DAILY_VERDICT_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(DAILY_VERDICT_TABLE_SHEET_NAME, DAILY_VERDICT_TABLE_HEADERS, [], { applyFormatting: true });
+  clearChartsSheetForCleanRun_(spreadsheet);
+}
+
+function clearAllSheetsForCleanRun_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const activeSheet = spreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME) || spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
+  activeSheet.showSheet();
+  clearSheetBodyAndFormatting_(activeSheet, HEADERS);
+  ensureHeaderFormatting_(activeSheet);
+
+  let deletedArchives = 0;
+  spreadsheet.getSheets().slice().forEach((sheet) => {
+    const name = sheet.getName();
+    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name)) {
+      spreadsheet.deleteSheet(sheet);
+      deletedArchives++;
+    }
+  });
+
+  clearAnalyticsForCleanRun_(spreadsheet);
+  spreadsheet.setActiveSheet(activeSheet);
+  return {
+    deletedArchives,
+    analyticsSheetsReset: ANALYTICS_SHEET_NAMES.length,
+    activeSheetName: ACTIVE_LOG_SHEET_NAME
+  };
+}
+
+function resetForCleanRun_() {
+  const ui = SpreadsheetApp.getUi();
+  const firstResponse = ui.alert(
+    'Reset for clean run',
+    'This will clear the active log, delete all dated archive sheets, and reset all analytics sheets. Telegram/script properties will stay unchanged. Continue?',
+    ui.ButtonSet.YES_NO
+  );
+  if (firstResponse !== ui.Button.YES) {
+    SpreadsheetApp.getActiveSpreadsheet().toast('Clean-run reset cancelled.', 'BS Noise', 5);
+    return;
+  }
+
+  const result = clearAllSheetsForCleanRun_();
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `Clean-run reset complete: ${result.activeSheetName} cleared, ${result.deletedArchives} archives deleted, analytics reset.`,
+    'BS Noise',
+    10
+  );
+  ui.alert(
+    'Clean-run reset complete',
+    `${result.activeSheetName} is empty and ready for new incoming rows.\nDeleted archive sheets: ${result.deletedArchives}\nAnalytics sheets reset: ${result.analyticsSheetsReset}`,
+    ui.ButtonSet.OK
+  );
+}
+
 function timestampKey_(dateText, timeText) {
   return `${normalizeDateText_(dateText)}T${normalizeTimeText_(timeText)}`;
 }
@@ -1180,6 +1360,7 @@ function getLatestValidCleanRecord_() {
     nowPct: row[8],
     hourPct: row[9],
     totalPct: row[10],
+    avgPeakToPeak: row[13],
     temperatureC: row[15],
     humidityPct: row[16],
     samples: row[20],
@@ -1322,7 +1503,7 @@ function buildDayPartTelegramBlock_(targetDate, partText) {
 
   return [
     `${partIcon_(partText)} <b>${partText}</b>`,
-    `Avg: ${formatMaybePct_(row[7])}`,
+    `Avg P2P: ${formatMaybeNumber_(row[10], '')}`,
     `Main: ${getMainLevelForPart_(targetDate, partText)}`,
     `Valid windows: ${formatMaybeFraction_(row[4], row[5])}`
   ].join('\n');
@@ -1347,6 +1528,7 @@ function buildLatestTelegramStatus_() {
     `🔊 Now: <b>${formatMaybePct_(record.nowPct)}</b>`,
     `🟡 H: ${formatMaybePct_(record.hourPct)}`,
     `🔵 M: ${formatMaybePct_(record.totalPct)}`,
+    `📏 Avg P2P: <b>${formatMaybeNumber_(record.avgPeakToPeak, '')}</b>`,
     `🏷️ Level: <b>${htmlEscape_(record.levelText || 'n/a')}</b>`,
     '',
     `🌡️ Temp: ${formatMaybeNumber_(record.temperatureC, ' C')}`,
@@ -1376,10 +1558,10 @@ function buildDailyTelegramSummary_(dateText) {
   const overallDayRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'DAY');
   const overallNightRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'NGT');
   const resultLines = [];
-  if (overallDayRow && toNumber_(overallDayRow[7]) > 0) {
+  if (overallDayRow && toNumber_(overallDayRow[10]) > 0) {
     resultLines.push(`Day looks mostly ${getMainLevelForPart_(targetDate, 'DAY').toLowerCase()}.`);
   }
-  if (overallNightRow && toNumber_(overallNightRow[7]) > 0) {
+  if (overallNightRow && toNumber_(overallNightRow[10]) > 0) {
     resultLines.push(`Night looks mostly ${getMainLevelForPart_(targetDate, 'NGT').toLowerCase()}.`);
   }
   resultLines.push(`Data quality is ${qualityLabel}.`);
@@ -1906,8 +2088,8 @@ function levelToVerdictScore_(levelText) {
   return index >= 0 ? index + 1 : '';
 }
 
-function buildConclusionReading_(partText, avgNowPct, mainLevel, mainSharePct, confidence) {
-  const avgText = avgNowPct === '' ? 'n/a' : `${avgNowPct}%`;
+function buildConclusionReading_(partText, avgPeakToPeak, mainLevel, mainSharePct, confidence) {
+  const avgText = avgPeakToPeak === '' ? 'n/a' : `${avgPeakToPeak} P2P`;
   const shareText = mainSharePct === '' ? 'n/a' : `${mainSharePct}%`;
   return `${partText}: typical ${mainLevel}, avg ${avgText}, mix share ${shareText}, ${confidence.toLowerCase()} confidence`;
 }
@@ -1922,7 +2104,7 @@ function buildConclusionSummaryRows_(records) {
       dateText: record.dateText,
       partText: record.partText,
       validWindows: 0,
-      sumNow: 0,
+      sumP2P: 0,
       levelCounts: {
         SILENT: 0,
         NORMAL: 0,
@@ -1936,7 +2118,7 @@ function buildConclusionSummaryRows_(records) {
     }
 
     bucket.validWindows++;
-    bucket.sumNow += record.nowPct;
+    bucket.sumP2P += record.avgPeakToPeak;
     bucket.levelCounts[record.levelText] = (bucket.levelCounts[record.levelText] || 0) + 1;
   });
 
@@ -1947,7 +2129,7 @@ function buildConclusionSummaryRows_(records) {
       ? roundValue_(bucket.validWindows * 100 / expectedWindows, 1)
       : '';
     const mainLevelStats = getMainLevelStats_(bucket.levelCounts);
-    const avgNowPct = bucket.validWindows > 0 ? roundValue_(bucket.sumNow / bucket.validWindows, 1) : '';
+    const avgPeakToPeak = bucket.validWindows > 0 ? roundValue_(bucket.sumP2P / bucket.validWindows, 1) : '';
     const mainSharePct = bucket.validWindows > 0
       ? roundValue_(mainLevelStats.count * 100 / bucket.validWindows, 1)
       : '';
@@ -1957,7 +2139,7 @@ function buildConclusionSummaryRows_(records) {
       bucket.deviceId,
       bucket.dateText,
       bucket.partText,
-      avgNowPct,
+      avgPeakToPeak,
       bucket.validWindows > 0 ? mainLevelStats.level : 'NO DATA',
       mainSharePct,
       bucket.validWindows,
@@ -1965,7 +2147,7 @@ function buildConclusionSummaryRows_(records) {
       coveragePct,
       confidence,
       bucket.validWindows > 0
-        ? buildConclusionReading_(bucket.partText, avgNowPct, mainLevelStats.level, mainSharePct, confidence)
+        ? buildConclusionReading_(bucket.partText, avgPeakToPeak, mainLevelStats.level, mainSharePct, confidence)
         : `${bucket.partText}: no valid windows yet`
     ];
   });

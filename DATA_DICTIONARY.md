@@ -499,7 +499,7 @@ This is a trust score for the summary. A loud/quiet conclusion with low coverage
 
 Average `NOW %` for that day-part.
 
-This is the main numeric summary for "how loud was this part of the day on average?"
+This is a legacy/simple percent-scale view. For current build `110` level conclusions, prefer `AVG P2P` and `LEVEL`.
 
 ### `AVG H %`
 
@@ -517,7 +517,7 @@ This is usually less useful for immediate day-part conclusions because it change
 
 Average `AVG P2P` for the day-part.
 
-For `INMP441`, this is currently one of the best technical signals for comparing night/day/evening.
+For `INMP441`, this is the main numeric summary for current relative `SILENT / NORMAL / LOUD / PEAK` conclusions.
 
 ### `AVG TEMP C`
 
@@ -663,7 +663,7 @@ Human-readable sentence summarizing the row.
 Example:
 
 ```text
-NGT: typical NORMAL, avg 34.2%, mix share 61.9%, good confidence
+NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
 ```
 
 This is meant to be read directly by a person or shown in AppSheet.
