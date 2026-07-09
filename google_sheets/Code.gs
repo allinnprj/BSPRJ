@@ -807,7 +807,7 @@ function ensureWritableLogSheet_(incomingDateText) {
 
 function onOpen() {
   SpreadsheetApp.getUi()
-    .createMenu('BS Noise')
+    .createMenu('🔊')
     .addItem('Rebuild analytics', 'rebuildAnalytics_')
     .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
     .addItem('Enable auto analytics refresh', 'enableAutomaticAnalyticsRefresh_')
