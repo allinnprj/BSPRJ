@@ -130,6 +130,79 @@ String displayNameForLogPath(const String &path) {
   return String(F("Legacy archive: ")) + fileName;
 }
 
+String formatBytes(size_t byteCount) {
+  if (byteCount >= 1024) {
+    const size_t wholeKb = byteCount / 1024;
+    const size_t decimalKb = (byteCount % 1024) * 10 / 1024;
+    return String(wholeKb) + F(".") + String(decimalKb) + F(" KB");
+  }
+  return String(byteCount) + F(" B");
+}
+
+size_t fileSizeForPath(const String &path) {
+  if (!LittleFS.exists(path)) {
+    return 0;
+  }
+
+  File file = LittleFS.open(path, FILE_READ);
+  if (!file) {
+    return 0;
+  }
+  const size_t fileSize = file.size();
+  file.close();
+  return fileSize;
+}
+
+struct LogStorageStats {
+  size_t totalBytes = 0;
+  size_t usedBytes = 0;
+  size_t activeLogBytes = 0;
+  size_t archivedLogBytes = 0;
+  uint16_t archivedLogCount = 0;
+};
+
+LogStorageStats collectLogStorageStats() {
+  LogStorageStats stats;
+  stats.totalBytes = LittleFS.totalBytes();
+  stats.usedBytes = LittleFS.usedBytes();
+  stats.activeLogBytes = fileSizeForPath(kLogPath);
+
+  File root = LittleFS.open("/");
+  File file = root.openNextFile();
+  while (file) {
+    String path = file.name();
+    if (!path.startsWith("/")) {
+      path = String("/") + path;
+    }
+    if (isDownloadableLogPath(path)) {
+      stats.archivedLogBytes += file.size();
+      stats.archivedLogCount++;
+    }
+    file = root.openNextFile();
+  }
+  return stats;
+}
+
+void appendStorageSummary(String &body) {
+  const LogStorageStats stats = collectLogStorageStats();
+  const size_t freeBytes = stats.totalBytes > stats.usedBytes
+                               ? stats.totalBytes - stats.usedBytes
+                               : 0;
+  body += F("<h4>Storage</h4><p class=\"muted\">LittleFS: ");
+  body += formatBytes(stats.usedBytes);
+  body += F(" used / ");
+  body += formatBytes(stats.totalBytes);
+  body += F(" total / ");
+  body += formatBytes(freeBytes);
+  body += F(" free<br>Active log: ");
+  body += formatBytes(stats.activeLogBytes);
+  body += F("<br>Archived logs: ");
+  body += String(stats.archivedLogCount);
+  body += F(" files, ");
+  body += formatBytes(stats.archivedLogBytes);
+  body += F("</p>");
+}
+
 void sendCsvDownloadHeader(const String &fileName) {
   logServer.sendHeader(F("Content-Disposition"),
                        String(F("attachment; filename=\"")) + fileName + F("\""));
@@ -178,9 +251,11 @@ void handleRoot() {
   String body = pageStart(F("BS Noise Log"));
   body += F("<h3>BS Noise Log</h3>");
   body += F("<p class=\"muted\">Active log: <b>/log.csv</b></p>");
+  appendStorageSummary(body);
   body += F("<p><a class=\"btn\" href=\"/log.csv\" download>Download active log</a>");
   body += F("<a class=\"btn ghost\" href=\"/archive-log\">Archive current log</a>");
-  body += F("<a class=\"btn danger\" href=\"/clear-log\">Clear log</a></p>");
+  body += F("<a class=\"btn danger\" href=\"/clear-log\">Clear log</a>");
+  body += F("<a class=\"btn danger\" href=\"/clear-all-logs\">Clear ALL logs</a></p>");
   body += F("<h4>Archived logs</h4><ul>");
   File root = LittleFS.open("/");
   File file = root.openNextFile();
@@ -197,7 +272,10 @@ void handleRoot() {
       body += url;
       body += F("\" download>");
       body += displayNameForLogPath(path);
-      body += F("</a></li>");
+      body += F("</a>");
+      body += F(" <span class=\"muted\">");
+      body += formatBytes(file.size());
+      body += F("</span></li>");
     }
     file = root.openNextFile();
   }
@@ -289,6 +367,72 @@ void handleClearLogAction() {
   logServer.send(200, "text/html", body);
 }
 
+void handleClearAllLogsConfirm() {
+  const LogStorageStats stats = collectLogStorageStats();
+  String body = pageStart(F("Clear ALL BS Noise Logs"));
+  body += F("<h3>Clear ALL logs?</h3>");
+  body += F("<p>This deletes the active log, all archived logs, and the legacy log from LittleFS. ");
+  body += F("Google Sheets data is not touched.</p>");
+  body += F("<p class=\"muted\">Will remove approximately ");
+  body += formatBytes(stats.activeLogBytes + stats.archivedLogBytes);
+  body += F(" from ");
+  body += String(stats.archivedLogCount + (stats.activeLogBytes > 0 ? 1 : 0));
+  body += F(" local log files.</p>");
+  body += F("<p><a class=\"btn danger\" href=\"/clear-all-logs-confirm\">Confirm clear ALL</a>");
+  body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
+  pageEnd(body);
+  logServer.send(200, "text/html", body);
+}
+
+void handleClearAllLogsAction() {
+  uint16_t deletedCount = 0;
+  size_t deletedBytes = 0;
+
+  if (LittleFS.exists(kLogPath)) {
+    const size_t fileSize = fileSizeForPath(kLogPath);
+    if (LittleFS.remove(kLogPath)) {
+      deletedBytes += fileSize;
+      deletedCount++;
+    }
+  }
+
+  File root = LittleFS.open("/");
+  File file = root.openNextFile();
+  while (file) {
+    String path = file.name();
+    if (!path.startsWith("/")) {
+      path = String("/") + path;
+    }
+    const bool shouldDelete = isDownloadableLogPath(path);
+    const size_t fileSize = shouldDelete ? file.size() : 0;
+    file = root.openNextFile();
+    if (shouldDelete && LittleFS.remove(path)) {
+      deletedBytes += fileSize;
+      deletedCount++;
+    }
+  }
+
+  if (!createFreshLogFile()) {
+    logServer.send(500, "text/plain", "failed to create new log after clear all\n");
+    return;
+  }
+  logClearedByWeb = true;
+
+  Serial.print(F("[LOG] all local logs cleared from web UI -> files "));
+  Serial.println(deletedCount);
+  String body = pageStart(F("All BS Noise Logs Cleared"));
+  body += F("<h3 class=\"ok\">All local logs cleared.</h3>");
+  body += F("<p>Deleted files: ");
+  body += String(deletedCount);
+  body += F("<br>Deleted size: ");
+  body += formatBytes(deletedBytes);
+  body += F("</p>");
+  body += F("<p><a class=\"btn ghost\" href=\"/log.csv\" download>Download new log.csv</a>");
+  body += F("<a class=\"btn ghost\" href=\"/\">Back</a></p>");
+  pageEnd(body);
+  logServer.send(200, "text/html", body);
+}
+
 void handleLogDownload() {
   if (!LittleFS.exists(kLogPath)) {
     logServer.send(404, "text/plain", "log file not found\n");
@@ -357,6 +501,8 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     logServer.on("/download-archive", HTTP_GET, handleArchiveDownload);
     logServer.on("/clear-log", HTTP_GET, handleClearLogConfirm);
     logServer.on("/clear-log-confirm", HTTP_GET, handleClearLogAction);
+    logServer.on("/clear-all-logs", HTTP_GET, handleClearAllLogsConfirm);
+    logServer.on("/clear-all-logs-confirm", HTTP_GET, handleClearAllLogsAction);
     logServer.begin();
     serverStarted_ = true;
     lastIpAddress_ = ipAddress;

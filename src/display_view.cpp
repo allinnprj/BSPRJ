@@ -9,7 +9,8 @@ bool DisplayView::begin(TwoWire *wire, uint8_t sdaPin, uint8_t sclPin, uint8_t a
   return initialized_;
 }
 
-void DisplayView::showBootMessage(const char *line1, const char *line2) {
+void DisplayView::showBootMessage(const char *line1, const char *line2,
+                                  const char *powerProfileText) {
   if (!initialized_) {
     return;
   }
@@ -19,6 +20,8 @@ void DisplayView::showBootMessage(const char *line1, const char *line2) {
   display_.setTextSize(1);
   display_.setCursor(0, 0);
   display_.println(F("OLED OK"));
+  display_.setCursor(104, 0);
+  display_.print(powerProfileText);
   display_.setCursor(0, 18);
   display_.println(line1);
   display_.setCursor(0, 30);
@@ -77,7 +80,8 @@ void DisplayView::drawCenteredText(const String &text, int16_t topY, uint8_t tex
 }
 
 void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
-                                  bool timeSynced, bool wifiConnected, uint8_t wifiPercent) {
+                                  bool timeSynced, bool wifiConnected, uint8_t wifiPercent,
+                                  const char *powerProfileText) {
   static constexpr int kTopBarMaxWidth = 31;
   static constexpr int kTopBarX = 46;
   static constexpr int kTopBarWidth = 33;
@@ -110,6 +114,10 @@ void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Read
   display_.setCursor(wifiX + 1, 0);
   display_.print(wifiLine);
 
+  display_.setTextSize(1);
+  display_.setCursor(108, 20);
+  display_.print(powerProfileText);
+
   display_.setFont(&FreeSans9pt7b);
   display_.setTextSize(1);
   char secondLine[24];
@@ -135,11 +143,14 @@ void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Read
   drawCenteredText(String(environmentLine), 57, 1);
 }
 
-void DisplayView::renderDebugPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading) {
+void DisplayView::renderDebugPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
+                                  const char *powerProfileText) {
   (void)sht31Reading;
   display_.setFont(nullptr);
   display_.setTextColor(SSD1306_WHITE);
-  drawCenteredText(F("DEBUG"), 0, 2);
+  char titleLine[18];
+  snprintf(titleLine, sizeof(titleLine), "DEBUG %s", powerProfileText);
+  drawCenteredText(String(titleLine), 0, 2);
 
   char rawLine[28];
   snprintf(rawLine, sizeof(rawLine), "%ld/%ld", static_cast<long>(snapshot.rawMin),
@@ -199,14 +210,14 @@ void DisplayView::drawPinnedIndicator(bool pinnedOn) {
   display_.setFont(nullptr);
   display_.setTextColor(SSD1306_WHITE);
   display_.setTextSize(1);
-  display_.setCursor(108, 0);
+  display_.setCursor(108, currentPage_ == 1 ? 56 : 0);
   display_.print(F("PIN"));
 }
 
 void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
                          const char *versionText, uint32_t buildNumber, bool timeSynced,
                          bool wifiConnected,
-                         uint8_t wifiPercent, bool pinnedOn) {
+                         uint8_t wifiPercent, bool pinnedOn, const char *powerProfileText) {
   if (!initialized_) {
     return;
   }
@@ -226,10 +237,11 @@ void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht3
   blanked_ = false;
   switch (currentPage_) {
     case 0:
-      renderSoundPage(snapshot, sht31Reading, timeSynced, wifiConnected, wifiPercent);
+      renderSoundPage(snapshot, sht31Reading, timeSynced, wifiConnected, wifiPercent,
+                      powerProfileText);
       break;
     case 1:
-      renderDebugPage(snapshot, sht31Reading);
+      renderDebugPage(snapshot, sht31Reading, powerProfileText);
       break;
     case 2:
       renderRangePage(snapshot);

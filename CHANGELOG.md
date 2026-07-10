@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## 0.1.59-EXP+113 log storage controls - 2026-07-10
+
+1. Added a LittleFS storage summary to the local `BS Noise Log` page: used/total/free space, active log size, and archived-log count/total size.
+2. Added per-archive file sizes beside each archived log download link.
+3. Added a separate `Clear ALL logs` danger flow with confirmation; it deletes the active log, compact archives, legacy archives, and `sound_log_legacy.csv`, then creates a fresh active log header.
+4. Validation: `pio run -e esp32dev` -> SUCCESS (RAM 19.8%, Flash 84.2%); `pio run -e esp32dev_ota` -> SUCCESS (RAM 19.8%, Flash 84.2%). OTA `firmware.bin` size: `1,325,056` bytes, leaving about `248 KB` in the `1,572,864` byte OTA slot.
+
+## 0.1.58-EXP+112 OLED power profile visibility - 2026-07-10
+
+1. Added `PROJECT_POWER_PROFILE` as the firmware-visible active energy-saving profile marker; the current fixed profile is `ECO`.
+2. Show the active profile on OLED boot, the main status page, and the debug page title as `DEBUG ECO`.
+3. Kept MQTT/Datacake profile publishing out of the current payload and recorded it as a future ДВЗ task if remote dashboards need it later.
+4. Validation: `pio run -e esp32dev` -> SUCCESS (RAM 19.8%, Flash 83.9%); `pio run -e esp32dev_ota` -> SUCCESS (RAM 19.8%, Flash 83.9%). OTA `firmware.bin` size: `1,320,352` bytes, leaving about `252 KB` in the `1,572,864` byte OTA slot.
+
 ## 0.1.57-EXP+111 soft ECO power profile - 2026-07-10
 
 1. Added the first safe energy-saving firmware layer for the upcoming unattended battery/solar run without changing the continuous audio sampling or 10-minute Google Sheets/log windows.

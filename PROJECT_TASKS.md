@@ -43,3 +43,4 @@
 25. Migrate the `INMP441` I2S input from the legacy ESP32 `driver/i2s.h` API to the newer `driver/i2s_std.h` API after the current measurement/logging behavior is stable.
 26. Evaluate whether splitting work across ESP32 dual cores is useful after the single-device measurement flow is stable; only adopt it if audio sampling, Wi-Fi/cloud uploads, display, or sensor reads begin to interfere with each other.
 27. Add a safe local-log archive flow before clearing logs, changing CSV schema, OTA updates, or firmware test resets, so partial multi-day runs can be preserved and merged into later analysis.
+28. Add `POWER_PROFILE` to MQTT/Datacake only if remote dashboards later need to show the active energy-saving profile; keep it out of the current MQTT payload until explicitly reopened.

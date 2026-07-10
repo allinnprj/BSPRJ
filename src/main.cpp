@@ -823,7 +823,7 @@ void setup() {
   }
   char bootLine1[32];
   snprintf(bootLine1, sizeof(bootLine1), "%s b%u", PROJECT_VERSION, PROJECT_BUILD);
-  displayView.showBootMessage(bootLine1, "ECO I2S 26/25/32");
+  displayView.showBootMessage(bootLine1, "I2S 26/25/32", PROJECT_POWER_PROFILE);
   delay(BOOT_SCREEN_DELAY_MS);
   lastDisplayInteractionAt = millis();
 }
@@ -904,7 +904,7 @@ void loop() {
     lastDisplayAt = nowMs;
     displayView.render(latestSnapshot, latestSht31Reading, PROJECT_VERSION, PROJECT_BUILD,
                        timeService.isSynced(), wifiService.isConnected(),
-                       wifiService.signalPercent(), displayPinnedOn);
+                       wifiService.signalPercent(), displayPinnedOn, PROJECT_POWER_PROFILE);
   }
 
   if (nowMs - lastSerialLogAt >= SERIAL_LOG_INTERVAL_MS) {
