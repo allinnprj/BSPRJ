@@ -10,7 +10,7 @@
 
 ## Критично
 
-1. Before the upcoming unattended/vacation run, finish energy saving as the top priority. Design it so battery/solar autonomy improves without making day-part sound conclusions misleading: record measured seconds, sleep seconds, coverage percent, and window quality for any reduced-power mode.
+1. Before the upcoming unattended/vacation run, finish energy saving as the top priority. Build `111` adds the first safe soft-ECO layer without deep sleep; next validate it on the real device and only add deeper sleep/coverage accounting if it remains necessary and does not make day-part sound conclusions misleading.
 2. Before the upcoming unattended/vacation run, design and implement the smart link between the current ESP32 noise controller and the nearby ESP32-C3 Super Mini + INA3221 solar controller. Account for the C3's weak Wi-Fi and the main controller's better antenna; evaluate a local controller-to-controller link such as UART, I2C, or ESP-NOW, with the main ESP32 acting as the gateway if that is the most reliable path.
 3. If only one pre-departure task can be completed, complete energy saving first and defer the ESP32-C3/INA3221 link.
 4. Add persistent storage for long-term average so `M` can survive reboot when that behavior is needed.

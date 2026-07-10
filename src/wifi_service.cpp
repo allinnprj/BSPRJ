@@ -43,6 +43,7 @@ void WifiService::begin() {
   }
 
   WiFi.mode(WIFI_STA);
+  WiFi.setSleep(true);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(false);
   Serial.print(F("[WF] begin -> "));

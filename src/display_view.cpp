@@ -31,7 +31,22 @@ void DisplayView::nextPage() {
 }
 
 void DisplayView::setEnabled(bool enabled) {
+  if (!initialized_ || enabled_ == enabled) {
+    enabled_ = enabled;
+    return;
+  }
+
   enabled_ = enabled;
+  if (enabled_) {
+    display_.ssd1306_command(SSD1306_DISPLAYON);
+    blanked_ = false;
+    return;
+  }
+
+  display_.clearDisplay();
+  display_.display();
+  display_.ssd1306_command(SSD1306_DISPLAYOFF);
+  blanked_ = true;
 }
 
 void DisplayView::toggleEnabled() {

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 0.1.57-EXP+111 soft ECO power profile - 2026-07-10
+
+1. Added the first safe energy-saving firmware layer for the upcoming unattended battery/solar run without changing the continuous audio sampling or 10-minute Google Sheets/log windows.
+2. Enabled ESP32 Wi-Fi modem sleep and reduced non-critical update frequency: Wi-Fi RSSI cache refresh is now every `120 s`, WQTT live publishes every `60 s`, WQTT status every `120 s`, WQTT day-part metrics every `300 s`, and Serial `[STAT]` output every `30 s`.
+3. Reduced display power draw: OLED auto-off is now `15 s`, normal refresh is `2 s`, debug refresh is `1 s`, and disabling the display now sends `SSD1306_DISPLAYOFF` instead of only drawing a blank screen.
+4. Reduced environment sensor activity by reading `SHT31` every `60 s` instead of every `15 s`; audio, local log, Google Sheets, OTA, Telegram online alerts, and restart diagnostics remain active.
+5. Validation: `pio run -e esp32dev` -> SUCCESS (RAM 19.8%, Flash 83.9%); `pio run -e esp32dev_ota` -> SUCCESS (RAM 19.8%, Flash 83.9%). `firmware.bin` size: `1,320,240` bytes, leaving about `252 KB` in the `1,572,864` byte OTA slot.
+
 ## 0.1.56-EXP+110 analytics alignment - 2026-07-09
 
 1. Updated Google Sheets Telegram latest/summary text to show `AVG P2P` beside the `SILENT / NORMAL / LOUD / PEAK` label, so user-facing reports no longer pair a P2P-derived level with an old `NOW %` average.

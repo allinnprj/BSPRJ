@@ -18,7 +18,7 @@ class WifiService {
 
  private:
   static constexpr unsigned long kReconnectIntervalMs = 15000UL;
-  static constexpr unsigned long kSignalRefreshIntervalMs = 30000UL;
+  static constexpr unsigned long kSignalRefreshIntervalMs = 120000UL;
 
   bool configured_ = false;
   int lastStatusCode_ = -1;

@@ -10,9 +10,9 @@
 namespace {
 
 constexpr unsigned long kReconnectIntervalMs = 10000UL;
-constexpr unsigned long kWqttStatusPublishIntervalMs = 60000UL;
-constexpr unsigned long kWqttLivePublishIntervalMs = 10000UL;
-constexpr unsigned long kWqttPeriodPublishIntervalMs = 120000UL;
+constexpr unsigned long kWqttStatusPublishIntervalMs = 120000UL;
+constexpr unsigned long kWqttLivePublishIntervalMs = 60000UL;
+constexpr unsigned long kWqttPeriodPublishIntervalMs = 300000UL;
 constexpr unsigned long kFastPublishIntervalMs = 60UL * 60UL * 1000UL;
 constexpr unsigned long kSlowPublishIntervalMs = 6UL * 60UL * 60UL * 1000UL;
 constexpr unsigned long kTextPublishIntervalMs = 60UL * 60UL * 1000UL;

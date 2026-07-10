@@ -25,14 +25,14 @@ static constexpr uint8_t I2S_WS_PIN = 25;
 static constexpr uint8_t I2S_DATA_PIN = 32;
 static constexpr uint8_t BUTTON_PIN = 27;
 static constexpr uint8_t OLED_ADDRESS = 0x3C;
-static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 250;
-static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 1000;
-static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 5000;
+static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 1000;
+static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 2000;
+static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 30000;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
 static constexpr uint8_t GOOGLE_SHEETS_QUEUE_SIZE = 6;
 static constexpr unsigned long MEAN_PERSIST_INTERVAL_MS = 600000UL;
-static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 60000UL;
+static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 15000UL;
 static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
 static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
 static constexpr unsigned long SCHEDULED_RESTART_INTERVAL_MS = 86400000UL;
@@ -823,7 +823,7 @@ void setup() {
   }
   char bootLine1[32];
   snprintf(bootLine1, sizeof(bootLine1), "%s b%u", PROJECT_VERSION, PROJECT_BUILD);
-  displayView.showBootMessage(bootLine1, "I2S 26/25/32");
+  displayView.showBootMessage(bootLine1, "ECO I2S 26/25/32");
   delay(BOOT_SCREEN_DELAY_MS);
   lastDisplayInteractionAt = millis();
 }

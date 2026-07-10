@@ -1,5 +1,5 @@
 #pragma once
 
-#define PROJECT_VERSION "0.1.56-EXP"
-#define PROJECT_BUILD 110
+#define PROJECT_VERSION "0.1.57-EXP"
+#define PROJECT_BUILD 111
 #define PROJECT_ACOUSTIC_REV 2
