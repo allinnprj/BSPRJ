@@ -10,7 +10,7 @@
 
 ## Критично
 
-1. Before the upcoming unattended/vacation run, finish energy saving as the top priority. Build `111` adds the first safe soft-ECO layer without deep sleep; next validate it on the real device and only add deeper sleep/coverage accounting if it remains necessary and does not make day-part sound conclusions misleading.
+1. Validate build `113` soft-ECO behavior on the real device before the upcoming unattended/vacation run. Builds `111..113` already added the first safe ECO layer, visible `ECO` profile marker, and long-run log cleanup tools without deep sleep; next decide from FNB58/current logs whether this is enough or whether deeper sleep/coverage accounting is necessary.
 2. Before the upcoming unattended/vacation run, design and implement the smart link between the current ESP32 noise controller and the nearby ESP32-C3 Super Mini + INA3221 solar controller. Account for the C3's weak Wi-Fi and the main controller's better antenna; evaluate a local controller-to-controller link such as UART, I2C, or ESP-NOW, with the main ESP32 acting as the gateway if that is the most reliable path.
 3. If only one pre-departure task can be completed, complete energy saving first and defer the ESP32-C3/INA3221 link.
 4. Add persistent storage for long-term average so `M` can survive reboot when that behavior is needed.
@@ -38,9 +38,15 @@
 20. Add historical trend pages for minute or hour summaries.
 21. Add acoustic event markers or threshold counters for louder periods.
 22. Harden MQTT retained/live freshness behavior for desktop dashboards so clients open with immediately usable last-known values.
-23. Add level-2 power-saving optimizations: slower OLED refresh, less frequent `SHT31` reads, and less frequent non-critical live telemetry.
+23. If build `113` ECO is still not efficient enough, add level-2 power-saving with explicit measurement coverage accounting rather than only slower refresh/telemetry. Do not weaken 10-minute day-part sound conclusions without logging measured seconds, skipped/sleep seconds, coverage percent, and window quality.
 24. Add daily Google Sheets rotation so each day can write into a date-named sheet automatically.
 25. Migrate the `INMP441` I2S input from the legacy ESP32 `driver/i2s.h` API to the newer `driver/i2s_std.h` API after the current measurement/logging behavior is stable.
 26. Evaluate whether splitting work across ESP32 dual cores is useful after the single-device measurement flow is stable; only adopt it if audio sampling, Wi-Fi/cloud uploads, display, or sensor reads begin to interfere with each other.
-27. Add a safe local-log archive flow before clearing logs, changing CSV schema, OTA updates, or firmware test resets, so partial multi-day runs can be preserved and merged into later analysis.
+27. Extend the build `113` local-log housekeeping only if field use shows it is still missing something, for example a one-click download-all package or clearer storage warning before LittleFS fills up.
 28. Add `POWER_PROFILE` to MQTT/Datacake only if remote dashboards later need to show the active energy-saving profile; keep it out of the current MQTT payload until explicitly reopened.
+
+## Сделано / частично закрыто
+
+- Build `111`: first safe soft-ECO layer without deep sleep; OLED real display-off, slower visible refresh, Wi-Fi modem sleep, less frequent SHT31/RSSI/WQTT/Serial updates.
+- Build `112`: visible `PROJECT_POWER_PROFILE=ECO` on OLED boot, main status, and `DEBUG ECO`; MQTT/Datacake profile publishing deliberately deferred.
+- Build `113`: local `BS Noise Log` page shows LittleFS used/total/free, active log size, archived-log count/total, per-archive size, and a confirmed `Clear ALL logs` action for local LittleFS logs only.
