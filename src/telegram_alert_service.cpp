@@ -11,6 +11,25 @@ constexpr char kTelegramApiBase[] = "https://api.telegram.org/bot";
 constexpr char kStatisticsUrl[] =
     "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943";
 
+String localLogUrl(const String &ipAddress) {
+  if (ipAddress.isEmpty() || ipAddress == F("0.0.0.0")) {
+    return String();
+  }
+  return String(F("http://")) + ipAddress + F("/");
+}
+
+void appendLinks(String &message, const String &ipAddress) {
+  message += F("\n\n🔗 <a href=\"");
+  message += kStatisticsUrl;
+  message += F("\">Online Statistics</a>");
+  const String logUrl = localLogUrl(ipAddress);
+  if (!logUrl.isEmpty()) {
+    message += F("\n🔗 <a href=\"");
+    message += logUrl;
+    message += F("\">Local Log</a>");
+  }
+}
+
 }  // namespace
 
 void TelegramAlertService::begin() {
@@ -230,9 +249,7 @@ String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, 
   message += F("</b>\n");
   message += F("Uptime: ");
   message += htmlEscape_(uptimeText);
-  message += F("\n\n🔗 <a href=\"");
-  message += kStatisticsUrl;
-  message += F("\">Online Statistics</a>");
+  appendLinks(message, ipAddress);
   return message;
 }
 
@@ -270,9 +287,7 @@ String TelegramAlertService::buildWifiRestoredMessage_(const String &ipAddress, 
   message += F("</b>\n");
   message += F("Uptime: ");
   message += htmlEscape_(uptimeText);
-  message += F("\n\n🔗 <a href=\"");
-  message += kStatisticsUrl;
-  message += F("\">Online Statistics</a>");
+  appendLinks(message, ipAddress);
   return message;
 }
 

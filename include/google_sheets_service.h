@@ -10,6 +10,7 @@ struct GoogleSheetsWindowRecord {
   String timeFromText;
   String timeToText;
   String dayPartText;
+  String levelText;
   uint8_t averageNowPercent = 0;
   uint8_t averageHourPercent = 0;
   uint8_t averageTotalPercent = 0;

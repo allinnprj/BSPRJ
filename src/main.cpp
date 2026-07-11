@@ -405,6 +405,7 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
+  record.levelText = noiseLevelText(record.averagePeakToPeak);
   record.peakToPeakP95 = percentile95(window.levelSamples, window.levelSampleCount);
   record.minPeakToPeak = window.minPeakToPeak == UINT16_MAX ? 0 : window.minPeakToPeak;
   record.maxPeakToPeak = window.maxPeakToPeak;

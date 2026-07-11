@@ -52,6 +52,8 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   payload += record.timeToText;
   payload += F("\",\"part\":\"");
   payload += record.dayPartText;
+  payload += F("\",\"level\":\"");
+  payload += record.levelText;
   payload += F("\",\"avg_now_pct\":");
   payload += String(record.averageNowPercent);
   payload += F(",\"avg_hour_pct\":");

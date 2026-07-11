@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 0.1.60-EXP+114 local links and raw level column - 2026-07-11
+
+1. Added a `Local Log` link below `Online Statistics` in firmware Telegram online/restored messages, using the current device IP address.
+2. Added a fixed `Local Log` link below `Online Statistics` in Google Sheets Apps Script Telegram latest/summary messages.
+3. Changed the Google Sheets custom menu icon from `⚡` to `⚙️ BS` for better visibility.
+4. Added `LEVEL` after `PART` in the raw Google Sheets `log` schema. New firmware payloads send the P2P-derived level, and Apps Script can derive/migrate the level for older raw sheets from `AVG P2P`.
+5. Recorded the microphone wind filter change: the sponge is now replaced with foam from a professional microphone.
+6. Validation: `Code.gs` syntax check -> OK; raw table color/header array lengths are all `36`; `pio run -e esp32dev` -> SUCCESS (RAM 19.8%, Flash 84.3%); `pio run -e esp32dev_ota` -> SUCCESS (RAM 19.8%, Flash 84.3%). OTA `firmware.bin` size: `1,325,648` bytes, leaving about `247 KB` in the `1,572,864` byte OTA slot.
+
 ## 0.1.59-EXP+113 log storage controls - 2026-07-10
 
 1. Added a LittleFS storage summary to the local `BS Noise Log` page: used/total/free space, active log size, and archived-log count/total size.

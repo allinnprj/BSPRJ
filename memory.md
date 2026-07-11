@@ -11,7 +11,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.59-EXP` build `113`.
+- Current firmware marker: `0.1.60-EXP` build `114`.
 
 ## Important Decisions
 
@@ -39,7 +39,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
   - `3300 uF` on the controller input.
   - `470 uF` for the display/environment branch.
   - Local capacitor at the `INMP441` `3.3V` input.
-- The microphone has a sponge/wind filter for balcony use.
+- The microphone wind filter was changed on 2026-07-11 to foam from a professional microphone for balcony use.
 - The current assembly is still on breadboards inside a metal enclosure.
 - The `INMP441` is now outside the enclosure on a separate cable, close to the outer end of a short plastic support tube. A thin sponge layer and enlarged outer opening provide wind/rain protection without the earlier narrow acoustic restriction.
 - A second controller for solar-charge management is an intentional required part of the target system. It shares the battery supply with the noise-monitoring ESP32 and exists to keep solar charging, discharging, and power monitoring work off the main controller. Final field validation must run with both controllers powered together. Its own connectivity/reboot issues must still be analyzed separately unless the noise-monitoring ESP32 shows matching failures.
@@ -139,6 +139,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Build `111` is the first safe soft-ECO power-saving layer for the unattended battery/solar run. It does not use deep sleep and does not change continuous audio sampling or 10-minute statistics. It enables Wi-Fi modem sleep, makes the OLED truly turn off after a shorter `15 s` idle timeout, slows OLED refresh while visible, reduces `SHT31` reads to `60 s`, reduces Wi-Fi RSSI refresh to `120 s`, reduces WQTT live/status/period publish frequency, and slows Serial `[STAT]` output to `30 s`. Build validation passed for `esp32dev` and `esp32dev_ota`; this still needs real-device upload and field validation before raising readiness.
 - Build `112` makes the active power profile visible in firmware UI without changing the build `111` energy-saving behavior: `PROJECT_POWER_PROFILE` is currently `ECO`, OLED boot shows the profile, the main status page shows `ECO`, and the debug page title reads `DEBUG ECO`. MQTT/Datacake `POWER_PROFILE` publishing is deliberately deferred as a PROJECT_TASKS backlog item until explicitly needed.
 - Build `113` improves long-run log housekeeping on the local `BS Noise Log` web page. It shows LittleFS used/total/free space, active log size, archived-log count/total size, per-archive file sizes, and adds a separate confirmed `Clear ALL logs` action that removes active, archived, and legacy local logs before recreating a fresh active header. This affects only local LittleFS logs, not Google Sheets.
+- Build `114` adds `Local Log` links under `Online Statistics` in Telegram messages, changes the Google Sheets custom menu to `⚙️ BS`, and adds raw Google Sheets `log` column `LEVEL` after `PART` with Apps Script migration for older raw sheets.
 - Analysis of `D:\MD\Downloads\sound\Log - 06-07-2026.csv` and `Log - log.csv` on 2026-07-07: build `110` field behavior looks broadly on plan. All rows had `SIG IN=OK`, `ENV FAIL=0`, and healthy heap margins. New `P2P` level thresholds separate night as mostly `SILENT` and day/evening as mostly `NORMAL` with only rare `LOUD` windows. Treat the 2026-07-06 duplicate windows at `18:10` and `18:40` as log/export duplicates around soft-restart/build transition. The 2026-07-07 gap after `15:00` until `17:40` with `BOOT SEQ=1` and `RESET_REASON=POWERON` is user-explained: the battery was not charged in time. Exclude this gap from firmware, microphone, and unexplained power-fault conclusions.
 - Final-run preparation checkpoint on 2026-05-30:
   - Updated `google_sheets/Code.gs` has been deployed in Google Apps Script.

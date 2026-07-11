@@ -6,6 +6,7 @@ const HEADERS = [
   'T FROM',
   'T TO',
   'PART',
+  'LEVEL',
   'NOW %',
   'H %',
   'M %',
@@ -48,6 +49,7 @@ const DAILY_VERDICT_SHEET_NAME = 'daily_verdict';
 const DAILY_VERDICT_TABLE_SHEET_NAME = 'daily_verdict_table';
 const CHARTS_SHEET_NAME = 'charts';
 const TELEGRAM_STATS_URL = 'https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943';
+const TELEGRAM_LOCAL_LOG_URL = 'http://192.168.11.124/';
 const ANALYTICS_SHEET_NAMES = [
   CLEAN_SUMMARY_SHEET_NAME,
   TIMELINE_SUMMARY_SHEET_NAME,
@@ -377,6 +379,7 @@ const HEADER_WIDTH_OVERRIDES = {
   'T FROM': 85,
   'T TO': 85,
   'PART': 70,
+  'LEVEL': 85,
   'NOW %': 75,
   'H %': 60,
   'M %': 60,
@@ -458,6 +461,7 @@ const HEADER_WIDTH_OVERRIDES = {
 const HEADER_COLORS = [
   '#b7e1cd', '#b7e1cd', '#b7e1cd',
   '#cfe2f3', '#cfe2f3', '#cfe2f3', '#cfe2f3',
+  '#ffe599',
   '#ffe599', '#ffe599', '#ffe599',
   '#f9cb9c', '#f9cb9c', '#f9cb9c',
   '#d9b8f0',
@@ -473,6 +477,7 @@ const HEADER_COLORS = [
 const DATA_COLORS_ODD = [
   '#eef7f1', '#eef7f1', '#eef7f1',
   '#f2f8fd', '#f2f8fd', '#f2f8fd', '#f2f8fd',
+  '#fff9e6',
   '#fff9e6', '#fff9e6', '#fff9e6',
   '#fef5ec', '#fef5ec', '#fef5ec',
   '#f8f1fc',
@@ -488,6 +493,7 @@ const DATA_COLORS_ODD = [
 const DATA_COLORS_EVEN = [
   '#f7fbf8', '#f7fbf8', '#f7fbf8',
   '#f8fbfe', '#f8fbfe', '#f8fbfe', '#f8fbfe',
+  '#fffdf3',
   '#fffdf3', '#fffdf3', '#fffdf3',
   '#fff9f4', '#fff9f4', '#fff9f4',
   '#fbf7fe',
@@ -518,7 +524,39 @@ function buildDataBackgroundsForSheetRows_(startRow, rowCount) {
   return backgrounds;
 }
 
+function noiseLevelFromMaybeP2p_(value) {
+  if (!hasDisplayValue_(value)) {
+    return '';
+  }
+  return noiseLevelFromP2p_(value);
+}
+
+function migrateRawSheetLevelColumnIfNeeded_(sheet) {
+  if (!sheet || sheet.getLastColumn() < 8) {
+    return;
+  }
+
+  const headerWidth = Math.min(sheet.getLastColumn(), HEADERS.length);
+  const currentHeaders = sheet.getRange(1, 1, 1, headerWidth).getValues()[0];
+  const looksLikeOldRawHeader = currentHeaders[6] === 'PART' &&
+    currentHeaders[7] === 'NOW %' &&
+    currentHeaders[8] === 'H %';
+  if (!looksLikeOldRawHeader) {
+    return;
+  }
+
+  sheet.insertColumnAfter(7);
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    const rowCount = lastRow - 1;
+    const avgP2pValues = sheet.getRange(2, 14, rowCount, 1).getValues();
+    const levelValues = avgP2pValues.map((row) => [noiseLevelFromMaybeP2p_(row[0])]);
+    sheet.getRange(2, 8, rowCount, 1).setValues(levelValues);
+  }
+}
+
 function ensureHeaderRowValues_(sheet) {
+  migrateRawSheetLevelColumnIfNeeded_(sheet);
   const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
   const currentHeaders = headerRange.getValues()[0];
   const headersMatch = HEADERS.every((header, index) => currentHeaders[index] === header);
@@ -549,19 +587,20 @@ function ensureHeaderFormatting_(sheet) {
   sheet.setColumnWidth(5, 85);   // T FROM
   sheet.setColumnWidth(6, 85);   // T TO
   sheet.setColumnWidth(7, 60);   // PART
-  sheet.setColumnWidth(8, 65);   // NOW
-  sheet.setColumnWidth(9, 55);   // H
-  sheet.setColumnWidth(10, 55);  // M
-  sheet.setColumnWidth(11, 85);  // RAW MIN
-  sheet.setColumnWidth(12, 85);  // RAW MAX
-  sheet.setColumnWidth(13, 85);  // AVG P2P
-  sheet.setColumnWidth(14, 75);  // SIG IN
-  sheet.setColumnWidth(15, 75);  // TEMP
-  sheet.setColumnWidth(16, 75);  // HUM
-  sheet.setColumnWidth(17, 75);  // WIN MIN
-  sheet.setColumnWidth(18, 70);  // QUIET
-  sheet.setColumnWidth(19, 70);  // LOUD
-  sheet.setColumnWidth(20, 80);  // SAMPLES
+  sheet.setColumnWidth(8, 85);   // LEVEL
+  sheet.setColumnWidth(9, 65);   // NOW
+  sheet.setColumnWidth(10, 55);  // H
+  sheet.setColumnWidth(11, 55);  // M
+  sheet.setColumnWidth(12, 85);  // RAW MIN
+  sheet.setColumnWidth(13, 85);  // RAW MAX
+  sheet.setColumnWidth(14, 85);  // AVG P2P
+  sheet.setColumnWidth(15, 75);  // SIG IN
+  sheet.setColumnWidth(16, 75);  // TEMP
+  sheet.setColumnWidth(17, 75);  // HUM
+  sheet.setColumnWidth(18, 75);  // WIN MIN
+  sheet.setColumnWidth(19, 70);  // QUIET
+  sheet.setColumnWidth(20, 70);  // LOUD
+  sheet.setColumnWidth(21, 80);  // SAMPLES
   applyAdaptiveHeaderLayout_(sheet, HEADERS);
 
   const lastRow = Math.max(sheet.getLastRow(), 2);
@@ -581,7 +620,7 @@ function ensureHeaderFormatting_(sheet) {
 
   // Thick separators between logical blocks:
   // C|D, G|H, J|K, M|N, N|O, P|Q
-  [3, 7, 10, 13, 14, 16].forEach((col) => {
+  [3, 7, 11, 14, 15, 17].forEach((col) => {
     sheet.getRange(1, col, lastRow, 1)
       .setBorder(null, null, null, true, null, null, '#8a8a8a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   });
@@ -603,7 +642,7 @@ function applyLogRowFormatting_(sheet, startRow, rowCount) {
   sheet.getRange(startRow, 4, rowCount, 1).setNumberFormat('dd-mm-yyyy');
   sheet.getRange(startRow, 5, rowCount, 2).setNumberFormat('hh:mm:ss');
 
-  [3, 7, 10, 13, 14, 16].forEach((col) => {
+  [3, 7, 11, 14, 15, 17].forEach((col) => {
     sheet.getRange(startRow, col, rowCount, 1)
       .setBorder(null, null, null, true, null, null, '#8a8a8a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   });
@@ -756,6 +795,7 @@ function appendLogRowsToArchive_(sourceSheet, targetSheet) {
   if (sourceLastRow < 2) {
     return;
   }
+  ensureHeaderRowValues_(targetSheet);
 
   const rowCount = sourceLastRow - 1;
   const sourceRange = sourceSheet.getRange(2, 1, rowCount, HEADERS.length);
@@ -807,7 +847,7 @@ function ensureWritableLogSheet_(incomingDateText) {
 
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  ui.createMenu('⚡')
+  ui.createMenu('⚙️ BS')
     .addItem('Refresh latest data', 'rebuildAnalytics_')
     .addSeparator()
     .addSubMenu(ui.createMenu('Data')
@@ -1320,7 +1360,10 @@ function sendTelegramMessage_(text) {
 }
 
 function buildTelegramStatsLinkLine_() {
-  return `🔗 <a href="${TELEGRAM_STATS_URL}">Online Statistics</a>`;
+  return [
+    `🔗 <a href="${TELEGRAM_STATS_URL}">Online Statistics</a>`,
+    `🔗 <a href="${TELEGRAM_LOCAL_LOG_URL}">Local Log</a>`
+  ].join('\n');
 }
 
 function buildTelegramNoDataMessage_(title, body) {
@@ -1769,20 +1812,20 @@ function collectRawRecords_() {
         timeFromText,
         timeToText,
         partText,
-        nowPct: toNumber_(row[7]),
-        hourPct: toNumber_(row[8]),
-        totalPct: toNumber_(row[9]),
-        rawMin: toNumber_(row[10]),
-        rawMax: toNumber_(row[11]),
-        avgPeakToPeak: toNumber_(row[12]),
-        signalText: String(row[13] || ''),
-        temperatureC: row[14] === '' ? '' : toNumber_(row[14]),
-        humidityPct: row[15] === '' ? '' : toNumber_(row[15]),
-        windowMinutes: toNumber_(row[16]),
-        quietCount: toNumber_(row[17]),
-        loudCount: toNumber_(row[18]),
-        samples: toNumber_(row[19]),
-        uptimeText: String(row[20] || ''),
+        nowPct: toNumber_(row[8]),
+        hourPct: toNumber_(row[9]),
+        totalPct: toNumber_(row[10]),
+        rawMin: toNumber_(row[11]),
+        rawMax: toNumber_(row[12]),
+        avgPeakToPeak: toNumber_(row[13]),
+        signalText: String(row[14] || ''),
+        temperatureC: row[15] === '' ? '' : toNumber_(row[15]),
+        humidityPct: row[16] === '' ? '' : toNumber_(row[16]),
+        windowMinutes: toNumber_(row[17]),
+        quietCount: toNumber_(row[18]),
+        loudCount: toNumber_(row[19]),
+        samples: toNumber_(row[20]),
+        uptimeText: String(row[21] || ''),
         sourceSheet: sheet.getName(),
         dayState: sheet.getName() === ACTIVE_LOG_SHEET_NAME ? 'CURRENT' : 'ARCHIVE',
         recordKey
@@ -2612,6 +2655,7 @@ function doPost(e) {
   const normalizedDate = normalizeDateText_(valueOrBlank(data.date));
   const normalizedTimeFrom = normalizeTimeText_(valueOrBlank(data.time_from));
   const normalizedTimeTo = normalizeTimeText_(valueOrBlank(data.time_to));
+  const levelText = valueOrBlank(data.level) || noiseLevelFromMaybeP2p_(data.avg_peak_to_peak);
   const sheet = ensureWritableLogSheet_(normalizedDate);
   const recordKey = buildRecordKeyFromPayload_(data);
 
@@ -2630,6 +2674,7 @@ function doPost(e) {
     normalizedTimeFrom,
     normalizedTimeTo,
     valueOrBlank(data.part),
+    levelText,
     valueOrBlank(data.avg_now_pct),
     valueOrBlank(data.avg_hour_pct),
     valueOrBlank(data.avg_total_pct),
