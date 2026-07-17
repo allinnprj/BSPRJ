@@ -1424,6 +1424,36 @@ function getLatestValidCleanRecord_() {
   };
 }
 
+function getLatestCleanUptimeForDate_(dateText) {
+  const targetDate = normalizeDateText_(dateText);
+  if (!targetDate) {
+    return '';
+  }
+
+  const sheet = getOrCreateSheet_(CLEAN_SUMMARY_SHEET_NAME);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return '';
+  }
+
+  const values = sheet.getRange(2, 1, lastRow - 1, CLEAN_SUMMARY_HEADERS.length).getValues();
+  const dateRows = values.filter((row) => normalizeDateText_(row[3]) === targetDate);
+  if (!dateRows.length) {
+    return '';
+  }
+
+  const validRows = dateRows.filter((row) => toNumber_(row[27]) === 1);
+  const sourceRows = validRows.length ? validRows : dateRows;
+  sourceRows.sort((left, right) => {
+    const leftKey = `${normalizeDateText_(left[3])}T${normalizeTimeText_(left[5])}`;
+    const rightKey = `${normalizeDateText_(right[3])}T${normalizeTimeText_(right[5])}`;
+    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
+  });
+
+  const latestRow = sourceRows[sourceRows.length - 1];
+  return String(latestRow[21] || '').trim();
+}
+
 function getLatestSummaryDateText_() {
   return getLatestDateTextFromSheet_(DAYPART_SUMMARY_SHEET_NAME, 2);
 }
@@ -1601,6 +1631,7 @@ function buildDailyTelegramSummary_(dateText) {
     return buildTelegramNoDataMessage_('BS Noise Summary', 'No summary data yet. Run Rebuild analytics first.');
   }
 
+  const uptimeText = getLatestCleanUptimeForDate_(targetDate);
   const partLines = PART_ORDER.map((partText) => buildDayPartTelegramBlock_(targetDate, partText));
 
   const healthRow = findHealthRowByDate_(targetDate);
@@ -1623,6 +1654,7 @@ function buildDailyTelegramSummary_(dateText) {
   return [
     '📘 <b>BS Noise Summary</b>',
     `📅 Date: <b>${htmlEscape_(targetDate)}</b>`,
+    `⏱️ Uptime: <b>${htmlEscape_(uptimeText || 'no data')}</b>`,
     '',
     partLines.join('\n\n'),
     '',

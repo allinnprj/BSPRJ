@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Google Sheets daily summary uptime - 2026-07-17
+
+1. Updated Google Sheets Telegram `BS Noise Summary` text to show the latest real device `UPTIME` for the summary date directly under the date line.
+2. The uptime is taken from the latest valid `clean_summary_10m` row for that date, with a fallback to the latest row for the date if no valid row exists.
+3. Firmware version/build were not changed because this is a Google Sheets Apps Script message-format update only.
+
 ## Google Sheets auto-hide archive sheets - 2026-07-17
 
 1. Added Google Sheets menu actions under `⚙️ BS -> Archive` to enable or disable automatic archive-sheet hiding.
