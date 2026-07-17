@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Google Sheets auto-hide archive sheets - 2026-07-17
+
+1. Added Google Sheets menu actions under `⚙️ BS -> Archive` to enable or disable automatic archive-sheet hiding.
+2. Added a daily Apps Script trigger handler that runs the existing `Hide archive sheets` behavior automatically around `03:00`, hiding dated raw archive sheets while leaving the active `log` and analytics sheets untouched.
+3. Kept data retention unchanged: archive sheets are only hidden, not moved, deleted, or copied to another spreadsheet.
+4. Firmware version/build were not changed because this is a Google Sheets Apps Script workflow update only.
+
 ## 0.1.60-EXP+114 local links and raw level column - 2026-07-11
 
 1. Added a `Local Log` link below `Online Statistics` in firmware Telegram online/restored messages, using the current device IP address.

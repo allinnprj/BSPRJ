@@ -66,6 +66,8 @@ const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
 const TELEGRAM_CHAT_ID_PROPERTY = 'BS_TELEGRAM_CHAT_ID';
 const AUTO_ANALYTICS_ENABLED_PROPERTY = 'BS_AUTO_ANALYTICS_ENABLED';
 const AUTO_ANALYTICS_INTERVAL_MINUTES = 10;
+const AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY = 'BS_AUTO_HIDE_ARCHIVE_SHEETS_ENABLED';
+const AUTO_HIDE_ARCHIVE_SHEETS_HOUR = 3;
 const TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_ENABLED';
 const TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_LAST_SENT_DATE';
 const MIN_VALID_SAMPLES = 100;
@@ -864,7 +866,10 @@ function onOpen() {
       .addItem('Hide archive sheets', 'hideArchiveSheets_')
       .addItem('Show archive sheets', 'showArchiveSheets_')
       .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
-      .addItem('Show analytics sheets', 'showAnalyticsSheets_'))
+      .addItem('Show analytics sheets', 'showAnalyticsSheets_')
+      .addSeparator()
+      .addItem('Enable auto hide archive sheets', 'enableAutomaticArchiveSheetHiding_')
+      .addItem('Disable auto hide archive sheets', 'disableAutomaticArchiveSheetHiding_'))
     .addSubMenu(ui.createMenu('Reports')
       .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
       .addItem('Send daily Telegram summary', 'sendDailyTelegramSummary_')
@@ -1717,6 +1722,47 @@ function runAutomaticAnalyticsRefresh_() {
     silent: true,
     formatCharts: false
   });
+}
+
+function removeAutomaticArchiveSheetHidingTriggers_() {
+  ScriptApp.getProjectTriggers().forEach((trigger) => {
+    if (trigger.getHandlerFunction() === 'runAutomaticArchiveSheetHiding_') {
+      ScriptApp.deleteTrigger(trigger);
+    }
+  });
+}
+
+function enableAutomaticArchiveSheetHiding_() {
+  const properties = PropertiesService.getScriptProperties();
+  removeAutomaticArchiveSheetHidingTriggers_();
+  ScriptApp.newTrigger('runAutomaticArchiveSheetHiding_')
+    .timeBased()
+    .everyDays(1)
+    .atHour(AUTO_HIDE_ARCHIVE_SHEETS_HOUR)
+    .create();
+  properties.setProperty(AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY, 'true');
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `Auto archive-sheet hiding enabled daily around ${AUTO_HIDE_ARCHIVE_SHEETS_HOUR}:00.`,
+    'BS Noise',
+    6
+  );
+}
+
+function disableAutomaticArchiveSheetHiding_() {
+  const properties = PropertiesService.getScriptProperties();
+  removeAutomaticArchiveSheetHidingTriggers_();
+  properties.setProperty(AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY, 'false');
+  SpreadsheetApp.getActiveSpreadsheet().toast('Auto archive-sheet hiding disabled.', 'BS Noise', 5);
+}
+
+function runAutomaticArchiveSheetHiding_() {
+  const properties = PropertiesService.getScriptProperties();
+  const enabled = String(properties.getProperty(AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true';
+  if (!enabled) {
+    return;
+  }
+
+  hideArchiveSheets_();
 }
 
 function removeAutomaticDailySummaryTriggers_() {
