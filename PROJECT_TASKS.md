@@ -8,45 +8,101 @@
 - `BSPRJ` is the active project name; new work belongs in `BSPRJ`.
 - `zaexp` is an old isolated microphone test and is not part of active `BSPRJ` planning.
 
-## Критично
+## Priority Rule
 
-1. Validate build `113` soft-ECO behavior on the real device before the upcoming unattended/vacation run. Builds `111..113` already added the first safe ECO layer, visible `ECO` profile marker, and long-run log cleanup tools without deep sleep; next decide from FNB58/current logs whether this is enough or whether deeper sleep/coverage accounting is necessary.
-2. Before the upcoming unattended/vacation run, design and implement the smart link between the current ESP32 noise controller and the nearby ESP32-C3 Super Mini + INA3221 solar controller. Account for the C3's weak Wi-Fi and the main controller's better antenna; evaluate a local controller-to-controller link such as UART, I2C, or ESP-NOW, with the main ESP32 acting as the gateway if that is the most reliable path.
-3. If only one pre-departure task can be completed, complete energy saving first and defer the ESP32-C3/INA3221 link.
-4. Add persistent storage for long-term average so `M` can survive reboot when that behavior is needed.
-5. Refine microphone sanity checks with longer-term warning counters and clearer recovery rules if the input oscillates between valid and invalid states.
-6. Harden the current NTP-based time path so day-part statistics stay trustworthy after late sync, reconnects, and startup transitions.
-7. Validate and harden Wi-Fi reconnect/recovery behavior under real `DISC` / `LOST` / `FAIL` cases so the device reliably returns to normal operation.
+- Finish the complete sound path first: reliable relative P2P analytics, diagnostics, reporting, and real dB calibration.
+- Only after the sound acceptance gate is closed, continue with solar power, controller communication, GPS, GSM, permanent assembly, and final integrated validation.
+- Keep `ECO`, acoustic revision `2`, the professional-microphone foam, and the accepted P2P thresholds unchanged unless new controlled evidence contradicts the clean-run findings.
 
-## Важно
+## A. Confirmed Sound Foundation
 
-8. Add a calibration mode to map relative levels to approximate real-world `dB` with clear limitations.
-9. Prepare the ESP32 migration plan for `INMP441`, including what logic can be reused and what must change for I2S input.
-10. Add a cleaner OLED layout with optional compact and large-font modes.
-11. Add adjustable time windows so hour statistics can also be inspected over shorter warmup-friendly periods.
-12. Expose time-sync state more clearly in telemetry/UI so users can tell when day-part statistics are already based on valid wall-clock time.
-13. Unify `SIGNAL_STATE` across Datacake and MQTT to use the same human-readable levels: `SILENT`, `NORMAL`, `LOUD`, `PEAK`.
-14. Remove redundant uptime/update telemetry from the active dashboard set: `LAST_UPDATE_TS`, `UPTIME_DATE`, `UPTIME_MIN`, and `UPTIME_HOURS`.
-15. Keep `DAY_PCT`, `EVENING_PCT`, and `NIGHT_PCT` as the primary day-part statistics and re-evaluate whether `CURRENT_PERIOD_PCT` still adds enough value.
-16. Optimize Datacake telemetry by batching fields where possible and keeping the cloud side quota-safe without weakening the live MQTT feed.
-17. Investigate and reduce the light startup lag that is visible before Wi-Fi becomes available.
-18. Add a minimal controller-side Telegram alert service for `Device Online`, `Wi-Fi Restored`, and a non-spamming `Warning` path via direct Telegram Bot API calls, without pulling in a heavy bot framework.
+1. [x] Confirm `ESP32 + INMP441` operation on the real device.
+2. [x] Fix the accepted microphone construction as `ACOUSTIC REV 2`.
+3. [x] Confirm that the professional-microphone foam preserves useful acoustic range.
+4. [x] Use `AVG P2P`, not `NOW %`, as the basis for `SILENT / NORMAL / LOUD / PEAK`.
+5. [x] Accept the relative thresholds: `SILENT <=350`, `NORMAL <=650`, `LOUD <=850`, `PEAK >850`.
+6. [x] Confirm useful `DAY / EVE / NGT` separation.
+7. [x] Confirm that the current soft `ECO` profile causes no hidden measurement gaps.
+8. [x] Confirm stable `SIG IN`, SHT31 health, and sample counts during the clean run.
+9. [x] Confirm continuous device-recorded uptime across planned soft restarts.
+10. [x] Confirm that Telegram displays `AVG P2P` and real device uptime correctly.
 
-## Позже
+## B. Current Sound-Pipeline Defects
 
-19. Build a read-only AppSheet dashboard layer on top of `summary_conclusions`, `summary_daypart`, `summary_levels`, `summary_health`, and later `clean_summary_10m`, without changing the live `log` write contract.
-20. Add historical trend pages for minute or hour summaries.
-21. Add acoustic event markers or threshold counters for louder periods.
-22. Harden MQTT retained/live freshness behavior for desktop dashboards so clients open with immediately usable last-known values.
-23. If build `113` ECO is still not efficient enough, add level-2 power-saving with explicit measurement coverage accounting rather than only slower refresh/telemetry. Do not weaken 10-minute day-part sound conclusions without logging measured seconds, skipped/sleep seconds, coverage percent, and window quality.
-24. Add daily Google Sheets rotation so each day can write into a date-named sheet automatically.
-25. Migrate the `INMP441` I2S input from the legacy ESP32 `driver/i2s.h` API to the newer `driver/i2s_std.h` API after the current measurement/logging behavior is stable.
-26. Evaluate whether splitting work across ESP32 dual cores is useful after the single-device measurement flow is stable; only adopt it if audio sampling, Wi-Fi/cloud uploads, display, or sensor reads begin to interfere with each other.
-27. Extend the build `113` local-log housekeeping only if field use shows it is still missing something, for example a one-click download-all package or clearer storage warning before LittleFS fills up.
-28. Add `POWER_PROFILE` to MQTT/Datacake only if remote dashboards later need to show the active energy-saving profile; keep it out of the current MQTT payload until explicitly reopened.
+11. [x] Fix automatic Telegram daily-summary date tracking so old report dates are never alternated or resent.
+12. [x] Add a script lock around the automatic daily-summary decision, send, and watermark update.
+13. [ ] Validate three consecutive automatic reports with exactly one report for each completed date.
+14. [ ] Locate the loss of the `00:00-00:09` window between the local CSV and Google Sheets.
+15. [ ] Eliminate any race between the midnight window upload and `SCHEDULED_RESTART`.
+16. [ ] Achieve `144/144` full-day cloud windows and `42/42` `NGT` windows.
+17. [ ] Align `BOOT / SCHEDULED_RESTART` rows with the 35-field local CSV header.
+18. [ ] Verify automatic archive-sheet hiding in the deployed spreadsheet.
+19. [ ] Remove stale or duplicate Apps Script triggers after the corrected script is deployed.
+20. [ ] Verify that manual and automatic Telegram summaries do not conflict.
 
-## Сделано / частично закрыто
+## C. Runtime Memory Reliability
 
-- Build `111`: first safe soft-ECO layer without deep sleep; OLED real display-off, slower visible refresh, Wi-Fi modem sleep, less frequent SHT31/RSSI/WQTT/Serial updates.
-- Build `112`: visible `PROJECT_POWER_PROFILE=ECO` on OLED boot, main status, and `DEBUG ECO`; MQTT/Datacake profile publishing deliberately deferred.
-- Build `113`: local `BS Noise Log` page shows LittleFS used/total/free, active log size, archived-log count/total, per-archive size, and a confirmed `Clear ALL logs` action for local LittleFS logs only.
+21. [ ] Localize the repeated daily `FREE HEAP` decline of about `67-70 KB`.
+22. [ ] Measure heap before and after HTTPS, Sheets, MQTT, Telegram, and file operations.
+23. [ ] Check HTTP/TLS clients, `String` objects, and temporary buffers for retained allocations.
+24. [ ] Determine whether the trend is a leak, fragmentation, or bounded caching.
+25. [ ] Fix the cause or prove a safe stable plateau with sufficient heap margin.
+26. [ ] Keep the daily planned restart enabled until memory stability is proven.
+27. [ ] Run at least 72 hours of heap observation after the memory change.
+28. [ ] Accept runtime memory only after there are no memory-related resets and minimum heap remains safe.
+
+## D. Relative Classification Completion
+
+29. [ ] Add `MIXED NORMAL/LOUD` handling for tied or nearly tied dominant levels.
+30. [ ] Split coverage confidence from level dominance as `DATA CONFIDENCE` and `LEVEL DOMINANCE`.
+31. [ ] Review days where average P2P is `LOUD` while the modal window level is `NORMAL`.
+32. [ ] Align level semantics across firmware, Sheets, Telegram, MQTT, and Datacake.
+33. [ ] Keep the accepted P2P thresholds unchanged unless controlled evidence requires retuning.
+34. [ ] Run a clean 3-7 day regression after pipeline, memory, and classification fixes.
+35. [ ] Confirm that every output surface gives the same level for the same source window.
+36. [ ] Freeze the relative noise monitor as accepted sound version v1.
+
+## E. Real dB Calibration
+
+37. [ ] Define whether the target is indicative dB or a validated `Leq` measurement.
+38. [ ] Add an RMS/Leq acoustic metric instead of converting `AVG P2P` directly to dB.
+39. [ ] Document the usable INMP441 frequency-response and weighting limitations.
+40. [ ] Add a calibration mode without weakening normal logging.
+41. [ ] Define fixed microphone and reference sound-level-meter placement.
+42. [ ] Collect paired quiet, normal, loud, and peak readings.
+43. [ ] Repeat calibration readings across multiple times and relevant environmental conditions.
+44. [ ] Calculate and implement the accepted calibration offset or model.
+45. [ ] Validate the model against measurements not used for fitting.
+46. [ ] Record the accepted error range and all limitations.
+47. [ ] Add the calibrated dB metric to local logs, Sheets, and Telegram.
+48. [ ] Preserve `AVG P2P` as a separate diagnostic metric.
+49. [ ] Run the final seven-day sound acceptance test.
+50. [ ] Mark the complete sound subsystem finished only after the dB acceptance test passes.
+
+## F. Remaining Project Subsystems
+
+51. [ ] Finish the reliability of the separate `ESP32-S3 + INA3221` controller.
+52. [ ] Validate charge, discharge, voltage, current, and sleep behavior.
+53. [ ] Select the accepted local communication protocol between controllers.
+54. [ ] Implement controller status, power telemetry, heartbeat, and failure behavior.
+55. [ ] Use the main ESP32 as the network gateway if integration testing confirms that architecture.
+56. [ ] Implement automatic `LOW_BAT` behavior from measured power data.
+57. [ ] Validate both controllers operating from the same battery supply.
+58. [ ] Integrate GPS time and coordinates.
+59. [ ] Validate time and day-part statistics without NTP.
+60. [ ] Review Flash and OTA-slot capacity before GSM integration.
+61. [ ] Design the power path for GSM current peaks.
+62. [ ] Implement GSM connectivity and recovery.
+63. [ ] Validate data delivery without home Wi-Fi.
+64. [ ] Remove breadboards and temporary contacts.
+65. [ ] Build the permanent soldered or PCB assembly.
+66. [ ] Add moisture protection, drainage, cable retention, and corrosion protection.
+67. [ ] Preserve USB and OTA recovery access.
+68. [ ] Run an integration test across every required subsystem.
+69. [ ] Run a final autonomous 20-30 day acceptance test.
+70. [ ] Fix only defects confirmed by the integrated acceptance evidence.
+71. [ ] Update final documentation, data dictionaries, and architecture diagrams.
+72. [x] Replace the stale project backlog with this progress-aware numbered checklist.
+73. [ ] Prepare the stable firmware and Apps Script release state.
+74. [ ] Move the validated release from `devlop` to `main`.
+75. [ ] Record and publish the final project release.

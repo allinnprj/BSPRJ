@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets daily summary deduplication - 2026-07-26
+
+1. Changed automatic Telegram daily-summary date selection to use the newest archived date as a monotonic watermark, so an older date cannot replace the latest sent date and trigger hourly alternating reports.
+2. Added a Google Apps Script lock around the automatic summary decision, analytics refresh, Telegram send, and last-sent property update to prevent concurrent trigger executions from sending the same date.
+3. Replaced the stale project backlog with a 75-item progress-aware completion checklist that keeps the full sound path ahead of solar, controller-link, GPS, GSM, and final-integration work.
+4. Validation: Apps Script syntax check -> OK; automatic date-selection regression test -> PASS. Real trigger validation remains open until three consecutive dates each produce exactly one automatic report.
+5. Firmware version/build were not changed because this step changes Google Sheets Apps Script and project planning only.
+
 ## Google Sheets daily summary uptime - 2026-07-17
 
 1. Updated Google Sheets Telegram `BS Noise Summary` text to show the latest real device `UPTIME` for the summary date directly under the date line.

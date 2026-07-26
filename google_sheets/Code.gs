@@ -1703,17 +1703,17 @@ function getArchivedDateTexts_() {
 }
 
 function findLatestAvailableSummaryDateForAutoDaily_(lastSentDate) {
-  const archivedDates = getArchivedDateTexts_().slice().reverse();
-  for (let index = 0; index < archivedDates.length; index++) {
-    const dateText = archivedDates[index];
-    if (!dateText || dateText === lastSentDate) {
-      continue;
-    }
-    if (hasSummaryDataForDate_(dateText)) {
-      return dateText;
-    }
+  const latestArchivedDate = normalizeDateText_(getLatestArchivedDateText_());
+  const normalizedLastSentDate = normalizeDateText_(lastSentDate);
+  if (!latestArchivedDate) {
+    return '';
   }
-  return '';
+
+  if (normalizedLastSentDate && latestArchivedDate <= normalizedLastSentDate) {
+    return '';
+  }
+
+  return hasSummaryDataForDate_(latestArchivedDate) ? latestArchivedDate : '';
 }
 
 function removeAutomaticAnalyticsRefreshTriggers_() {
@@ -1821,27 +1821,31 @@ function disableAutomaticDailySummary_() {
 }
 
 function runAutomaticDailyTelegramSummary_() {
-  const config = getTelegramConfig_();
-  if (!config.enabled || !config.autoDailyEnabled) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
     return;
   }
 
-  const latestArchivedDate = normalizeDateText_(getLatestArchivedDateText_());
-  if (!latestArchivedDate) {
-    return;
-  }
+  try {
+    const config = getTelegramConfig_();
+    if (!config.enabled || !config.autoDailyEnabled) {
+      return;
+    }
 
-  const properties = PropertiesService.getScriptProperties();
-  const lastSentDate = String(properties.getProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY) || '').trim();
-  rebuildAnalyticsCore_({ silent: true });
-  const targetDate = findLatestAvailableSummaryDateForAutoDaily_(lastSentDate);
-  if (!targetDate) {
-    return;
-  }
+    const properties = PropertiesService.getScriptProperties();
+    const lastSentDate = String(properties.getProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY) || '').trim();
+    rebuildAnalyticsCore_({ silent: true });
+    const targetDate = findLatestAvailableSummaryDateForAutoDaily_(lastSentDate);
+    if (!targetDate) {
+      return;
+    }
 
-  const text = buildDailyTelegramSummary_(targetDate);
-  sendTelegramMessage_(text);
-  properties.setProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY, targetDate);
+    const text = buildDailyTelegramSummary_(targetDate);
+    sendTelegramMessage_(text);
+    properties.setProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY, targetDate);
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function sortRecords_(records) {
