@@ -106,3 +106,4 @@
 73. [ ] Prepare the stable firmware and Apps Script release state.
 74. [ ] Move the validated release from `devlop` to `main`.
 75. [ ] Record and publish the final project release.
+76. [ ] Create the final as-built `NETLIST` for the complete system after all controller, power, sensor, GPS, GSM, and interconnection wiring is finalized.
