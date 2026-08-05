@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Google Sheets analytics trigger serialization - 2026-08-05
+
+1. Added the shared Apps Script lock to the automatic analytics refresh so it cannot rebuild analytics concurrently with the automatic Telegram daily summary.
+2. A busy automatic execution now skips its current scheduled run and retries on its normal trigger schedule instead of writing the same analytics sheets concurrently.
+3. Validation: Apps Script syntax check and lock-coverage source check -> PASS. Live trigger validation remains open until the updated script is saved in Google Apps Script and three consecutive dates each produce exactly one automatic report.
+4. Firmware version/build were not changed because this step changes Google Sheets Apps Script only.
+
 ## Google Sheets daily summary deduplication - 2026-07-26
 
 1. Changed automatic Telegram daily-summary date selection to use the newest archived date as a monotonic watermark, so an older date cannot replace the latest sent date and trigger hourly alternating reports.

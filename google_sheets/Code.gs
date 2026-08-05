@@ -1744,16 +1744,25 @@ function disableAutomaticAnalyticsRefresh_() {
 }
 
 function runAutomaticAnalyticsRefresh_() {
-  const properties = PropertiesService.getScriptProperties();
-  const enabled = String(properties.getProperty(AUTO_ANALYTICS_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true';
-  if (!enabled) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
     return;
   }
 
-  rebuildAnalyticsCore_({
-    silent: true,
-    formatCharts: false
-  });
+  try {
+    const properties = PropertiesService.getScriptProperties();
+    const enabled = String(properties.getProperty(AUTO_ANALYTICS_ENABLED_PROPERTY) || '').trim().toLowerCase() === 'true';
+    if (!enabled) {
+      return;
+    }
+
+    rebuildAnalyticsCore_({
+      silent: true,
+      formatCharts: false
+    });
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 function removeAutomaticArchiveSheetHidingTriggers_() {
