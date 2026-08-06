@@ -673,7 +673,7 @@ void LogService::appendRuntimeEvent(const String &eventText, const String &dateT
   file.print(uptimeMinutes);
   file.print(',');
   file.print(uptimeText);
-  for (uint8_t index = 0; index < 23; ++index) {
+  for (uint8_t index = 0; index < 24; ++index) {
     file.print(',');
   }
   file.print(wifiRssiDbm);

@@ -39,7 +39,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current whole-project readiness estimate: `38%`.
+- Current whole-project readiness estimate: `44%`.
 
 ## Russian Report Block
 
@@ -50,14 +50,14 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 - Микрофон и механическая сборка: 80%
 - Относительная статистика шума и классификация: 60%
 - Реальная dB-калибровка: 0%
-- INA3221 и солнечная зарядка: 30%
+- INA3221 и солнечная зарядка: 95%
 - Связь между контроллерами: 0%
 - GPS и контекст места/времени: 5%
 - GSM/мобильная связь: 0%
 - Общее питание и автономная работа: 25%
 - Основная прошивка, логи, OTA и диагностика: 75%
 - Постоянная сборка и финальная полевая проверка: 10%
-- Общая готовность проекта: 38%
+- Общая готовность проекта: 44%
 ```
 
 | Subsystem | Readiness | Confirmed state | Main remaining work |
@@ -65,7 +65,7 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 | Microphone and mechanical assembly | `80%` | Protected external `INMP441` passed a multi-day build `109` field run with clear day-part separation and stable signal. Hardware geometry is accepted and will remain unchanged. | Controlled reference events and later confirmation that dB calibration works across the useful range. |
 | Relative sound statistics and classification | `60%` | Clean logs support preliminary `SILENT / NORMAL / LOUD / PEAK` boundaries and build `110` implements the accepted `P2P` thresholds in firmware and Google Sheets summary logic. A later local Apps Script pass aligned Telegram, dashboard charts, conclusions, and daily verdict readings to show `AVG P2P` beside those levels instead of implying old `NOW %` verdicts. A guarded Sheets reset command and technical-column hide/show controls now support a clean final run. Build validation passed, but deployed cloud output is not field-validated yet. | Deploy the updated Apps Script, run `Reset for clean run`, hide technical columns for normal observation, start a clean physical power-cycle, then validate that Telegram, charts, AppSheet, MQTT/Datacake, local logs, and Sheets summaries classify real windows consistently. |
 | Real dB calibration | `0%` | A reference sound-level meter is available, but no calibration dataset or conversion model has been accepted. | Define the calibration protocol, collect paired readings, choose the appropriate acoustic metric and weighting limitations, implement and validate the model. |
-| INA3221 and solar battery charging | `30%` | A separate `ESP32-S3 + INA3221` controller exists and operates in its own test project on the shared supply. | Finish its charging/sleep/reliability logic and validate solar charge/discharge behavior independently. This percentage is partly based on user-reported progress from the separate project. |
+| INA3221 and solar battery charging | `95%` | The user reports the separate INA3221/solar controller implementation as essentially complete. | Run the planned full acceptance test and close only defects confirmed by that evidence. This percentage remains user-reported until the run is reviewed. |
 | Communication between controllers | `0%` | Required architecture is known, but no accepted inter-controller data contract or validated link exists in this project. | Select the physical/protocol link, define messages and failure behavior, implement and test both sides. |
 | GPS and location/time context | `5%` | GPS is a defined next subsystem and separate exploratory work exists, but it is not integrated into this controller. | Connect, parse, validate location/time, define logging fields, and integrate without disturbing audio sampling. |
 | GSM/mobile connectivity | `0%` | Required future subsystem only. | Select/finalize the module and power path, implement connectivity and recovery, then validate network behavior and power demand. |
@@ -73,4 +73,4 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 | Core firmware, logging, OTA, and health diagnostics | `75%` | Build `109`, local CSV, Google Sheets diagnostics, Telegram online reporting, SHT31 health fields, and OTA are working on the real device. | Finalize level semantics, investigate remaining power-adjacent `WDT`, harden recovery paths, and adapt telemetry for GPS/GSM/integration. |
 | Permanent assembly and end-to-end field validation | `10%` | Current breadboard system has accumulated useful field evidence inside the enclosure. | Replace temporary contacts where required, complete integrated assembly, weather/power validation, and final multi-day acceptance test. |
 
-The overall estimate remains `38%`: the microphone path and core diagnostics are relatively mature, but dB calibration, controller communication, GPS, GSM, reliable autonomous power, permanent assembly, and complete system validation are still substantial dependencies.
+The overall estimate is now `44%`: INA3221/solar implementation is reported near completion, while its final run, dB calibration, controller communication, GPS, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies.

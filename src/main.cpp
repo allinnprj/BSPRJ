@@ -36,6 +36,7 @@ static constexpr unsigned long DISPLAY_IDLE_TIMEOUT_MS = 15000UL;
 static constexpr unsigned long STARTUP_SERIAL_DELAY_MS = 80UL;
 static constexpr unsigned long BOOT_SCREEN_DELAY_MS = 120UL;
 static constexpr unsigned long SCHEDULED_RESTART_INTERVAL_MS = 86400000UL;
+static constexpr unsigned long SCHEDULED_RESTART_BOUNDARY_GRACE_MS = 10000UL;
 static constexpr unsigned long UPTIME_RTC_SAVE_INTERVAL_MS = 60000UL;
 static constexpr uint16_t MAX_WINDOW_LEVEL_SAMPLES = 620;
 static constexpr uint16_t SHT31_LOST_WARN_SECONDS = 120;
@@ -117,11 +118,13 @@ unsigned long lastRtcUptimeSaveAt = 0;
 unsigned long lastSht31RecoverAttemptAt = 0;
 bool displayPinnedOn = false;
 bool scheduledRestartStarted = false;
+bool scheduledRestartWaitLogged = false;
 bool sht31LostLogged = false;
 bool otaStarted = false;
 uint16_t sht31UnavailableSeconds = 0;
 uint16_t sht31RecoverCount = 0;
 uint32_t currentBootSequence = 0;
+unsigned long lastCompletedSheetsWindowAt = 0;
 String currentResetReason;
 DayPartStats dayPartStats[3];
 GoogleSheetsAccumulator activeSheetsWindow;
@@ -497,6 +500,7 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
       Serial.println(pendingSheetsCount);
     }
     logService.appendWindowAggregate(completedRecord, PROJECT_BUILD, wifiService.rssiDbm());
+    lastCompletedSheetsWindowAt = millis();
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   }
 
@@ -978,7 +982,14 @@ void loop() {
     Serial.println();
   }
 
-  if (!otaStarted && !scheduledRestartStarted && nowMs >= SCHEDULED_RESTART_INTERVAL_MS) {
+  const bool scheduledRestartDue = nowMs >= SCHEDULED_RESTART_INTERVAL_MS;
+  const bool completedWindowBoundaryReady =
+      lastCompletedSheetsWindowAt != 0 &&
+      nowMs - lastCompletedSheetsWindowAt <= SCHEDULED_RESTART_BOUNDARY_GRACE_MS;
+  const bool sheetsDeliveryReady =
+      !googleSheetsService.isConfigured() || !hasPendingGoogleSheetsUploads();
+  if (!otaStarted && !scheduledRestartStarted && scheduledRestartDue &&
+      completedWindowBoundaryReady && sheetsDeliveryReady) {
     scheduledRestartStarted = true;
     savePowerUptimeCheckpoint();
     logService.appendRuntimeEvent(F("SCHEDULED_RESTART"), currentDateText(), currentTimeText(),
@@ -988,6 +999,10 @@ void loop() {
     Serial.println(F("[SYS] scheduled restart -> keeping power-session uptime"));
     delay(150);
     ESP.restart();
+  } else if (!otaStarted && !scheduledRestartStarted && scheduledRestartDue &&
+             !scheduledRestartWaitLogged) {
+    scheduledRestartWaitLogged = true;
+    Serial.println(F("[SYS] scheduled restart deferred -> wait for a completed and delivered window"));
   }
 
   delay(20);

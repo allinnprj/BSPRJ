@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 0.1.61-EXP+115 evidence-integrity hardening - 2026-08-06
+
+1. Fixed local `BOOT`, `SCHEDULED_RESTART`, OTA, and SHT31 event rows so they contain all 35 CSV fields and no longer shift Wi-Fi/acoustic diagnostics left.
+2. Changed the scheduled daily restart to wait for a completed 10-minute boundary and an empty Google Sheets upload queue, preventing the normal restart path from discarding the just-closed cloud window.
+3. Extended Google Sheets health analysis with leading/trailing full-day gap accounting, signal-issue windows, environment failures, minimum heap, and problematic reset windows.
+4. Changed clean-window validity to require both the minimum sample count and a healthy input-signal state, while preserving explicit quality flags for diagnostics.
+5. Added the shared Apps Script lock to `doPost()` so incoming rows and date rollover cannot race automatic analytics or Telegram rebuilding.
+6. Validation: Apps Script syntax check -> PASS; missing-midnight health regression -> PASS; `pio run -e esp32dev` and `pio run -e esp32dev_ota` -> SUCCESS (RAM 19.8%, Flash 84.3%). Firmware size: `1,325,471` bytes, leaving `247,393` bytes in the `1,572,864`-byte OTA slot.
+7. Live Apps Script deployment, device CSV confirmation, and `144/144` field validation remain required before the related acceptance tasks are closed.
+
 ## Google Sheets analytics trigger serialization - 2026-08-05
 
 1. Added the shared Apps Script lock to the automatic analytics refresh so it cannot rebuild analytics concurrently with the automatic Telegram daily summary.

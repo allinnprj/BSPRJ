@@ -171,7 +171,12 @@ const HEALTH_SUMMARY_HEADERS = [
   'FIRST TIME',
   'LAST TIME',
   'HAS LOG ROWS',
-  'COVERAGE %'
+  'COVERAGE %',
+  'SIGNAL ISSUE WIN',
+  'ENV FAIL WIN',
+  'ENV FAIL SAMPLES',
+  'MIN FREE HEAP',
+  'RESET ISSUE WIN'
 ];
 const CONCLUSION_SUMMARY_HEADERS = [
   'DEV ID',
@@ -309,7 +314,8 @@ const SHEET_STYLE_PROFILES = {
       '#d9d2e9', '#d9d2e9',
       '#ead1dc', '#f4cccc', '#f4cccc',
       '#cfe2f3', '#cfe2f3',
-      '#d0e0e3', '#f9cb9c'
+      '#d0e0e3', '#f9cb9c',
+      '#f4cccc', '#f4cccc', '#f4cccc', '#d9d2e9', '#f4cccc'
     ],
     bodyOdd: '#fffafa',
     bodyEven: '#fff3f3',
@@ -1311,8 +1317,15 @@ function buildQualityText_(record, isValid, gapBefore) {
   if (record.duplicateCount > 1) {
     flags.push('DUPLICATED');
   }
-  if (!isValid) {
+  if (record.samples < MIN_VALID_SAMPLES) {
     flags.push('LOW_SAMPLES');
+  }
+  const signalText = String(record.signalText || '').trim().toUpperCase();
+  if (signalText && signalText !== 'OK') {
+    flags.push(`SIGNAL_${signalText}`);
+  }
+  if (toNumber_(record.environmentFailCount) > 0) {
+    flags.push('ENV_FAIL');
   }
   if (gapBefore > 0) {
     flags.push('GAP_BEFORE');
@@ -1638,6 +1651,11 @@ function buildDailyTelegramSummary_(dateText) {
   const validTotal = healthRow ? healthRow[3] : '';
   const missingWindows = healthRow ? healthRow[6] : '';
   const coveragePct = healthRow ? healthRow[10] : '';
+  const signalIssueWindows = healthRow ? healthRow[11] : '';
+  const environmentFailWindows = healthRow ? healthRow[12] : '';
+  const environmentFailSamples = healthRow ? healthRow[13] : '';
+  const minimumFreeHeap = healthRow ? healthRow[14] : '';
+  const resetIssueWindows = healthRow ? healthRow[15] : '';
   const qualityLabel = getCoverageQualityLabel_(coveragePct);
 
   const overallDayRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'DAY');
@@ -1663,6 +1681,10 @@ function buildDailyTelegramSummary_(dateText) {
     `Missing windows: ${formatMaybeCount_(missingWindows)}`,
     `Coverage: ${formatMaybePct_(coveragePct)}`,
     `Quality: ${htmlEscape_(qualityLabel)}`,
+    `Signal issue windows: ${formatMaybeCount_(signalIssueWindows)}`,
+    `Environment fail windows: ${formatMaybeCount_(environmentFailWindows)} (${formatMaybeCount_(environmentFailSamples)} samples)`,
+    `Minimum free heap: ${formatMaybeCount_(minimumFreeHeap)}`,
+    `Reset issue windows: ${formatMaybeCount_(resetIssueWindows)}`,
     '',
     '🧾 <b>Result</b>',
     resultLines.join('\n'),
@@ -1917,6 +1939,20 @@ function collectRawRecords_() {
         loudCount: toNumber_(row[19]),
         samples: toNumber_(row[20]),
         uptimeText: String(row[21] || ''),
+        peakToPeakP95: toNumber_(row[22]),
+        minPeakToPeak: toNumber_(row[23]),
+        maxPeakToPeak: toNumber_(row[24]),
+        stableMaxPeakToPeak: toNumber_(row[25]),
+        sessionMinPeakToPeak: toNumber_(row[26]),
+        sessionMaxPeakToPeak: toNumber_(row[27]),
+        sessionStableMaxPeakToPeak: toNumber_(row[28]),
+        environmentOkCount: toNumber_(row[29]),
+        environmentFailCount: toNumber_(row[30]),
+        freeHeap: toNumber_(row[31]),
+        minFreeHeap: toNumber_(row[32]),
+        bootSequence: toNumber_(row[33]),
+        resetReason: String(row[34] || ''),
+        acousticRevision: toNumber_(row[35]),
         sourceSheet: sheet.getName(),
         dayState: sheet.getName() === ACTIVE_LOG_SHEET_NAME ? 'CURRENT' : 'ARCHIVE',
         recordKey
@@ -1962,13 +1998,17 @@ function buildCleanSummaryData_(records) {
           gapBefore = Math.max(Math.floor(minuteDelta / 10) - 1, 0);
         }
       }
+    } else if (currentMinutes > 0) {
+      gapBefore = Math.floor(currentMinutes / 10);
     }
 
     previousByDeviceDate[previousKey] = record;
     record.gapBefore = gapBefore;
     record.levelText = noiseLevelFromP2p_(record.avgPeakToPeak);
     record.isDuplicated = record.duplicateCount > 1;
-    record.isValid = record.samples >= MIN_VALID_SAMPLES;
+    const normalizedSignalText = String(record.signalText || '').trim().toUpperCase();
+    const signalIsHealthy = !normalizedSignalText || normalizedSignalText === 'OK';
+    record.isValid = record.samples >= MIN_VALID_SAMPLES && signalIsHealthy;
     record.qualityText = buildQualityText_(record, record.isValid, gapBefore);
 
     cleanRows.push([
@@ -2099,7 +2139,7 @@ function buildDayPartSummaryRows_(records) {
       bucket.levelCounts.NORMAL || 0,
       bucket.levelCounts.LOUD || 0,
       bucket.levelCounts.PEAK || 0,
-      bucket.missingWindows
+      Math.max(expectedWindows - bucket.windowsTotal, 0)
     ];
   });
 
@@ -2396,15 +2436,18 @@ function buildHealthSummaryRows_(records) {
       validWindows: 0,
       duplicateExtraRows: 0,
       lowSampleWindows: 0,
-      missingWindows: 0,
       firstTime: '',
       lastTime: '',
-      hasLogRows: 0
+      hasLogRows: 0,
+      signalIssueWindows: 0,
+      environmentFailWindows: 0,
+      environmentFailSamples: 0,
+      minFreeHeap: 0,
+      resetIssueWindows: 0
     }));
 
     bucket.uniqueWindows++;
     bucket.duplicateExtraRows += Math.max((record.duplicateCount || 1) - 1, 0);
-    bucket.missingWindows += record.gapBefore || 0;
     if (!bucket.firstTime || record.timeFromText < bucket.firstTime) {
       bucket.firstTime = record.timeFromText;
     }
@@ -2414,10 +2457,27 @@ function buildHealthSummaryRows_(records) {
     if (record.sourceSheet === ACTIVE_LOG_SHEET_NAME) {
       bucket.hasLogRows = 1;
     }
+    if (record.samples < MIN_VALID_SAMPLES) {
+      bucket.lowSampleWindows++;
+    }
+    const signalText = String(record.signalText || '').trim().toUpperCase();
+    if (signalText && signalText !== 'OK') {
+      bucket.signalIssueWindows++;
+    }
+    if (toNumber_(record.environmentFailCount) > 0) {
+      bucket.environmentFailWindows++;
+      bucket.environmentFailSamples += toNumber_(record.environmentFailCount);
+    }
+    const minFreeHeap = toNumber_(record.minFreeHeap);
+    if (minFreeHeap > 0 && (bucket.minFreeHeap === 0 || minFreeHeap < bucket.minFreeHeap)) {
+      bucket.minFreeHeap = minFreeHeap;
+    }
+    const resetReason = String(record.resetReason || '').trim().toUpperCase();
+    if (resetReason && resetReason !== 'POWERON' && resetReason !== 'SOFT') {
+      bucket.resetIssueWindows++;
+    }
     if (record.isValid) {
       bucket.validWindows++;
-    } else {
-      bucket.lowSampleWindows++;
     }
   });
 
@@ -2430,11 +2490,16 @@ function buildHealthSummaryRows_(records) {
       bucket.validWindows,
       bucket.duplicateExtraRows,
       bucket.lowSampleWindows,
-      bucket.missingWindows,
+      Math.max(144 - bucket.uniqueWindows, 0),
       bucket.firstTime,
       bucket.lastTime,
       bucket.hasLogRows,
-      roundValue_(bucket.validWindows * 100 / 144, 1)
+      roundValue_(bucket.validWindows * 100 / 144, 1),
+      bucket.signalIssueWindows,
+      bucket.environmentFailWindows,
+      bucket.environmentFailSamples,
+      bucket.minFreeHeap || '',
+      bucket.resetIssueWindows
     ];
   });
 
@@ -2740,7 +2805,7 @@ function doGet() {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-function doPost(e) {
+function doPostUnlocked_(e) {
   const data = JSON.parse(e.postData.contents);
   const valueOrBlank = (value) => value === undefined || value === null ? '' : value;
   const normalizedDate = normalizeDateText_(valueOrBlank(data.date));
@@ -2801,4 +2866,17 @@ function doPost(e) {
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(30000)) {
+    throw new Error('BS Noise log writer is busy; retry the window upload.');
+  }
+
+  try {
+    return doPostUnlocked_(e);
+  } finally {
+    lock.releaseLock();
+  }
 }

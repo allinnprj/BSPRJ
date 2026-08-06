@@ -610,6 +610,22 @@ How many windows had too few samples.
 
 This can point to resets, partial windows, or unstable runtime.
 
+### `SIGNAL ISSUE WIN`
+
+Number of windows whose final `SIG IN` state was not `OK`. These windows are excluded from clean sound conclusions.
+
+### `ENV FAIL WIN` / `ENV FAIL SAMPLES`
+
+Number of windows containing SHT31 failures and the total failed-read count. Environment failure is reported separately and does not automatically invalidate the acoustic window.
+
+### `MIN FREE HEAP`
+
+Lowest `MIN FREE HEAP` value among the day's windows, used to expose long-running memory decline.
+
+### `RESET ISSUE WIN`
+
+Number of windows associated with a reset reason other than normal `POWERON` or `SOFT`.
+
 ### `FIRST TIME`
 
 First measurement time found for the day.

@@ -9,6 +9,16 @@ function buildChartSourceBlocks_(records) {
   const coverageByDate = {};
 
   records.forEach((record) => {
+    const coverage = coverageByDate[record.dateText] || {
+      uniqueWindows: 0,
+      validWindows: 0
+    };
+    coverage.uniqueWindows++;
+    if (record.isValid) {
+      coverage.validWindows++;
+    }
+    coverageByDate[record.dateText] = coverage;
+
     if (!record.isValid) {
       return;
     }
@@ -22,10 +32,6 @@ function buildChartSourceBlocks_(records) {
     byDatePart[dateKey][record.partText].push(record.avgPeakToPeak);
     levelMix[record.levelText] = (levelMix[record.levelText] || 0) + 1;
 
-    const coverage = coverageByDate[dateKey] || { validWindows: 0, missingWindows: 0 };
-    coverage.validWindows++;
-    coverage.missingWindows += record.gapBefore || 0;
-    coverageByDate[dateKey] = coverage;
   });
 
   const sortedDates = Object.keys(byDatePart).sort();
@@ -50,11 +56,16 @@ function buildChartSourceBlocks_(records) {
   ]));
 
   const latestCoverage = latestDate
-    ? (coverageByDate[latestDate] || { validWindows: 0, missingWindows: 0 })
-    : { validWindows: '', missingWindows: '' };
+    ? (coverageByDate[latestDate] || { uniqueWindows: 0, validWindows: 0 })
+    : { uniqueWindows: '', validWindows: '' };
   const coverageRows = [
     ['VALID WINDOWS', latestCoverage.validWindows],
-    ['MISSING WINDOWS', latestCoverage.missingWindows]
+    [
+      'MISSING WINDOWS',
+      hasDisplayValue_(latestCoverage.uniqueWindows)
+        ? Math.max(144 - toNumber_(latestCoverage.uniqueWindows), 0)
+        : ''
+    ]
   ];
   const verdictRows = buildDailyVerdictRows_(records);
 

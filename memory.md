@@ -11,7 +11,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.60-EXP` build `114`.
+- Current firmware marker: `0.1.61-EXP` build `115`.
 
 ## Important Decisions
 
@@ -27,8 +27,9 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Use `devlop` for active testing/development and `main` only for release-ready states.
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
 - `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` are the practical references for table, Telegram, AppSheet, log, and analytics terms.
-- `progress.md` defines the readiness percentage method; current whole-project baseline is `38%` after the build `109` field-run analysis broadened the estimate to the complete target system.
-- Memory/Flash planning is now an explicit project constraint. Current BSPRJ ESP32 DevKit build `110` evidence: static RAM is about `19.8%`, Flash is about `83.9%`, `firmware.bin` is about `1,319,824` bytes, OTA app slot is `0x180000` / `1,572,864` bytes, leaving roughly `253 KB` inside one OTA slot. RAM is acceptable for the next steps, but Flash must be watched after every added subsystem.
+- `progress.md` defines the readiness percentage method; current whole-project baseline is `44%` after the user reported the INA3221/solar controller at 95% pending its full acceptance run.
+- Memory/Flash planning is now an explicit project constraint. Current BSPRJ ESP32 DevKit build `115` evidence: static RAM is `19.8%`, Flash is `84.3%`, `firmware.bin` is `1,325,471` bytes, OTA app slot is `0x180000` / `1,572,864` bytes, leaving `247,393` bytes inside one OTA slot. RAM is acceptable for the next steps, but Flash must be watched after every added subsystem.
+- Build `115` locally fixes 35-field runtime-event rows, defers the scheduled restart until a completed/delivered 10-minute window, expands Sheets health diagnostics, counts leading/trailing daily gaps, and serializes `doPost()` with the automatic analytics lock. Both firmware environments and local Apps Script regression checks passed; remote deployment and device evidence remain open.
 - Do not treat ESP-NOW as the main memory risk. A compact inter-controller ESP-NOW packet between the BSPRJ noise controller and the solar-charge controller should be feasible. The larger memory risks are duplicated HTTPS/TLS/cloud paths, heavy GSM libraries, large String/JSON buffers, retained diagnostics, and unnecessary web/UI payloads.
 - For future additions, record the build-size baseline after each module: RAM percent, Flash percent, `firmware.bin` size, and remaining bytes in the OTA slot. If the app approaches the OTA slot limit, first remove/trim obsolete diagnostics and cloud/web payloads; later consider resizing partitions by reducing LittleFS and increasing both OTA app slots.
 - Project organization can evolve to one repository/project containing two firmware targets/controllers if that becomes cleaner: the main BSPRJ noise-monitoring ESP32 and the ESP32-C3 Super Mini solar-charge controller. Keep runtime responsibilities separate even if both controllers eventually live in one PlatformIO project.

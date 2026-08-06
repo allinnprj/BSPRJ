@@ -8,8 +8,8 @@ Main ESP32 noise-monitoring firmware project `BSPRJ`, with:
 ## Status
 
 - Type: main firmware project
-- Current version: `0.1.56-EXP`
-- Current build: `110`
+- Current version: `0.1.61-EXP`
+- Current build: `115`
 - GitHub: `https://github.com/allinnprj/BSPRJ`
 - Branch model: `main` = release/stable, `devlop` = test/development
 - Active microphone path: `INMP441` on `I2S`
