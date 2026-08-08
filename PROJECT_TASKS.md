@@ -81,16 +81,16 @@
 
 ## F. Remaining Project Subsystems
 
-51. [ ] Finish the reliability of the separate `ESP32-S3 + INA3221` controller.
-52. [ ] Validate charge, discharge, voltage, current, and sleep behavior.
-53. [ ] Select the accepted local communication protocol between controllers.
-54. [ ] Implement controller status, power telemetry, heartbeat, and failure behavior.
-55. [ ] Use the main ESP32 as the network gateway if integration testing confirms that architecture.
+51. [x] Complete and validate the separate `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller.
+52. [x] Validate charge, discharge, voltage, current, and sleep behavior on the separate controller.
+53. [ ] Select the accepted local communication protocol between the main BSPRJ ESP32 and the ESP32-C3 SuperMini.
+54. [ ] Implement controller status, power telemetry, heartbeat, and safe communication-failure behavior.
+55. [ ] Keep the BSPRJ ESP32 as the primary noise, logging, and network controller; use it as the network gateway for the ESP32-C3 if integration testing confirms that path.
 56. [ ] Implement automatic `LOW_BAT` behavior from measured power data.
-57. [ ] Validate both controllers operating from the same battery supply.
-58. [ ] Integrate GPS time and coordinates.
+57. [ ] Validate the main controller operating from the battery/converter path managed and monitored by the ESP32-C3 solar controller.
+58. [ ] Connect and integrate the separately completed and tested GPS module into the main BSPRJ controller.
 59. [ ] Validate time and day-part statistics without NTP.
-60. [ ] Review Flash and OTA-slot capacity before GSM integration.
+60. [ ] Optimize the current ESP32 firmware and review RAM, Flash, and OTA-slot capacity before GSM integration; migrate the main controller to an ESP32-S3 module only if measured resource limits require it.
 61. [ ] Design the power path for GSM current peaks.
 62. [ ] Implement GSM connectivity and recovery.
 63. [ ] Validate data delivery without home Wi-Fi.

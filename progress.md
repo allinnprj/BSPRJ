@@ -39,7 +39,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current whole-project readiness estimate: `44%`.
+- Current whole-project readiness estimate: `48%`.
 
 ## Russian Report Block
 
@@ -50,14 +50,14 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 - Микрофон и механическая сборка: 80%
 - Относительная статистика шума и классификация: 60%
 - Реальная dB-калибровка: 0%
-- INA3221 и солнечная зарядка: 95%
+- INA3221 и солнечная зарядка: 100%
 - Связь между контроллерами: 0%
-- GPS и контекст места/времени: 5%
+- GPS и контекст места/времени: 65%
 - GSM/мобильная связь: 0%
 - Общее питание и автономная работа: 25%
 - Основная прошивка, логи, OTA и диагностика: 75%
 - Постоянная сборка и финальная полевая проверка: 10%
-- Общая готовность проекта: 44%
+- Общая готовность проекта: 48%
 ```
 
 | Subsystem | Readiness | Confirmed state | Main remaining work |
@@ -65,12 +65,12 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 | Microphone and mechanical assembly | `80%` | Protected external `INMP441` passed a multi-day build `109` field run with clear day-part separation and stable signal. Hardware geometry is accepted and will remain unchanged. | Controlled reference events and later confirmation that dB calibration works across the useful range. |
 | Relative sound statistics and classification | `60%` | Clean logs support preliminary `SILENT / NORMAL / LOUD / PEAK` boundaries and build `110` implements the accepted `P2P` thresholds in firmware and Google Sheets summary logic. A later local Apps Script pass aligned Telegram, dashboard charts, conclusions, and daily verdict readings to show `AVG P2P` beside those levels instead of implying old `NOW %` verdicts. A guarded Sheets reset command and technical-column hide/show controls now support a clean final run. Build validation passed, but deployed cloud output is not field-validated yet. | Deploy the updated Apps Script, run `Reset for clean run`, hide technical columns for normal observation, start a clean physical power-cycle, then validate that Telegram, charts, AppSheet, MQTT/Datacake, local logs, and Sheets summaries classify real windows consistently. |
 | Real dB calibration | `0%` | A reference sound-level meter is available, but no calibration dataset or conversion model has been accepted. | Define the calibration protocol, collect paired readings, choose the appropriate acoustic metric and weighting limitations, implement and validate the model. |
-| INA3221 and solar battery charging | `95%` | The user reports the separate INA3221/solar controller implementation as essentially complete. | Run the planned full acceptance test and close only defects confirmed by that evidence. This percentage remains user-reported until the run is reviewed. |
-| Communication between controllers | `0%` | Required architecture is known, but no accepted inter-controller data contract or validated link exists in this project. | Select the physical/protocol link, define messages and failure behavior, implement and test both sides. |
-| GPS and location/time context | `5%` | GPS is a defined next subsystem and separate exploratory work exists, but it is not integrated into this controller. | Connect, parse, validate location/time, define logging fields, and integrate without disturbing audio sampling. |
+| INA3221 and solar battery charging | `100%` | The separate `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller has completed its full standalone test. | No standalone INA3221/solar work remains. Its later link to BSPRJ and shared-power validation are tracked as separate integration subsystems. |
+| Communication between controllers | `0%` | The main BSPRJ ESP32 remains the primary noise, logging, and network controller, while the ESP32-C3 manages and monitors the solar/power path. No accepted inter-controller data contract or validated link exists yet. | Select the physical/protocol link, define telemetry, heartbeat, commands, and safe failure behavior, then implement and test both sides. |
+| GPS and location/time context | `65%` | The GPS module has been completed and tested separately. It is not yet connected to or integrated into the main BSPRJ controller. | Connect it to the main controller, integrate a compact parser/service, add the accepted time/coordinate fields, and validate day-part behavior without NTP. |
 | GSM/mobile connectivity | `0%` | Required future subsystem only. | Select/finalize the module and power path, implement connectivity and recovery, then validate network behavior and power demand. |
 | Shared power and autonomous operation | `25%` | Battery operation and shared-power field behavior have been observed, and power-related gaps can be distinguished in logs. | Stabilize battery/charging contacts and transitions, prove operation with both controllers, manage GSM current peaks, and complete long autonomous testing. |
 | Core firmware, logging, OTA, and health diagnostics | `75%` | Build `109`, local CSV, Google Sheets diagnostics, Telegram online reporting, SHT31 health fields, and OTA are working on the real device. | Finalize level semantics, investigate remaining power-adjacent `WDT`, harden recovery paths, and adapt telemetry for GPS/GSM/integration. |
 | Permanent assembly and end-to-end field validation | `10%` | Current breadboard system has accumulated useful field evidence inside the enclosure. | Replace temporary contacts where required, complete integrated assembly, weather/power validation, and final multi-day acceptance test. |
 
-The overall estimate is now `44%`: INA3221/solar implementation is reported near completion, while its final run, dB calibration, controller communication, GPS, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies.
+The overall estimate is now `48%`: standalone INA3221/solar work is complete and the GPS module is separately proven, while controller communication, GPS integration, dB calibration, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies. The increase is weighted rather than a simple average because standalone module completion does not yet prove integrated operation.

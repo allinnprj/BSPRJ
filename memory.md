@@ -27,12 +27,14 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Use `devlop` for active testing/development and `main` only for release-ready states.
 - `CHANGELOG.md` is history; this `memory.md` is the continuation context for new chats.
 - `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` are the practical references for table, Telegram, AppSheet, log, and analytics terms.
-- `progress.md` defines the readiness percentage method; current whole-project baseline is `44%` after the user reported the INA3221/solar controller at 95% pending its full acceptance run.
+- `progress.md` defines the readiness percentage method; the current whole-project baseline is `48%`. The separate ESP32-C3 SuperMini + INA3221 controller completed its full standalone test, and the separately tested GPS module still requires integration into BSPRJ.
 - Memory/Flash planning is now an explicit project constraint. Current BSPRJ ESP32 DevKit build `115` evidence: static RAM is `19.8%`, Flash is `84.3%`, `firmware.bin` is `1,325,471` bytes, OTA app slot is `0x180000` / `1,572,864` bytes, leaving `247,393` bytes inside one OTA slot. RAM is acceptable for the next steps, but Flash must be watched after every added subsystem.
 - Build `115` locally fixes 35-field runtime-event rows, defers the scheduled restart until a completed/delivered 10-minute window, expands Sheets health diagnostics, counts leading/trailing daily gaps, and serializes `doPost()` with the automatic analytics lock. Both firmware environments and local Apps Script regression checks passed; remote deployment and device evidence remain open.
 - Do not treat ESP-NOW as the main memory risk. A compact inter-controller ESP-NOW packet between the BSPRJ noise controller and the solar-charge controller should be feasible. The larger memory risks are duplicated HTTPS/TLS/cloud paths, heavy GSM libraries, large String/JSON buffers, retained diagnostics, and unnecessary web/UI payloads.
 - For future additions, record the build-size baseline after each module: RAM percent, Flash percent, `firmware.bin` size, and remaining bytes in the OTA slot. If the app approaches the OTA slot limit, first remove/trim obsolete diagnostics and cloud/web payloads; later consider resizing partitions by reducing LittleFS and increasing both OTA app slots.
 - Project organization can evolve to one repository/project containing two firmware targets/controllers if that becomes cleaner: the main BSPRJ noise-monitoring ESP32 and the ESP32-C3 Super Mini solar-charge controller. Keep runtime responsibilities separate even if both controllers eventually live in one PlatformIO project.
+- The main BSPRJ ESP32 remains the primary noise, logging, and network controller. The ESP32-C3 SuperMini is the autonomous solar-charge and power-management controller: the battery/converter is the physical voltage source, while the C3 controls and monitors the power path supplying the main controller.
+- Optimize and measure the current ESP32 first. Migration of the main controller to an ESP32-S3 module is a contingency only if measured RAM, Flash, OTA-slot, or runtime limits remain after optimization.
 
 ## Hardware Notes
 
@@ -45,7 +47,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - The `INMP441` is now outside the enclosure on a separate cable, close to the outer end of a short plastic support tube. A thin sponge layer and enlarged outer opening provide wind/rain protection without the earlier narrow acoustic restriction.
 - A second controller for solar-charge management is an intentional required part of the target system. It shares the battery supply with the noise-monitoring ESP32 and exists to keep solar charging, discharging, and power monitoring work off the main controller. Final field validation must run with both controllers powered together. Its own connectivity/reboot issues must still be analyzed separately unless the noise-monitoring ESP32 shows matching failures.
 - The solar-charge controller is developed in a separate project/branch with its own runtime contract. Its normal design may include frequent `Light Sleep` and `Deep Sleep` periods. Do not treat its expected sleep-related connectivity gaps as evidence of a noise-monitoring ESP32 failure or shared-power instability unless the noise controller shows matching local-log gaps, reset events, or other correlated anomalies.
-- The shared-power solar controller is specifically an `ESP32-S3 + INA3221` system. It currently sends frequent reboot/online Telegram notifications, possibly due to its own contact issues or unfinished test-stage behavior. Analyze it as a separate layer. Only treat it as relevant to `bs-esp32-01` accuracy when its events correlate with the noise controller's own `BOOT`, `reset_reason`, uptime reset, local CSV gap, SHT31 issue, or `Device Online` evidence.
+- The shared-power solar controller is specifically an `ESP32-C3 SuperMini + INA3221` system. Its standalone charge, discharge, voltage, current, and sleep tests are complete. Analyze it as a separate layer until the accepted controller link and shared-power integration are implemented; only treat its events as relevant to `bs-esp32-01` accuracy when the noise controller shows correlated local-log gaps, reset events, or other matching evidence.
 
 ## Recent Findings
 
@@ -188,6 +190,9 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 ## Next Best Steps
 
+- Preserve the completed ESP32-C3 SuperMini + INA3221 standalone result; the remaining work is the controller link, telemetry/failure contract, and integrated shared-power validation.
+- Connect the separately tested GPS to the main BSPRJ controller and integrate it incrementally without disturbing I2S sampling, logging, OTA, or the current clean run.
+- Measure RAM, Flash, OTA-slot, and runtime headroom after each integration step; consider ESP32-S3 migration only if optimization cannot preserve safe margins.
 - Use OTA for future firmware updates when the device is reachable on the local network; USB remains the recovery path.
 - Before starting the next clean run, download the current `/log.csv`; optionally use `/archive-log` after download to preserve the on-device file and start a fresh active log.
 - Reboot or power-cycle before the multi-day balcony run; a physical power cycle starts a fresh power-session uptime and `boot_seq=1`.

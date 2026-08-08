@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Architecture and subsystem acceptance update - 2026-08-08
+
+1. Recorded the completed full standalone test of the `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller and closed checklist items 51-52.
+2. Recorded that the GPS module is complete and separately tested; connection and integration into the main BSPRJ controller remain open.
+3. Fixed the controller architecture description: the BSPRJ ESP32 remains the primary noise, logging, and network controller, while the ESP32-C3 manages and monitors the battery/converter power path.
+4. Made migration to an ESP32-S3 module conditional on measured RAM, Flash, OTA-slot, or runtime limits that remain after optimizing the current ESP32.
+5. Updated the weighted readiness baseline to `48%` (`INA3221 and solar battery charging: 100%`; `GPS and location/time context: 65%`).
+6. Firmware and Apps Script were not changed; version `0.1.61-EXP` build `115` remains current and no firmware build was required for this documentation-only update.
+
 ## 0.1.61-EXP+115 evidence-integrity hardening - 2026-08-06
 
 1. Fixed local `BOOT`, `SCHEDULED_RESTART`, OTA, and SHT31 event rows so they contain all 35 CSV fields and no longer shift Wi-Fi/acoustic diagnostics left.
