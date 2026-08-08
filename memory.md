@@ -35,6 +35,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Project organization can evolve to one repository/project containing two firmware targets/controllers if that becomes cleaner: the main BSPRJ noise-monitoring ESP32 and the ESP32-C3 Super Mini solar-charge controller. Keep runtime responsibilities separate even if both controllers eventually live in one PlatformIO project.
 - The main BSPRJ ESP32 remains the primary noise, logging, and network controller. The ESP32-C3 SuperMini is the autonomous solar-charge and power-management controller: the battery/converter is the physical voltage source, while the C3 controls and monitors the power path supplying the main controller.
 - Optimize and measure the current ESP32 first. Migration of the main controller to an ESP32-S3 module is a contingency only if measured RAM, Flash, OTA-slot, or runtime limits remain after optimization.
+- On 2026-08-08, the active Git metadata was moved out of Google Drive to `D:\GitMetadata\BSPRJ.git`, while `D:\DEV\BSPRJ\.git` became a standard relative gitdir pointer. Google Drive remained active; the external gitdir passed `git fsck --no-reflogs --full` and `git fetch origin --prune` with no `desktop.ini` warnings. The recoverable pre-migration copy is retained at `D:\GitMetadata\BSPRJ.git.original-20260808`. Each additional workstation needs its own local external gitdir at the same path before using this synchronized working tree.
 
 ## Hardware Notes
 
