@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Google Sheets daily-summary lock-contention fix - 2026-08-10
+
+1. Confirmed from live Apps Script executions that `runAutomaticDailyTelegramSummary_` repeatedly started while `runAutomaticAnalyticsRefresh_` still held the shared script lock; the daily job waited about five seconds, returned without sending, and was still shown as successfully completed.
+2. Increased the automatic daily-summary lock wait to five minutes and added an execution warning when the lock remains busy, so long analytics refreshes no longer cause silent hourly skips.
+3. Removed the unconditional redundant analytics rebuild from the normal daily-summary path. The job now uses an already prepared summary and rebuilds analytics only as a fallback when a newer archived date exists but its summary is not ready.
+4. Added Telegram Bot API JSON confirmation before advancing `BS_TELEGRAM_AUTO_DAILY_LAST_SENT_DATE`, preventing an unconfirmed delivery from being recorded as sent.
+5. Added and passed a local regression covering the ready-summary path, fallback rebuild, busy lock, watermark update, and Telegram API confirmation.
+6. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. The updated `Code.gs` still requires saving in the bound Apps Script project and live automatic-report validation.
+
 ## Architecture and subsystem acceptance update - 2026-08-08
 
 1. Recorded the completed full standalone test of the `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller and closed checklist items 51-52.

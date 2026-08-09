@@ -70,6 +70,7 @@ const AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY = 'BS_AUTO_HIDE_ARCHIVE_SHEETS_E
 const AUTO_HIDE_ARCHIVE_SHEETS_HOUR = 3;
 const TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_ENABLED';
 const TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY = 'BS_TELEGRAM_AUTO_DAILY_LAST_SENT_DATE';
+const AUTO_DAILY_LOCK_WAIT_MILLISECONDS = 300000;
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -1370,8 +1371,19 @@ function sendTelegramMessage_(text) {
   });
 
   const statusCode = response.getResponseCode();
+  const responseText = response.getContentText();
   if (statusCode < 200 || statusCode >= 300) {
-    throw new Error(`Telegram send failed: HTTP ${statusCode} ${response.getContentText()}`);
+    throw new Error(`Telegram send failed: HTTP ${statusCode} ${responseText}`);
+  }
+
+  let responsePayload;
+  try {
+    responsePayload = JSON.parse(responseText);
+  } catch (error) {
+    throw new Error(`Telegram send failed: invalid JSON response (${responseText})`);
+  }
+  if (!responsePayload || responsePayload.ok !== true) {
+    throw new Error(`Telegram send failed: API did not confirm delivery (${responseText})`);
   }
 
   return response;
@@ -1853,7 +1865,10 @@ function disableAutomaticDailySummary_() {
 
 function runAutomaticDailyTelegramSummary_() {
   const lock = LockService.getScriptLock();
-  if (!lock.tryLock(5000)) {
+  if (!lock.tryLock(AUTO_DAILY_LOCK_WAIT_MILLISECONDS)) {
+    console.warn(
+      `Auto daily summary skipped: script lock stayed busy for ${AUTO_DAILY_LOCK_WAIT_MILLISECONDS} ms.`
+    );
     return;
   }
 
@@ -1865,8 +1880,19 @@ function runAutomaticDailyTelegramSummary_() {
 
     const properties = PropertiesService.getScriptProperties();
     const lastSentDate = String(properties.getProperty(TELEGRAM_AUTO_DAILY_LAST_SENT_DATE_PROPERTY) || '').trim();
-    rebuildAnalyticsCore_({ silent: true });
-    const targetDate = findLatestAvailableSummaryDateForAutoDaily_(lastSentDate);
+    let targetDate = findLatestAvailableSummaryDateForAutoDaily_(lastSentDate);
+    if (!targetDate) {
+      const latestArchivedDate = normalizeDateText_(getLatestArchivedDateText_());
+      const normalizedLastSentDate = normalizeDateText_(lastSentDate);
+      const hasUnsentArchive = latestArchivedDate &&
+        (!normalizedLastSentDate || latestArchivedDate > normalizedLastSentDate);
+      if (!hasUnsentArchive) {
+        return;
+      }
+
+      rebuildAnalyticsCore_({ silent: true });
+      targetDate = findLatestAvailableSummaryDateForAutoDaily_(lastSentDate);
+    }
     if (!targetDate) {
       return;
     }
