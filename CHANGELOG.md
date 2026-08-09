@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Google Sheets user/technical interface modes - 2026-08-10
+
+1. Added an English-only `User mode` that keeps `log`, `daily_verdict_table`, and `charts` visible while hiding dated archives, internal analytics sheets, and technical columns without deleting or rebuilding data.
+2. Added an English-only `Technical mode` that restores all archive/analytics sheets and columns for maintenance and exported-log analysis.
+3. Simplified the default `⚙️ BS` menu to the primary refresh, mode, report, and guarded reset actions; advanced commands now appear only in `Technical mode` under `Maintenance`, `Diagnostics`, and `Automation`.
+4. Stored the selected menu mode in per-user properties, so the interface preference does not modify shared trigger settings or Telegram configuration.
+5. Added a concise English section map to `Code.gs` without renaming or splitting the working Apps Script functions.
+6. Added and passed a regression proving the intended sheet visibility, column-mode calls, English-only source UI, and absence of sheet deletion from either mode. The existing automatic daily-summary regression also remains passing.
+7. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. Live Apps Script save and Google Sheets UI validation remain required.
+
 ## Google Sheets daily-summary lock-contention fix - 2026-08-10
 
 1. Confirmed from live Apps Script executions that `runAutomaticDailyTelegramSummary_` repeatedly started while `runAutomaticAnalyticsRefresh_` still held the shared script lock; the daily job waited about five seconds, returned without sending, and was still shown as successfully completed.

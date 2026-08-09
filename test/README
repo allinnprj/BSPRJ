@@ -9,3 +9,7 @@ in the development cycle.
 
 More information about PlatformIO Unit Testing:
 - https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+
+Google Sheets Apps Script regression checks:
+- `node test/google_sheets_daily_summary_test.js`
+- `node test/google_sheets_ui_mode_test.js`
