@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Google Sheets visible mode and automation indicators - 2026-08-10
+
+1. Changed the custom menu title to show the current per-user interface mode as `⚙️ BS · USER` or `⚙️ BS · TECH`.
+2. Replaced ambiguous mode commands with a `● ...: ACTIVE` status row plus one explicit `Switch to ...` action.
+3. Added `● ...: ON/OFF` status rows for automatic analytics refresh, archive hiding, and the daily Telegram summary; each status row is informational and the following command performs only the opposite state change.
+4. Rebuilds the custom menu immediately after every mode or automation toggle, so the visible indicator does not require a sheet reload.
+5. Extended and passed the UI regression for both menu titles, all three automation states, inverse toggle routing, no-op status rows, immediate menu refresh calls, and English-only Apps Script UI. The daily-summary regression remains passing.
+6. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. Live Apps Script save and visual menu validation remain required.
+
 ## Google Sheets user/technical interface modes - 2026-08-10
 
 1. Added an English-only `User mode` that keeps `log`, `daily_verdict_table`, and `charts` visible while hiding dated archives, internal analytics sheets, and technical columns without deleting or rebuilding data.

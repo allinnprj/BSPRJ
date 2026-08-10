@@ -893,39 +893,205 @@ function setUserInterfaceMode_(mode) {
   PropertiesService.getUserProperties().setProperty(USER_INTERFACE_MODE_PROPERTY, mode);
 }
 
+function isScriptPropertyEnabled_(propertyName) {
+  return String(
+    PropertiesService.getScriptProperties().getProperty(propertyName) || ''
+  ).trim().toLowerCase() === 'true';
+}
+
+function getAutomationState_() {
+  return {
+    analyticsRefresh: isScriptPropertyEnabled_(AUTO_ANALYTICS_ENABLED_PROPERTY),
+    archiveHiding: isScriptPropertyEnabled_(AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY),
+    dailySummary: isScriptPropertyEnabled_(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY)
+  };
+}
+
+function addAutomationToggle_(menu, label, enabled, enableFunction, disableFunction) {
+  const actionLabel = `${enabled ? 'Turn OFF' : 'Turn ON'} ${label.charAt(0).toLowerCase()}${label.slice(1)}`;
+  return menu
+    .addItem(`● ${label}: ${enabled ? 'ON' : 'OFF'}`, 'showAutomationStatus_')
+    .addItem(actionLabel, enabled ? disableFunction : enableFunction);
+}
+
+function visibilityStateFromCounts_(shownCount, totalCount) {
+  if (totalCount === 0) {
+    return 'NONE';
+  }
+  if (shownCount === 0) {
+    return 'HIDDEN';
+  }
+  if (shownCount === totalCount) {
+    return 'SHOWN';
+  }
+  return 'MIXED';
+}
+
+function getSheetVisibilityState_(spreadsheet, predicate) {
+  const matchingSheets = spreadsheet.getSheets().filter((sheet) => predicate(sheet.getName()));
+  const shownCount = matchingSheets.filter((sheet) => !sheet.isSheetHidden()).length;
+  return visibilityStateFromCounts_(shownCount, matchingSheets.length);
+}
+
+function getTechnicalColumnsVisibilityState_(spreadsheet) {
+  let totalCount = 0;
+  let shownCount = 0;
+  spreadsheet.getSheets().forEach((sheet) => {
+    const lastColumn = sheet.getLastColumn();
+    const technicalHeaders = getTechnicalColumnsForSheet_(sheet.getName());
+    if (lastColumn < 1 || technicalHeaders.length === 0) {
+      return;
+    }
+
+    const headers = sheet.getRange(1, 1, 1, lastColumn).getValues()[0];
+    technicalHeaders.forEach((headerName) => {
+      const columnIndex = headers.indexOf(headerName) + 1;
+      if (columnIndex > 0) {
+        totalCount++;
+        if (!sheet.isColumnHiddenByUser(columnIndex)) {
+          shownCount++;
+        }
+      }
+    });
+  });
+  return visibilityStateFromCounts_(shownCount, totalCount);
+}
+
+function getDiagnosticsState_(spreadsheet) {
+  const targetSpreadsheet = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
+  return {
+    technicalColumns: getTechnicalColumnsVisibilityState_(targetSpreadsheet),
+    archiveSheets: getSheetVisibilityState_(targetSpreadsheet, (sheetName) =>
+      sheetName !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(sheetName)),
+    analyticsSheets: getSheetVisibilityState_(targetSpreadsheet, (sheetName) =>
+      isAnalyticsSheetName_(sheetName))
+  };
+}
+
+function addVisibilityToggle_(menu, label, state, hideLabel, hideFunction, showLabel, showFunction) {
+  menu.addItem(`● ${label}: ${state}`, 'showDiagnosticsStatus_');
+  if (state === 'SHOWN') {
+    menu.addItem(hideLabel, hideFunction);
+  } else if (state === 'HIDDEN') {
+    menu.addItem(showLabel, showFunction);
+  } else if (state === 'MIXED') {
+    menu.addItem(hideLabel, hideFunction).addItem(showLabel, showFunction);
+  }
+  return menu;
+}
+
+function showCurrentInterfaceMode_() {
+  const mode = getUserInterfaceMode_() === USER_INTERFACE_MODE_TECHNICAL ? 'TECH' : 'USER';
+  SpreadsheetApp.getActiveSpreadsheet().toast(`Current interface mode: ${mode}.`, 'BS Noise', 5);
+}
+
+function showAutomationStatus_() {
+  const state = getAutomationState_();
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `Automation status: analytics refresh ${state.analyticsRefresh ? 'ON' : 'OFF'}, ` +
+      `archive hiding ${state.archiveHiding ? 'ON' : 'OFF'}, ` +
+      `daily summary ${state.dailySummary ? 'ON' : 'OFF'}.`,
+    'BS Noise',
+    8
+  );
+}
+
+function showDiagnosticsStatus_() {
+  const state = getDiagnosticsState_();
+  SpreadsheetApp.getActiveSpreadsheet().toast(
+    `Diagnostics status: technical columns ${state.technicalColumns}, ` +
+      `archive sheets ${state.archiveSheets}, analytics sheets ${state.analyticsSheets}.`,
+    'BS Noise',
+    8
+  );
+}
+
 function onOpen() {
   const ui = SpreadsheetApp.getUi();
-  const menu = ui.createMenu('⚙️ BS')
-    .addItem('Refresh latest data', 'rebuildAnalytics_')
-    .addItem('User mode', 'enableUserMode_')
-    .addItem('Technical mode', 'enableTechnicalMode_')
+  const interfaceMode = getUserInterfaceMode_();
+  const isTechnicalMode = interfaceMode === USER_INTERFACE_MODE_TECHNICAL;
+  const menu = ui.createMenu(`⚙️ BS · ${isTechnicalMode ? 'TECH' : 'USER'}`)
+    .addItem('Refresh latest data', 'rebuildAnalytics_');
+
+  if (isTechnicalMode) {
+    menu
+      .addItem('Switch to User mode', 'enableUserMode_')
+      .addItem('● Technical mode: ACTIVE', 'showCurrentInterfaceMode_');
+  } else {
+    menu
+      .addItem('● User mode: ACTIVE', 'showCurrentInterfaceMode_')
+      .addItem('Switch to Technical mode', 'enableTechnicalMode_');
+  }
+
+  menu
     .addSeparator()
     .addSubMenu(ui.createMenu('Reports')
       .addItem('Send latest Telegram status', 'sendLatestTelegramStatus_')
       .addItem('Send daily Telegram summary', 'sendDailyTelegramSummary_'));
 
-  if (getUserInterfaceMode_() === USER_INTERFACE_MODE_TECHNICAL) {
+  if (isTechnicalMode) {
+    const automationState = getAutomationState_();
+    const diagnosticsState = getDiagnosticsState_();
+    const automationMenu = ui.createMenu('Automation');
+    const diagnosticsMenu = ui.createMenu('Diagnostics');
+
+    addVisibilityToggle_(
+      diagnosticsMenu,
+      'Technical columns',
+      diagnosticsState.technicalColumns,
+      'Hide technical columns',
+      'hideTechnicalColumns_',
+      'Show all columns',
+      'showAllColumns_'
+    ).addSeparator();
+    addVisibilityToggle_(
+      diagnosticsMenu,
+      'Archive sheets',
+      diagnosticsState.archiveSheets,
+      'Hide archive sheets',
+      'hideArchiveSheetsFromMenu_',
+      'Show archive sheets',
+      'showArchiveSheetsFromMenu_'
+    ).addSeparator();
+    addVisibilityToggle_(
+      diagnosticsMenu,
+      'Analytics sheets',
+      diagnosticsState.analyticsSheets,
+      'Hide analytics sheets',
+      'hideAnalyticsSheetsFromMenu_',
+      'Show analytics sheets',
+      'showAnalyticsSheetsFromMenu_'
+    );
+
+    addAutomationToggle_(
+      automationMenu,
+      'Auto analytics refresh',
+      automationState.analyticsRefresh,
+      'enableAutomaticAnalyticsRefresh_',
+      'disableAutomaticAnalyticsRefresh_'
+    ).addSeparator();
+    addAutomationToggle_(
+      automationMenu,
+      'Auto archive hiding',
+      automationState.archiveHiding,
+      'enableAutomaticArchiveSheetHiding_',
+      'disableAutomaticArchiveSheetHiding_'
+    ).addSeparator();
+    addAutomationToggle_(
+      automationMenu,
+      'Auto daily summary',
+      automationState.dailySummary,
+      'enableAutomaticDailySummary_',
+      'disableAutomaticDailySummary_'
+    );
+
     menu
       .addSubMenu(ui.createMenu('Maintenance')
         .addItem('Rebuild analytics', 'rebuildAnalytics_')
         .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
         .addItem('Refresh all sheet formatting', 'refreshAllSheetFormatting_'))
-      .addSubMenu(ui.createMenu('Diagnostics')
-        .addItem('Hide technical columns', 'hideTechnicalColumns_')
-        .addItem('Show all columns', 'showAllColumns_')
-        .addItem('Hide archive sheets', 'hideArchiveSheets_')
-        .addItem('Show archive sheets', 'showArchiveSheets_')
-        .addItem('Hide analytics sheets', 'hideAnalyticsSheets_')
-        .addItem('Show analytics sheets', 'showAnalyticsSheets_'))
-      .addSubMenu(ui.createMenu('Automation')
-        .addItem('Enable auto analytics refresh', 'enableAutomaticAnalyticsRefresh_')
-        .addItem('Disable auto analytics refresh', 'disableAutomaticAnalyticsRefresh_')
-        .addSeparator()
-        .addItem('Enable auto hide archive sheets', 'enableAutomaticArchiveSheetHiding_')
-        .addItem('Disable auto hide archive sheets', 'disableAutomaticArchiveSheetHiding_')
-        .addSeparator()
-        .addItem('Enable auto daily summary', 'enableAutomaticDailySummary_')
-        .addItem('Disable auto daily summary', 'disableAutomaticDailySummary_'));
+      .addSubMenu(diagnosticsMenu)
+      .addSubMenu(automationMenu);
   }
 
   menu
@@ -1153,6 +1319,18 @@ function showArchiveSheets_() {
   });
 }
 
+function hideArchiveSheetsFromMenu_() {
+  hideArchiveSheets_();
+  onOpen();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Archive sheets hidden.', 'BS Noise', 5);
+}
+
+function showArchiveSheetsFromMenu_() {
+  showArchiveSheets_();
+  onOpen();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Archive sheets shown.', 'BS Noise', 5);
+}
+
 function hideAnalyticsSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
@@ -1169,6 +1347,18 @@ function showAnalyticsSheets_() {
       sheet.showSheet();
     }
   });
+}
+
+function hideAnalyticsSheetsFromMenu_() {
+  hideAnalyticsSheets_();
+  onOpen();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets hidden.', 'BS Noise', 5);
+}
+
+function showAnalyticsSheetsFromMenu_() {
+  showAnalyticsSheets_();
+  onOpen();
+  SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets shown.', 'BS Noise', 5);
 }
 
 function applyUserMode_(spreadsheet) {
@@ -1227,7 +1417,7 @@ function enableUserMode_() {
   setUserInterfaceMode_(USER_INTERFACE_MODE_USER);
   onOpen();
   spreadsheet.toast(
-    `User mode enabled: ${result.shownSheets} primary sheets shown, ` +
+    `USER MODE ENABLED: ${result.shownSheets} primary sheets shown, ` +
       `${result.hiddenSheets} technical/archive sheets hidden, ` +
       `${result.hiddenColumns} technical columns hidden.`,
     'BS Noise',
@@ -1241,7 +1431,7 @@ function enableTechnicalMode_() {
   setUserInterfaceMode_(USER_INTERFACE_MODE_TECHNICAL);
   onOpen();
   spreadsheet.toast(
-    `Technical mode enabled: ${result.shownSheets} analytics/archive sheets shown and all columns restored.`,
+    `TECHNICAL MODE ENABLED: ${result.shownSheets} analytics/archive sheets shown and all columns restored.`,
     'BS Noise',
     8
   );
@@ -1320,6 +1510,7 @@ function hideTechnicalColumnsCore_(spreadsheet) {
 function hideTechnicalColumns_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const hiddenCount = hideTechnicalColumnsCore_(spreadsheet);
+  onOpen();
   spreadsheet.toast(`Technical columns hidden: ${hiddenCount}. Use Show all columns to restore them.`, 'BS Noise', 6);
 }
 
@@ -1335,6 +1526,7 @@ function showAllColumnsCore_(spreadsheet) {
 function showAllColumns_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   showAllColumnsCore_(spreadsheet);
+  onOpen();
   spreadsheet.toast('All columns shown.', 'BS Noise', 5);
 }
 
@@ -1900,6 +2092,7 @@ function enableAutomaticAnalyticsRefresh_() {
   removeAutomaticAnalyticsRefreshTriggers_();
   ScriptApp.newTrigger('runAutomaticAnalyticsRefresh_').timeBased().everyMinutes(AUTO_ANALYTICS_INTERVAL_MINUTES).create();
   properties.setProperty(AUTO_ANALYTICS_ENABLED_PROPERTY, 'true');
+  onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast(
     `Auto analytics refresh enabled every ${AUTO_ANALYTICS_INTERVAL_MINUTES} minutes.`,
     'BS Noise',
@@ -1911,6 +2104,7 @@ function disableAutomaticAnalyticsRefresh_() {
   const properties = PropertiesService.getScriptProperties();
   removeAutomaticAnalyticsRefreshTriggers_();
   properties.setProperty(AUTO_ANALYTICS_ENABLED_PROPERTY, 'false');
+  onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Auto analytics refresh disabled.', 'BS Noise', 5);
 }
 
@@ -1953,6 +2147,7 @@ function enableAutomaticArchiveSheetHiding_() {
     .atHour(AUTO_HIDE_ARCHIVE_SHEETS_HOUR)
     .create();
   properties.setProperty(AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY, 'true');
+  onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast(
     `Auto archive-sheet hiding enabled daily around ${AUTO_HIDE_ARCHIVE_SHEETS_HOUR}:00.`,
     'BS Noise',
@@ -1964,6 +2159,7 @@ function disableAutomaticArchiveSheetHiding_() {
   const properties = PropertiesService.getScriptProperties();
   removeAutomaticArchiveSheetHidingTriggers_();
   properties.setProperty(AUTO_HIDE_ARCHIVE_SHEETS_ENABLED_PROPERTY, 'false');
+  onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Auto archive-sheet hiding disabled.', 'BS Noise', 5);
 }
 
@@ -1990,6 +2186,7 @@ function enableAutomaticDailySummary_() {
   removeAutomaticDailySummaryTriggers_();
   ScriptApp.newTrigger('runAutomaticDailyTelegramSummary_').timeBased().everyHours(1).create();
   properties.setProperty(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY, 'true');
+  onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Auto daily summary enabled with an hourly background check.', 'BS Noise', 6);
 }
 
@@ -1997,6 +2194,7 @@ function disableAutomaticDailySummary_() {
   const properties = PropertiesService.getScriptProperties();
   removeAutomaticDailySummaryTriggers_();
   properties.setProperty(TELEGRAM_AUTO_DAILY_ENABLED_PROPERTY, 'false');
+  onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Auto daily summary disabled.', 'BS Noise', 5);
 }
 
