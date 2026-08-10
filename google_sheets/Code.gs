@@ -1010,16 +1010,16 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   const interfaceMode = getUserInterfaceMode_();
   const isTechnicalMode = interfaceMode === USER_INTERFACE_MODE_TECHNICAL;
-  const menu = ui.createMenu(`⚙️ BS · ${isTechnicalMode ? 'TECH' : 'USER'}`)
+  const menu = ui.createMenu('⚙️ BS')
     .addItem('Refresh latest data', 'rebuildAnalytics_');
 
   if (isTechnicalMode) {
     menu
-      .addItem('Switch to User mode', 'enableUserMode_')
-      .addItem('● Technical mode: ACTIVE', 'showCurrentInterfaceMode_');
+      .addItem('● Interface mode: TECH', 'showCurrentInterfaceMode_')
+      .addItem('Switch to User mode', 'enableUserMode_');
   } else {
     menu
-      .addItem('● User mode: ACTIVE', 'showCurrentInterfaceMode_')
+      .addItem('● Interface mode: USER', 'showCurrentInterfaceMode_')
       .addItem('Switch to Technical mode', 'enableTechnicalMode_');
   }
 
@@ -1303,7 +1303,7 @@ function hideArchiveSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
     const name = sheet.getName();
-    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name)) {
+    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name) && !sheet.isSheetHidden()) {
       sheet.hideSheet();
     }
   });
@@ -1313,7 +1313,7 @@ function showArchiveSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
     const name = sheet.getName();
-    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name)) {
+    if (name !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(name) && sheet.isSheetHidden()) {
       sheet.showSheet();
     }
   });
@@ -1334,7 +1334,7 @@ function showArchiveSheetsFromMenu_() {
 function hideAnalyticsSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
-    if (isAnalyticsSheetName_(sheet.getName())) {
+    if (isAnalyticsSheetName_(sheet.getName()) && !sheet.isSheetHidden()) {
       sheet.hideSheet();
     }
   });
@@ -1343,7 +1343,7 @@ function hideAnalyticsSheets_() {
 function showAnalyticsSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
-    if (isAnalyticsSheetName_(sheet.getName())) {
+    if (isAnalyticsSheetName_(sheet.getName()) && sheet.isSheetHidden()) {
       sheet.showSheet();
     }
   });
@@ -1369,7 +1369,9 @@ function applyUserMode_(spreadsheet) {
   USER_MODE_VISIBLE_SHEET_NAMES.forEach((sheetName) => {
     const sheet = targetSpreadsheet.getSheetByName(sheetName);
     if (sheet) {
-      sheet.showSheet();
+      if (sheet.isSheetHidden()) {
+        sheet.showSheet();
+      }
       shownSheets++;
     }
   });
@@ -1386,7 +1388,7 @@ function applyUserMode_(spreadsheet) {
     const isInternalAnalytics = isAnalyticsSheetName_(sheetName) &&
       !USER_MODE_VISIBLE_SHEET_NAMES.includes(sheetName);
     const isArchive = sheetName !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(sheetName);
-    if (isInternalAnalytics || isArchive) {
+    if ((isInternalAnalytics || isArchive) && !sheet.isSheetHidden()) {
       sheet.hideSheet();
       hiddenSheets++;
     }
@@ -1398,28 +1400,45 @@ function applyUserMode_(spreadsheet) {
 
 function applyTechnicalMode_(spreadsheet) {
   const targetSpreadsheet = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
-  let shownSheets = 0;
+  let shownAnalyticsSheets = 0;
+  let hiddenArchiveSheets = 0;
+
+  targetSpreadsheet.getSheets().forEach((sheet) => {
+    if (isAnalyticsSheetName_(sheet.getName())) {
+      if (sheet.isSheetHidden()) {
+        sheet.showSheet();
+        shownAnalyticsSheets++;
+      }
+    }
+  });
+
+  const preferredSheet = targetSpreadsheet.getSheetByName(CHARTS_SHEET_NAME) ||
+    targetSpreadsheet.getSheetByName(DAILY_VERDICT_TABLE_SHEET_NAME) ||
+    targetSpreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
+  if (preferredSheet) {
+    targetSpreadsheet.setActiveSheet(preferredSheet);
+  }
+
   targetSpreadsheet.getSheets().forEach((sheet) => {
     const sheetName = sheet.getName();
-    if (isAnalyticsSheetName_(sheetName) ||
-        (sheetName !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(sheetName))) {
-      sheet.showSheet();
-      shownSheets++;
+    const isArchive = sheetName !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(sheetName);
+    if (isArchive && !sheet.isSheetHidden()) {
+      sheet.hideSheet();
+      hiddenArchiveSheets++;
     }
   });
   showAllColumnsCore_(targetSpreadsheet);
-  return { shownSheets };
+  return { shownAnalyticsSheets, hiddenArchiveSheets };
 }
 
 function enableUserMode_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const result = applyUserMode_(spreadsheet);
+  applyUserMode_(spreadsheet);
   setUserInterfaceMode_(USER_INTERFACE_MODE_USER);
   onOpen();
   spreadsheet.toast(
-    `USER MODE ENABLED: ${result.shownSheets} primary sheets shown, ` +
-      `${result.hiddenSheets} technical/archive sheets hidden, ` +
-      `${result.hiddenColumns} technical columns hidden.`,
+    `USER MODE ENABLED: primary sheets shown; archives, internal analytics, ` +
+      `and technical columns hidden.`,
     'BS Noise',
     8
   );
@@ -1427,11 +1446,11 @@ function enableUserMode_() {
 
 function enableTechnicalMode_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  const result = applyTechnicalMode_(spreadsheet);
+  applyTechnicalMode_(spreadsheet);
   setUserInterfaceMode_(USER_INTERFACE_MODE_TECHNICAL);
   onOpen();
   spreadsheet.toast(
-    `TECHNICAL MODE ENABLED: ${result.shownSheets} analytics/archive sheets shown and all columns restored.`,
+    'TECHNICAL MODE ENABLED: analytics and all columns shown; archives remain hidden.',
     'BS Noise',
     8
   );
@@ -1487,7 +1506,7 @@ function hideColumnsByHeaderNames_(sheet, headerNames) {
   let hiddenCount = 0;
   headerNames.forEach((headerName) => {
     const colIndex = headers.indexOf(headerName) + 1;
-    if (colIndex > 0) {
+    if (colIndex > 0 && !sheet.isColumnHiddenByUser(colIndex)) {
       sheet.hideColumns(colIndex);
       hiddenCount++;
     }
@@ -1498,10 +1517,6 @@ function hideColumnsByHeaderNames_(sheet, headerNames) {
 function hideTechnicalColumnsCore_(spreadsheet) {
   let hiddenCount = 0;
   spreadsheet.getSheets().forEach((sheet) => {
-    const maxColumns = sheet.getMaxColumns();
-    if (maxColumns > 0) {
-      sheet.showColumns(1, maxColumns);
-    }
     hiddenCount += hideColumnsByHeaderNames_(sheet, getTechnicalColumnsForSheet_(sheet.getName()));
   });
   return hiddenCount;
@@ -1517,7 +1532,14 @@ function hideTechnicalColumns_() {
 function showAllColumnsCore_(spreadsheet) {
   spreadsheet.getSheets().forEach((sheet) => {
     const maxColumns = sheet.getMaxColumns();
-    if (maxColumns > 0) {
+    let hasHiddenColumns = false;
+    for (let columnIndex = 1; columnIndex <= maxColumns; columnIndex++) {
+      if (sheet.isColumnHiddenByUser(columnIndex)) {
+        hasHiddenColumns = true;
+        break;
+      }
+    }
+    if (hasHiddenColumns) {
       sheet.showColumns(1, maxColumns);
     }
   });

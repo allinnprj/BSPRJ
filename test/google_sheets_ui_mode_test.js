@@ -66,6 +66,7 @@ const state = {
   activeSheet: '',
   interfaceMode: 'USER',
   renderedMenu: null,
+  renderedMenuNames: [],
   scriptProperties: {
     BS_AUTO_ANALYTICS_ENABLED: 'false',
     BS_AUTO_HIDE_ARCHIVE_SHEETS_ENABLED: 'false',
@@ -109,6 +110,7 @@ function createMenu(name) {
     },
     addToUi() {
       state.renderedMenu = this;
+      state.renderedMenuNames.push(this.name);
       return this;
     }
   };
@@ -177,24 +179,29 @@ assert.deepStrictEqual(
 );
 
 sandbox.__applyTechnicalMode(spreadsheet);
-assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('09-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, false);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(sandbox.__getDiagnosticsState(spreadsheet))),
   {
     technicalColumns: 'SHOWN',
-    archiveSheets: 'SHOWN',
+    archiveSheets: 'HIDDEN',
     analyticsSheets: 'SHOWN'
   }
 );
 
+sandbox.__applyTechnicalMode(spreadsheet);
+assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('09-08-2026').hidden, true);
+
 state.interfaceMode = 'USER';
 sandbox.__onOpen();
-assert.strictEqual(state.renderedMenu.name, '⚙️ BS · USER');
+assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh latest data', '● User mode: ACTIVE', 'Switch to Technical mode']
+  ['Refresh latest data', '● Interface mode: USER', 'Switch to Technical mode']
 );
 
 state.interfaceMode = 'TECHNICAL';
@@ -202,10 +209,10 @@ state.scriptProperties.BS_AUTO_ANALYTICS_ENABLED = 'true';
 state.scriptProperties.BS_AUTO_HIDE_ARCHIVE_SHEETS_ENABLED = 'false';
 state.scriptProperties.BS_TELEGRAM_AUTO_DAILY_ENABLED = 'true';
 sandbox.__onOpen();
-assert.strictEqual(state.renderedMenu.name, '⚙️ BS · TECH');
+assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh latest data', 'Switch to User mode', '● Technical mode: ACTIVE']
+  ['Refresh latest data', '● Interface mode: TECH', 'Switch to User mode']
 );
 
 let diagnosticsMenu = state.renderedMenu.entries
@@ -215,8 +222,8 @@ assert.deepStrictEqual(
   [
     '● Technical columns: SHOWN',
     'Hide technical columns',
-    '● Archive sheets: SHOWN',
-    'Hide archive sheets',
+    '● Archive sheets: HIDDEN',
+    'Show archive sheets',
     '● Analytics sheets: SHOWN',
     'Hide analytics sheets'
   ]
@@ -254,7 +261,7 @@ assert.strictEqual(JSON.stringify(state.scriptProperties), propertiesBeforeStatu
 assert.match(state.toasts.at(-1), /analytics refresh ON, archive hiding OFF, daily summary ON/);
 
 spreadsheet.getSheetByName('log').hideColumns(2);
-spreadsheet.getSheetByName('08-08-2026').hideSheet();
+spreadsheet.getSheetByName('08-08-2026').showSheet();
 spreadsheet.getSheetByName('clean_summary_10m').hideSheet();
 sandbox.__onOpen();
 diagnosticsMenu = state.renderedMenu.entries
@@ -289,6 +296,7 @@ assert.deepStrictEqual(
   visibilityBeforeStatusClick
 );
 assert.match(state.toasts.at(-1), /technical columns MIXED, archive sheets MIXED, analytics sheets MIXED/);
+assert.deepStrictEqual(Array.from(new Set(state.renderedMenuNames)), ['⚙️ BS']);
 
 function getFunctionSource(functionName) {
   const start = source.indexOf(`function ${functionName}(`);

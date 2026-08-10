@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Google Sheets stable single-menu optimization - 2026-08-10
+
+1. Replaced the changing top-level menu names `⚙️ BS · USER/TECH` with one stable `⚙️ BS` menu, preventing Google Sheets from retaining two differently named custom menus during repeated mode switches.
+2. Moved the current mode into the first state row as `● Interface mode: USER/TECH` and kept one explicit inverse switch command below it.
+3. Changed `Technical mode` to show analytics and all columns while keeping every dated archive sheet hidden; archives can still be shown manually from Diagnostics when explicitly needed.
+4. Made repeated sheet/column visibility operations idempotent and moved the active view to a primary analytics sheet before hiding archives, reducing unnecessary UI work and visible tab churn.
+5. Extended and passed the UI regression for a single stable menu name, repeated USER/TECH switching, archives hidden in both modes, technical analytics visibility, and the existing Diagnostics/Automation indicators. The automatic daily-summary regression remains passing.
+6. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. Live Apps Script save and repeated browser-switch validation remain required.
+
 ## Google Sheets diagnostics state indicators - 2026-08-10
 
 1. Extended the `●` convention to every stateful Diagnostics group: technical columns, dated archive sheets, and analytics sheets now report their actual table state as `SHOWN`, `HIDDEN`, `MIXED`, or `NONE`.
