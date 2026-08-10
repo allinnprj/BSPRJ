@@ -208,6 +208,20 @@ assert.deepStrictEqual(
   ['Refresh latest data', 'Switch to User mode', '● Technical mode: ACTIVE']
 );
 
+let diagnosticsMenu = state.renderedMenu.entries
+  .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Diagnostics').menu;
+assert.deepStrictEqual(
+  diagnosticsMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
+  [
+    '● Technical columns: SHOWN',
+    'Hide technical columns',
+    '● Archive sheets: SHOWN',
+    'Hide archive sheets',
+    '● Analytics sheets: SHOWN',
+    'Hide analytics sheets'
+  ]
+);
+
 const automationMenu = state.renderedMenu.entries
   .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Automation').menu;
 const automationItems = automationMenu.entries.filter((entry) => entry.type === 'item');
@@ -239,6 +253,43 @@ sandbox.__showAutomationStatus();
 assert.strictEqual(JSON.stringify(state.scriptProperties), propertiesBeforeStatusClick);
 assert.match(state.toasts.at(-1), /analytics refresh ON, archive hiding OFF, daily summary ON/);
 
+spreadsheet.getSheetByName('log').hideColumns(2);
+spreadsheet.getSheetByName('08-08-2026').hideSheet();
+spreadsheet.getSheetByName('clean_summary_10m').hideSheet();
+sandbox.__onOpen();
+diagnosticsMenu = state.renderedMenu.entries
+  .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Diagnostics').menu;
+assert.deepStrictEqual(
+  diagnosticsMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
+  [
+    '● Technical columns: MIXED',
+    'Hide technical columns',
+    'Show all columns',
+    '● Archive sheets: MIXED',
+    'Hide archive sheets',
+    'Show archive sheets',
+    '● Analytics sheets: MIXED',
+    'Hide analytics sheets',
+    'Show analytics sheets'
+  ]
+);
+
+const visibilityBeforeStatusClick = sheets.map((sheet) => ({
+  name: sheet.name,
+  hidden: sheet.hidden,
+  hiddenColumns: Array.from(sheet.hiddenColumns)
+}));
+sandbox.__showDiagnosticsStatus();
+assert.deepStrictEqual(
+  sheets.map((sheet) => ({
+    name: sheet.name,
+    hidden: sheet.hidden,
+    hiddenColumns: Array.from(sheet.hiddenColumns)
+  })),
+  visibilityBeforeStatusClick
+);
+assert.match(state.toasts.at(-1), /technical columns MIXED, archive sheets MIXED, analytics sheets MIXED/);
+
 function getFunctionSource(functionName) {
   const start = source.indexOf(`function ${functionName}(`);
   assert.notStrictEqual(start, -1, `Missing function ${functionName}`);
@@ -258,7 +309,13 @@ function getFunctionSource(functionName) {
   'enableAutomaticArchiveSheetHiding_',
   'disableAutomaticArchiveSheetHiding_',
   'enableAutomaticDailySummary_',
-  'disableAutomaticDailySummary_'
+  'disableAutomaticDailySummary_',
+  'hideTechnicalColumns_',
+  'showAllColumns_',
+  'hideArchiveSheetsFromMenu_',
+  'showArchiveSheetsFromMenu_',
+  'hideAnalyticsSheetsFromMenu_',
+  'showAnalyticsSheetsFromMenu_'
 ].forEach((functionName) => {
   assert.match(getFunctionSource(functionName), /onOpen\(\);/);
 });

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets diagnostics state indicators - 2026-08-10
+
+1. Extended the `●` convention to every stateful Diagnostics group: technical columns, dated archive sheets, and analytics sheets now report their actual table state as `SHOWN`, `HIDDEN`, `MIXED`, or `NONE`.
+2. Diagnostics offers only the opposite action for a uniform shown/hidden state and both actions for a mixed state; the `●` status row remains informational and has no side effects.
+3. Added menu-specific archive/analytics visibility wrappers so manual actions refresh the menu immediately while the scheduled archive-hiding trigger remains independent of Spreadsheet UI access.
+4. Extended and passed the UI regression for real sheet/column inspection, user-mode mixed analytics visibility, full technical visibility, mixed Diagnostics menus, no-op status rows, and immediate menu refresh calls.
+5. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. Live Apps Script save and visual Diagnostics validation remain required.
+
 ## Google Sheets visible mode and automation indicators - 2026-08-10
 
 1. Changed the custom menu title to show the current per-user interface mode as `⚙️ BS · USER` or `⚙️ BS · TECH`.
