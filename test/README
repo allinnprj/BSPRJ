@@ -13,3 +13,5 @@ More information about PlatformIO Unit Testing:
 Google Sheets Apps Script regression checks:
 - `node test/google_sheets_daily_summary_test.js`
 - `node test/google_sheets_ui_mode_test.js`
+- `node test/google_sheets_newest_first_test.js`
+- `node test/google_sheets_charts_resilience_test.js`

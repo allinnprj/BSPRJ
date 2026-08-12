@@ -1499,11 +1499,6 @@ function refreshAllSheetFormatting_() {
   refreshExistingTableSheetFormatting_(DAILY_VERDICT_SHEET_NAME, DAILY_VERDICT_HEADERS);
   refreshExistingTableSheetFormatting_(DAILY_VERDICT_TABLE_SHEET_NAME, DAILY_VERDICT_TABLE_HEADERS);
 
-  const cleanSheet = spreadsheet.getSheetByName(CLEAN_SUMMARY_SHEET_NAME);
-  if (cleanSheet && cleanSheet.getLastRow() >= 2) {
-    rebuildAnalyticsCharts_(true);
-  }
-
   refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast('All table formatting and newest-first row order refreshed.', 'BS Noise', 6);

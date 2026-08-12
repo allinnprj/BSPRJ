@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets layout-refresh and chart-category resilience - 2026-08-12
+
+1. Removed chart rebuilding from `Refresh all table layout/order`, so this maintenance command now has one responsibility and cannot report a chart-data error after successfully applying table styles and row order.
+2. Hardened the chart source builder to validate normalized `PART` values before indexing chart buckets; unsupported values are skipped with an execution-log warning instead of causing `Cannot read properties of undefined (reading 'push')`.
+3. Added and passed a focused regression using an unsupported `DAWN` category, confirming valid `DAY`/`NGT` data still builds, invalid data does not affect chart coverage, and the layout command contains no chart rebuild call.
+4. Existing `Rebuild charts only` and `Rebuild analytics` commands remain the explicit ways to refresh charts. Source values, Telegram, automation triggers, and firmware were not changed.
+5. Firmware version `0.1.61-EXP` build `115` remains current. Live validation requires saving both `Code.gs` and `appsheet_charts.gs`; web-app redeployment and ESP32 restart are not required for this fix.
+
 ## Google Sheets raw-table header and scrolling refinement - 2026-08-12
 
 1. Kept the alternating odd/even row shades in `log` and dated archives while preserving each column's semantic color family.

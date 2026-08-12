@@ -9,6 +9,12 @@ function buildChartSourceBlocks_(records) {
   const coverageByDate = {};
 
   records.forEach((record) => {
+    const partText = normalizePartText_(record.partText);
+    if (!PART_ORDER.includes(partText)) {
+      console.warn(`Chart row skipped: unsupported PART "${partText}".`);
+      return;
+    }
+
     const coverage = coverageByDate[record.dateText] || {
       uniqueWindows: 0,
       validWindows: 0
@@ -29,7 +35,7 @@ function buildChartSourceBlocks_(records) {
       EVE: [],
       NGT: []
     };
-    byDatePart[dateKey][record.partText].push(record.avgPeakToPeak);
+    byDatePart[dateKey][partText].push(record.avgPeakToPeak);
     levelMix[record.levelText] = (levelMix[record.levelText] || 0) + 1;
 
   });
