@@ -1,0 +1,194 @@
+const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
+const vm = require('vm');
+
+const codePath = path.join(__dirname, '..', 'google_sheets', 'Code.gs');
+const source = fs.readFileSync(codePath, 'utf8');
+const chartsPath = path.join(__dirname, '..', 'google_sheets', 'appsheet_charts.gs');
+const chartsSource = fs.readFileSync(chartsPath, 'utf8');
+
+const state = {
+  formattedRows: [],
+  headerChecks: 0,
+  writtenTables: {}
+};
+const sandbox = { state };
+const hooks = `
+  ensureHeaderRowValues_ = () => { state.headerChecks += 1; };
+  applyLogRowFormatting_ = (sheet, startRow, rowCount) => {
+    state.formattedRows.push([startRow, rowCount]);
+  };
+  this.__sortRowsNewestFirst = sortRowsNewestFirst_;
+  this.__sortRecords = sortRecords_;
+  this.__prependLogRow = prependLogRow_;
+  this.__getNewestDataDate = getNewestDataDate_;
+`;
+vm.runInNewContext(`${source}\n${hooks}`, sandbox, { filename: codePath });
+
+const rawRows = [
+  ['device', '', '', '2026-08-11', '23:50:00', '', 'NGT'],
+  ['device', '', '', '2026-08-12', '00:10:00', '', 'NGT'],
+  ['device', '', '', '2026-08-12', '00:20:00', '', 'NGT']
+];
+sandbox.__sortRowsNewestFirst(rawRows, 3, 4, 6, 0);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(rawRows.map((row) => [row[3], row[4]]))),
+  [
+    ['2026-08-12', '00:20:00'],
+    ['2026-08-12', '00:10:00'],
+    ['2026-08-11', '23:50:00']
+  ]
+);
+
+const partRows = [
+  ['device', '2026-08-12', 'DAY'],
+  ['device', '2026-08-12', 'NGT'],
+  ['device', '2026-08-12', 'EVE']
+];
+sandbox.__sortRowsNewestFirst(partRows, 1, null, 2, 0);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(partRows.map((row) => row[2]))),
+  ['NGT', 'EVE', 'DAY']
+);
+
+const records = [
+  { dateText: '2026-08-12', timeFromText: '00:10:00', deviceId: 'device', partText: 'NGT', sourceSheet: 'log' },
+  { dateText: '2026-08-11', timeFromText: '23:50:00', deviceId: 'device', partText: 'NGT', sourceSheet: '11-08-2026' }
+];
+sandbox.__sortRecords(records);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(records.map((record) => record.dateText))),
+  ['2026-08-11', '2026-08-12'],
+  'Internal analytics chronology must remain oldest-first.'
+);
+
+const prependState = {
+  maxRows: 10,
+  lastRow: 3,
+  insertedBefore: null,
+  deletedRow: null,
+  values: null
+};
+const prependSheet = {
+  getMaxRows() {
+    return prependState.maxRows;
+  },
+  getLastRow() {
+    return prependState.lastRow;
+  },
+  insertRowBefore(row) {
+    prependState.insertedBefore = row;
+    prependState.maxRows++;
+    prependState.lastRow++;
+  },
+  getRange(row, column, rowCount, columnCount) {
+    assert.deepStrictEqual([row, column, rowCount, columnCount], [2, 1, 1, 36]);
+    return {
+      setValues(values) {
+        prependState.values = values;
+      }
+    };
+  },
+  deleteRow(row) {
+    prependState.deletedRow = row;
+    prependState.maxRows--;
+  }
+};
+const newRow = Array.from({ length: 36 }, (_, index) => `value-${index}`);
+assert.strictEqual(sandbox.__prependLogRow(prependSheet, newRow), 2);
+assert.strictEqual(prependState.insertedBefore, 2);
+assert.strictEqual(prependState.deletedRow, 11);
+assert.strictEqual(prependState.maxRows, 10, 'Prepending must not consume blank-sheet capacity.');
+assert.deepStrictEqual(JSON.parse(JSON.stringify(prependState.values)), [newRow]);
+assert.deepStrictEqual(JSON.parse(JSON.stringify(state.formattedRows.at(-1))), [2, 3]);
+
+const dateSheet = {
+  getLastRow() {
+    return 4;
+  },
+  getRange(row, column, rowCount, columnCount) {
+    assert.deepStrictEqual([row, column, rowCount, columnCount], [2, 4, 3, 1]);
+    return {
+      getValues() {
+        return [['2026-08-10'], ['12-08-2026'], ['2026-08-11']];
+      }
+    };
+  }
+};
+assert.strictEqual(sandbox.__getNewestDataDate(dateSheet), '2026-08-12');
+
+sandbox.ContentService = {
+  MimeType: { JSON: 'JSON' },
+  createTextOutput(text) {
+    return {
+      text,
+      setMimeType() {
+        return this;
+      }
+    };
+  }
+};
+vm.runInNewContext(`
+  ensureWritableLogSheet_ = () => ({ name: 'log' });
+  sheetHasRecordKey_ = () => false;
+  prependLogRow_ = (sheet, rowValues) => { state.postedRow = rowValues; };
+  this.__doPostUnlocked = doPostUnlocked_;
+`, sandbox);
+const postResult = sandbox.__doPostUnlocked({
+  postData: {
+    contents: JSON.stringify({
+      device_id: 'device',
+      date: '2026-08-12',
+      time_from: '12:00:00',
+      time_to: '12:09:59',
+      part: 'DAY',
+      avg_peak_to_peak: 400
+    })
+  }
+});
+assert.strictEqual(JSON.parse(postResult.text).ok, true);
+assert.strictEqual(state.postedRow.length, 36);
+assert.strictEqual(state.postedRow[0], 'device');
+assert.strictEqual(state.postedRow[3], '2026-08-12');
+
+const doPostStart = source.indexOf('function doPostUnlocked_(');
+const doPostEnd = source.indexOf('\nfunction doPost(', doPostStart);
+const doPostSource = source.slice(doPostStart, doPostEnd);
+assert.match(doPostSource, /prependLogRow_\(sheet, rowValues\)/);
+assert.doesNotMatch(doPostSource, /getLastRow\(\).*\+\s*1/);
+
+function getFunctionSource(functionName) {
+  const start = source.indexOf(`function ${functionName}(`);
+  assert.notStrictEqual(start, -1, `Missing function ${functionName}`);
+  const bodyStart = source.indexOf('{', start);
+  let depth = 0;
+  for (let index = bodyStart; index < source.length; index++) {
+    if (source[index] === '{') depth++;
+    if (source[index] === '}') depth--;
+    if (depth === 0) return source.slice(start, index + 1);
+  }
+  throw new Error(`Unclosed function ${functionName}`);
+}
+
+[
+  'buildDayPartSummaryRows_',
+  'buildTimelineSummaryRows_',
+  'buildLevelSummaryRows_',
+  'buildConclusionSummaryRows_',
+  'buildDailyVerdictTableRows_',
+  'buildHealthSummaryRows_'
+].forEach((functionName) => {
+  assert.match(getFunctionSource(functionName), /sortRowsNewestFirst_/);
+});
+assert.match(getFunctionSource('rebuildAnalyticsCore_'), /cleanRowsNewestFirst/);
+assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFontColor\('#274e13'\)/);
+assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFrozenColumns\(1\)/);
+assert.match(chartsSource, /const verdictDisplayRows = verdictChartRows\.slice\(\)\.reverse\(\)/);
+assert.match(chartsSource, /setValues\(verdictDisplayRows\)/);
+assert.match(chartsSource, /setValues\(verdictChartRows\)/);
+
+assert.doesNotMatch(source, /[А-Яа-яЁё]/);
+assert.doesNotMatch(chartsSource, /[А-Яа-яЁё]/);
+
+console.log('Google Sheets newest-first table order regression: PASS');

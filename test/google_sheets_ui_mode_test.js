@@ -31,6 +31,7 @@ function createSheet(name, headers) {
       return Math.max(this.headers.length, 1);
     },
     getRange(row, column, rowCount, columnCount) {
+      state.rangeReadCount++;
       assert.strictEqual(row, 1);
       assert.strictEqual(rowCount, 1);
       return {
@@ -64,9 +65,14 @@ const sheetDefinitions = [
 const sheets = sheetDefinitions.map(([name, headers]) => createSheet(name, headers));
 const state = {
   activeSheet: '',
-  interfaceMode: 'USER',
+  userProperties: {
+    BS_USER_INTERFACE_MODE: 'USER'
+  },
+  documentProperties: {},
   renderedMenu: null,
   renderedMenuNames: [],
+  rangeReadCount: 0,
+  throwScriptProperties: false,
   scriptProperties: {
     BS_AUTO_ANALYTICS_ENABLED: 'false',
     BS_AUTO_HIDE_ARCHIVE_SHEETS_ENABLED: 'false',
@@ -131,17 +137,30 @@ const sandbox = {
   PropertiesService: {
     getUserProperties() {
       return {
-        getProperty() {
-          return state.interfaceMode;
+        getProperty(key) {
+          return state.userProperties[key] || '';
         },
         setProperty(key, value) {
-          state.interfaceMode = value;
+          state.userProperties[key] = value;
+        }
+      };
+    },
+    getDocumentProperties() {
+      return {
+        getProperty(key) {
+          return state.documentProperties[key] || '';
+        },
+        setProperty(key, value) {
+          state.documentProperties[key] = value;
         }
       };
     },
     getScriptProperties() {
       return {
         getProperty(key) {
+          if (state.throwScriptProperties) {
+            throw new Error('Simulated property read failure.');
+          }
           return state.scriptProperties[key] || '';
         }
       };
@@ -153,6 +172,8 @@ const hooks = `
   this.__applyUserMode = applyUserMode_;
   this.__applyTechnicalMode = applyTechnicalMode_;
   this.__getDiagnosticsState = getDiagnosticsState_;
+  this.__refreshDiagnosticsStateCache = refreshDiagnosticsStateCache_;
+  this.__refreshBsMenuStatus = refreshBsMenuStatus_;
   this.__onOpen = onOpen;
   this.__showAutomationStatus = showAutomationStatus_;
   this.__showDiagnosticsStatus = showDiagnosticsStatus_;
@@ -196,23 +217,28 @@ sandbox.__applyTechnicalMode(spreadsheet);
 assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('09-08-2026').hidden, true);
 
-state.interfaceMode = 'USER';
+state.userProperties.BS_USER_INTERFACE_MODE = 'USER';
+state.rangeReadCount = 0;
 sandbox.__onOpen();
+assert.strictEqual(state.rangeReadCount, 0, 'User onOpen must not scan sheet ranges.');
 assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh latest data', '● Interface mode: USER', 'Switch to Technical mode']
+  ['Refresh BS menu/status', 'Refresh latest data', '● Interface mode: USER', 'Switch to Technical mode']
 );
 
-state.interfaceMode = 'TECHNICAL';
+state.userProperties.BS_USER_INTERFACE_MODE = 'TECHNICAL';
 state.scriptProperties.BS_AUTO_ANALYTICS_ENABLED = 'true';
 state.scriptProperties.BS_AUTO_HIDE_ARCHIVE_SHEETS_ENABLED = 'false';
 state.scriptProperties.BS_TELEGRAM_AUTO_DAILY_ENABLED = 'true';
+sandbox.__refreshDiagnosticsStateCache(spreadsheet);
+state.rangeReadCount = 0;
 sandbox.__onOpen();
+assert.strictEqual(state.rangeReadCount, 0, 'Technical onOpen must use cached diagnostics.');
 assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh latest data', '● Interface mode: TECH', 'Switch to User mode']
+  ['Refresh BS menu/status', 'Refresh latest data', '● Interface mode: TECH', 'Switch to User mode']
 );
 
 let diagnosticsMenu = state.renderedMenu.entries
@@ -263,6 +289,8 @@ assert.match(state.toasts.at(-1), /analytics refresh ON, archive hiding OFF, dai
 spreadsheet.getSheetByName('log').hideColumns(2);
 spreadsheet.getSheetByName('08-08-2026').showSheet();
 spreadsheet.getSheetByName('clean_summary_10m').hideSheet();
+sandbox.__refreshBsMenuStatus();
+assert.ok(state.rangeReadCount > 0, 'Explicit status refresh must scan actual sheet state.');
 sandbox.__onOpen();
 diagnosticsMenu = state.renderedMenu.entries
   .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Diagnostics').menu;
@@ -296,6 +324,15 @@ assert.deepStrictEqual(
   visibilityBeforeStatusClick
 );
 assert.match(state.toasts.at(-1), /technical columns MIXED, archive sheets MIXED, analytics sheets MIXED/);
+
+state.throwScriptProperties = true;
+sandbox.__onOpen();
+assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
+assert.deepStrictEqual(
+  state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
+  ['Refresh BS menu/status', 'Refresh latest data']
+);
+state.throwScriptProperties = false;
 assert.deepStrictEqual(Array.from(new Set(state.renderedMenuNames)), ['⚙️ BS']);
 
 function getFunctionSource(functionName) {

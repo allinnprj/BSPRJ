@@ -145,6 +145,7 @@ function rebuildAnalyticsCharts_(options) {
 
   const chartBlocks = buildChartSourceBlocks_(records);
   const verdictChartRows = buildDailyVerdictChartRows_(chartBlocks.verdictRows);
+  const verdictDisplayRows = verdictChartRows.slice().reverse();
   const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
   ensureMinColumnCount_(sheet, 10);
   sheet.clearContents();
@@ -262,8 +263,8 @@ function rebuildAnalyticsCharts_(options) {
   sheet.getRange(29, 1, 1, 4).merge().setValue('Scale: 1 = SILENT, 2 = NORMAL, 3 = LOUD, 4 = PEAK')
     .setHorizontalAlignment('left');
   sheet.getRange(30, 1, 1, 4).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
-  if (verdictChartRows.length > 0) {
-    sheet.getRange(31, 1, verdictChartRows.length, 4).setValues(verdictChartRows);
+  if (verdictDisplayRows.length > 0) {
+    sheet.getRange(31, 1, verdictDisplayRows.length, 4).setValues(verdictDisplayRows);
   }
 
   if (shouldFormat) {

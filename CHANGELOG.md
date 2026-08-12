@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Google Sheets fast menu, unified log style, and newest-first tables - 2026-08-12
+
+1. Made `onOpen()` build the stable `⚙️ BS` menu from lightweight stored state instead of scanning every sheet and technical column before `addToUi()`, and added a minimal fallback menu if state loading fails.
+2. Added `Refresh BS menu/status`; it explicitly scans actual sheet/column visibility, refreshes the shared diagnostics-state cache, and rebuilds the menu while preserving every `●` state indicator.
+3. Restyled raw `log` and dated archive sheets to match the accepted analytics-table language: bold dark-green headers, semantic pastel column groups, stronger group separators, fixed row sizing, and a frozen header/identity column.
+4. Changed incoming `doPost()` rows to be inserted directly at row `2`, preserving unused row capacity, and hardened rollover/archive merging so raw tables remain newest-first without relying on the former last-row date assumption.
+5. Changed every analytics table to display newest dates/windows first while preserving the internal oldest-first record sequence used for duplicate detection, gap calculation, coverage, and daily conclusions. Dashboard chart time axes remain chronological.
+6. Extended the technical maintenance command as `Refresh all table layout/order`, allowing existing raw and analytics sheets to be normalized once after deployment.
+7. Added and passed regressions for lightweight/fallback menu creation, cached versus explicit diagnostics refresh, raw-row prepending, newest-first table comparators, preserved internal chronology, daily-summary locking, and English-only Apps Script UI.
+8. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. Because `doPost()` changed, the bound Apps Script must be saved and the existing web-app deployment updated to a new version before live row-order validation.
+
 ## Google Sheets stable single-menu optimization - 2026-08-10
 
 1. Replaced the changing top-level menu names `⚙️ BS · USER/TECH` with one stable `⚙️ BS` menu, preventing Google Sheets from retaining two differently named custom menus during repeated mode switches.

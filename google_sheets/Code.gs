@@ -95,6 +95,8 @@ const AUTO_DAILY_LOCK_WAIT_MILLISECONDS = 300000;
 const USER_INTERFACE_MODE_PROPERTY = 'BS_USER_INTERFACE_MODE';
 const USER_INTERFACE_MODE_USER = 'USER';
 const USER_INTERFACE_MODE_TECHNICAL = 'TECHNICAL';
+const DIAGNOSTICS_STATE_CACHE_PROPERTY = 'BS_DIAGNOSTICS_STATE_CACHE';
+const DIAGNOSTICS_STATE_UNKNOWN = 'CHECK';
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
@@ -602,10 +604,13 @@ function ensureHeaderFormatting_(sheet) {
   ensureHeaderRowValues_(sheet);
 
   sheet.setFrozenRows(1);
+  sheet.setFrozenColumns(1);
+  sheet.setHiddenGridlines(false);
   const fullHeaderRange = sheet.getRange(1, 1, 1, HEADERS.length);
   fullHeaderRange
     .setFontWeight('bold')
-    .setFontSize(12)
+    .setFontSize(11)
+    .setFontColor('#274e13')
     .setHorizontalAlignment('center')
     .setVerticalAlignment('middle')
     .setWrap(true)
@@ -648,6 +653,7 @@ function ensureHeaderFormatting_(sheet) {
   sheet.getRange(2, 5, Math.max(lastRow - 1, 1), 2).setNumberFormat('hh:mm:ss');
 
   if (lastRow > 1) {
+    sheet.setRowHeights(2, lastRow - 1, 28);
     dataRange.setBackgrounds(buildDataBackgrounds_(lastRow - 1));
   }
 
@@ -665,6 +671,7 @@ function applyLogRowFormatting_(sheet, startRow, rowCount) {
   }
 
   const dataRange = sheet.getRange(startRow, 1, rowCount, HEADERS.length);
+  sheet.setRowHeights(startRow, rowCount, 28);
   dataRange
     .setHorizontalAlignment('center')
     .setVerticalAlignment('middle')
@@ -776,13 +783,18 @@ function normalizeTimeText_(value) {
   return raw;
 }
 
-function getLastDataDate_(sheet) {
+function getNewestDataDate_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) {
     return '';
   }
 
-  return normalizeDateText_(sheet.getRange(lastRow, 4).getValue());
+  const dates = sheet.getRange(2, 4, lastRow - 1, 1).getValues()
+    .flat()
+    .map((value) => normalizeDateText_(value))
+    .filter((value) => value)
+    .sort();
+  return dates.length ? dates[dates.length - 1] : '';
 }
 
 function isIncomingDateNewer_(existingDateText, incomingDateText) {
@@ -823,6 +835,57 @@ function sheetHasRecordKey_(sheet, recordKey) {
   return values.some((row) => buildRecordKeyFromRow_(row) === recordKey);
 }
 
+function rawSheetIsNewestFirst_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3) {
+    return true;
+  }
+
+  const keys = sheet.getRange(2, 4, lastRow - 1, 2).getValues().map((row) => (
+    `${normalizeDateText_(row[0])}T${normalizeTimeText_(row[1])}`
+  ));
+  for (let index = 1; index < keys.length; index++) {
+    if (compareTextDescending_(keys[index - 1], keys[index]) > 0) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function sortRawSheetNewestFirst_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 3) {
+    return 0;
+  }
+
+  const rowCount = lastRow - 1;
+  const range = sheet.getRange(2, 1, rowCount, HEADERS.length);
+  const rows = range.getValues();
+  sortRowsNewestFirst_(rows, 3, 4, 6, 0);
+  range.setValues(rows);
+  applyLogRowFormatting_(sheet, 2, rowCount);
+  return rowCount;
+}
+
+function ensureRawSheetNewestFirst_(sheet) {
+  return rawSheetIsNewestFirst_(sheet) ? 0 : sortRawSheetNewestFirst_(sheet);
+}
+
+function prependLogRow_(sheet, rowValues) {
+  const previousMaxRows = sheet.getMaxRows();
+  const hadSpareRow = sheet.getLastRow() < previousMaxRows;
+  sheet.insertRowBefore(2);
+  sheet.getRange(2, 1, 1, HEADERS.length).setValues([rowValues]);
+
+  if (hadSpareRow && sheet.getMaxRows() > previousMaxRows) {
+    sheet.deleteRow(sheet.getMaxRows());
+  }
+
+  ensureHeaderRowValues_(sheet);
+  applyLogRowFormatting_(sheet, 2, Math.max(sheet.getLastRow() - 1, 1));
+  return 2;
+}
+
 function appendLogRowsToArchive_(sourceSheet, targetSheet) {
   const sourceLastRow = sourceSheet.getLastRow();
   if (sourceLastRow < 2) {
@@ -842,7 +905,9 @@ function appendLogRowsToArchive_(sourceSheet, targetSheet) {
   const targetStartRow = Math.max(targetSheet.getLastRow(), 1) + 1;
   targetSheet.getRange(targetStartRow, 1, filteredValues.length, HEADERS.length).setValues(filteredValues);
   ensureHeaderRowValues_(targetSheet);
-  applyLogRowFormatting_(targetSheet, targetStartRow, filteredValues.length);
+  if (sortRawSheetNewestFirst_(targetSheet) === 0) {
+    applyLogRowFormatting_(targetSheet, targetStartRow, filteredValues.length);
+  }
 }
 
 function ensureWritableLogSheet_(incomingDateText) {
@@ -857,7 +922,7 @@ function ensureWritableLogSheet_(incomingDateText) {
 
   ensureHeaderRowValues_(sheet);
 
-  const lastDataDate = getLastDataDate_(sheet);
+  const lastDataDate = getNewestDataDate_(sheet);
   if (isIncomingDateNewer_(lastDataDate, normalizedIncomingDateText)) {
     const archivedSheetName = formatSheetDate_(lastDataDate);
     if (archivedSheetName && archivedSheetName !== ACTIVE_LOG_SHEET_NAME) {
@@ -865,6 +930,7 @@ function ensureWritableLogSheet_(incomingDateText) {
       if (!existingArchive) {
         sheet.setName(archivedSheetName);
         ensureHeaderRowValues_(sheet);
+        sortRawSheetNewestFirst_(sheet);
       } else {
         appendLogRowsToArchive_(sheet, existingArchive);
         spreadsheet.deleteSheet(sheet);
@@ -875,6 +941,7 @@ function ensureWritableLogSheet_(incomingDateText) {
     ensureHeaderFormatting_(sheet);
   }
 
+  ensureRawSheetNewestFirst_(sheet);
   return sheet;
 }
 
@@ -968,6 +1035,50 @@ function getDiagnosticsState_(spreadsheet) {
   };
 }
 
+function normalizeDiagnosticsState_(state) {
+  const allowedStates = ['SHOWN', 'HIDDEN', 'MIXED', 'NONE'];
+  const normalized = state || {};
+  return {
+    technicalColumns: allowedStates.includes(normalized.technicalColumns)
+      ? normalized.technicalColumns
+      : DIAGNOSTICS_STATE_UNKNOWN,
+    archiveSheets: allowedStates.includes(normalized.archiveSheets)
+      ? normalized.archiveSheets
+      : DIAGNOSTICS_STATE_UNKNOWN,
+    analyticsSheets: allowedStates.includes(normalized.analyticsSheets)
+      ? normalized.analyticsSheets
+      : DIAGNOSTICS_STATE_UNKNOWN
+  };
+}
+
+function getCachedDiagnosticsState_() {
+  const raw = String(
+    PropertiesService.getDocumentProperties().getProperty(DIAGNOSTICS_STATE_CACHE_PROPERTY) || ''
+  ).trim();
+  if (!raw) {
+    return normalizeDiagnosticsState_(null);
+  }
+
+  try {
+    return normalizeDiagnosticsState_(JSON.parse(raw));
+  } catch (error) {
+    return normalizeDiagnosticsState_(null);
+  }
+}
+
+function cacheDiagnosticsState_(state) {
+  const normalized = normalizeDiagnosticsState_(state);
+  PropertiesService.getDocumentProperties().setProperty(
+    DIAGNOSTICS_STATE_CACHE_PROPERTY,
+    JSON.stringify(normalized)
+  );
+  return normalized;
+}
+
+function refreshDiagnosticsStateCache_(spreadsheet) {
+  return cacheDiagnosticsState_(getDiagnosticsState_(spreadsheet));
+}
+
 function addVisibilityToggle_(menu, label, state, hideLabel, hideFunction, showLabel, showFunction) {
   menu.addItem(`● ${label}: ${state}`, 'showDiagnosticsStatus_');
   if (state === 'SHOWN') {
@@ -997,8 +1108,10 @@ function showAutomationStatus_() {
 }
 
 function showDiagnosticsStatus_() {
-  const state = getDiagnosticsState_();
-  SpreadsheetApp.getActiveSpreadsheet().toast(
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const state = refreshDiagnosticsStateCache_(spreadsheet);
+  onOpen();
+  spreadsheet.toast(
     `Diagnostics status: technical columns ${state.technicalColumns}, ` +
       `archive sheets ${state.archiveSheets}, analytics sheets ${state.analyticsSheets}.`,
     'BS Noise',
@@ -1006,11 +1119,12 @@ function showDiagnosticsStatus_() {
   );
 }
 
-function onOpen() {
+function addBsMenuToUi_() {
   const ui = SpreadsheetApp.getUi();
   const interfaceMode = getUserInterfaceMode_();
   const isTechnicalMode = interfaceMode === USER_INTERFACE_MODE_TECHNICAL;
   const menu = ui.createMenu('⚙️ BS')
+    .addItem('Refresh BS menu/status', 'refreshBsMenuStatus_')
     .addItem('Refresh latest data', 'rebuildAnalytics_');
 
   if (isTechnicalMode) {
@@ -1031,7 +1145,7 @@ function onOpen() {
 
   if (isTechnicalMode) {
     const automationState = getAutomationState_();
-    const diagnosticsState = getDiagnosticsState_();
+    const diagnosticsState = getCachedDiagnosticsState_();
     const automationMenu = ui.createMenu('Automation');
     const diagnosticsMenu = ui.createMenu('Diagnostics');
 
@@ -1089,7 +1203,7 @@ function onOpen() {
       .addSubMenu(ui.createMenu('Maintenance')
         .addItem('Rebuild analytics', 'rebuildAnalytics_')
         .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
-        .addItem('Refresh all sheet formatting', 'refreshAllSheetFormatting_'))
+        .addItem('Refresh all table layout/order', 'refreshAllSheetFormatting_'))
       .addSubMenu(diagnosticsMenu)
       .addSubMenu(automationMenu);
   }
@@ -1098,6 +1212,34 @@ function onOpen() {
     .addSubMenu(ui.createMenu('Danger zone')
       .addItem('Reset for clean run', 'resetForCleanRun_'))
     .addToUi();
+}
+
+function addFallbackBsMenuToUi_() {
+  SpreadsheetApp.getUi()
+    .createMenu('⚙️ BS')
+    .addItem('Refresh BS menu/status', 'refreshBsMenuStatus_')
+    .addItem('Refresh latest data', 'rebuildAnalytics_')
+    .addToUi();
+}
+
+function onOpen() {
+  try {
+    addBsMenuToUi_();
+  } catch (error) {
+    addFallbackBsMenuToUi_();
+  }
+}
+
+function refreshBsMenuStatus_() {
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  const diagnosticsState = refreshDiagnosticsStateCache_(spreadsheet);
+  onOpen();
+  spreadsheet.toast(
+    `BS menu refreshed: technical columns ${diagnosticsState.technicalColumns}, ` +
+      `archive sheets ${diagnosticsState.archiveSheets}, analytics sheets ${diagnosticsState.analyticsSheets}.`,
+    'BS Noise',
+    8
+  );
 }
 
 function toNumber_(value) {
@@ -1196,6 +1338,54 @@ function noiseLevelFromP2p_(value) {
   return 'PEAK';
 }
 
+function compareTextDescending_(leftValue, rightValue) {
+  const left = String(leftValue || '');
+  const right = String(rightValue || '');
+  if (left > right) {
+    return -1;
+  }
+  if (left < right) {
+    return 1;
+  }
+  return 0;
+}
+
+function sortRowsNewestFirst_(rows, dateIndex, timeIndex, partIndex, deviceIndex) {
+  rows.sort((left, right) => {
+    const dateResult = compareTextDescending_(
+      normalizeDateText_(left[dateIndex]),
+      normalizeDateText_(right[dateIndex])
+    );
+    if (dateResult !== 0) {
+      return dateResult;
+    }
+
+    if (timeIndex !== null && timeIndex !== undefined) {
+      const timeResult = compareTextDescending_(
+        normalizeTimeText_(left[timeIndex]),
+        normalizeTimeText_(right[timeIndex])
+      );
+      if (timeResult !== 0) {
+        return timeResult;
+      }
+    }
+
+    if (partIndex !== null && partIndex !== undefined) {
+      const leftPartOrder = PART_ORDER.indexOf(normalizePartText_(left[partIndex]));
+      const rightPartOrder = PART_ORDER.indexOf(normalizePartText_(right[partIndex]));
+      if (leftPartOrder !== rightPartOrder) {
+        return rightPartOrder - leftPartOrder;
+      }
+    }
+
+    if (deviceIndex !== null && deviceIndex !== undefined) {
+      return String(left[deviceIndex] || '').localeCompare(String(right[deviceIndex] || ''));
+    }
+    return 0;
+  });
+  return rows;
+}
+
 // === Raw data and archive handling ===
 
 function isRawDaySheetName_(name) {
@@ -1213,7 +1403,10 @@ function isAnalyticsSheetName_(name) {
 }
 
 function refreshRawSheetsFormatting_(spreadsheet) {
-  listRawDataSheets_(spreadsheet).forEach((sheet) => ensureHeaderFormatting_(sheet));
+  listRawDataSheets_(spreadsheet).forEach((sheet) => {
+    ensureHeaderFormatting_(sheet);
+    ensureRawSheetNewestFirst_(sheet);
+  });
 }
 
 function refreshExistingTableSheetFormatting_(sheetName, headers) {
@@ -1234,6 +1427,21 @@ function refreshExistingTableSheetFormatting_(sheetName, headers) {
   const headersMatch = headers.every((header, index) => currentHeaders[index] === header);
   if (!headersMatch) {
     headerRange.setValues([headers]);
+  }
+
+  if (lastRow > 2 && headers.indexOf('DATE') >= 0) {
+    const rows = sheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+    const timeIndex = headers.indexOf('T FROM');
+    const partIndex = headers.indexOf('PART');
+    const deviceIndex = headers.indexOf('DEV ID');
+    sortRowsNewestFirst_(
+      rows,
+      headers.indexOf('DATE'),
+      timeIndex >= 0 ? timeIndex : null,
+      partIndex >= 0 ? partIndex : null,
+      deviceIndex >= 0 ? deviceIndex : null
+    );
+    sheet.getRange(2, 1, rows.length, headers.length).setValues(rows);
   }
 
   sheet.setFrozenRows(1);
@@ -1296,7 +1504,9 @@ function refreshAllSheetFormatting_() {
     rebuildAnalyticsCharts_(true);
   }
 
-  spreadsheet.toast('All known sheet headers and columns refreshed.', 'BS Noise', 6);
+  refreshDiagnosticsStateCache_(spreadsheet);
+  onOpen();
+  spreadsheet.toast('All table formatting and newest-first row order refreshed.', 'BS Noise', 6);
 }
 
 function hideArchiveSheets_() {
@@ -1321,12 +1531,14 @@ function showArchiveSheets_() {
 
 function hideArchiveSheetsFromMenu_() {
   hideArchiveSheets_();
+  refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
   onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Archive sheets hidden.', 'BS Noise', 5);
 }
 
 function showArchiveSheetsFromMenu_() {
   showArchiveSheets_();
+  refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
   onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Archive sheets shown.', 'BS Noise', 5);
 }
@@ -1351,12 +1563,14 @@ function showAnalyticsSheets_() {
 
 function hideAnalyticsSheetsFromMenu_() {
   hideAnalyticsSheets_();
+  refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
   onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets hidden.', 'BS Noise', 5);
 }
 
 function showAnalyticsSheetsFromMenu_() {
   showAnalyticsSheets_();
+  refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
   onOpen();
   SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets shown.', 'BS Noise', 5);
 }
@@ -1435,6 +1649,7 @@ function enableUserMode_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   applyUserMode_(spreadsheet);
   setUserInterfaceMode_(USER_INTERFACE_MODE_USER);
+  refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast(
     `USER MODE ENABLED: primary sheets shown; archives, internal analytics, ` +
@@ -1448,6 +1663,7 @@ function enableTechnicalMode_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   applyTechnicalMode_(spreadsheet);
   setUserInterfaceMode_(USER_INTERFACE_MODE_TECHNICAL);
+  refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast(
     'TECHNICAL MODE ENABLED: analytics and all columns shown; archives remain hidden.',
@@ -1525,6 +1741,7 @@ function hideTechnicalColumnsCore_(spreadsheet) {
 function hideTechnicalColumns_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   const hiddenCount = hideTechnicalColumnsCore_(spreadsheet);
+  refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast(`Technical columns hidden: ${hiddenCount}. Use Show all columns to restore them.`, 'BS Noise', 6);
 }
@@ -1548,6 +1765,7 @@ function showAllColumnsCore_(spreadsheet) {
 function showAllColumns_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   showAllColumnsCore_(spreadsheet);
+  refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast('All columns shown.', 'BS Noise', 5);
 }
@@ -1634,7 +1852,10 @@ function resetForCleanRun_() {
   }
 
   const result = clearAllSheetsForCleanRun_();
-  SpreadsheetApp.getActiveSpreadsheet().toast(
+  const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
+  refreshDiagnosticsStateCache_(spreadsheet);
+  onOpen();
+  spreadsheet.toast(
     `Clean-run reset complete: ${result.activeSheetName} cleared, ${result.deletedArchives} archives deleted, analytics reset.`,
     'BS Noise',
     10
@@ -2193,6 +2414,7 @@ function runAutomaticArchiveSheetHiding_() {
   }
 
   hideArchiveSheets_();
+  refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
 }
 
 function removeAutomaticDailySummaryTriggers_() {
@@ -2528,11 +2750,7 @@ function buildDayPartSummaryRows_(records) {
     ];
   });
 
-  rows.sort((left, right) => {
-    const leftKey = `${left[0]}|${left[1]}|${PART_ORDER.indexOf(left[2])}`;
-    const rightKey = `${right[0]}|${right[1]}|${PART_ORDER.indexOf(right[2])}`;
-    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
-  });
+  sortRowsNewestFirst_(rows, 1, null, 2, 0);
 
   return rows;
 }
@@ -2566,11 +2784,7 @@ function buildTimelineSummaryRows_(records) {
       record.levelText === 'PEAK' ? 1 : 0
     ]));
 
-  rows.sort((left, right) => {
-    const leftKey = `${left[0]}|${left[1]}|${left[2]}|${PART_ORDER.indexOf(left[4])}`;
-    const rightKey = `${right[0]}|${right[1]}|${right[2]}|${PART_ORDER.indexOf(right[4])}`;
-    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
-  });
+  sortRowsNewestFirst_(rows, 1, 3, 5, 0);
 
   return rows;
 }
@@ -2620,11 +2834,7 @@ function buildLevelSummaryRows_(records) {
     ];
   });
 
-  rows.sort((left, right) => {
-    const leftKey = `${left[0]}|${left[1]}|${PART_ORDER.indexOf(left[2])}`;
-    const rightKey = `${right[0]}|${right[1]}|${PART_ORDER.indexOf(right[2])}`;
-    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
-  });
+  sortRowsNewestFirst_(rows, 1, null, 2, 0);
 
   return rows;
 }
@@ -2717,11 +2927,7 @@ function buildConclusionSummaryRows_(records) {
     ];
   });
 
-  rows.sort((left, right) => {
-    const leftKey = `${left[0]}|${left[1]}|${PART_ORDER.indexOf(left[2])}`;
-    const rightKey = `${right[0]}|${right[1]}|${PART_ORDER.indexOf(right[2])}`;
-    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
-  });
+  sortRowsNewestFirst_(rows, 1, null, 2, 0);
 
   return rows;
 }
@@ -2800,11 +3006,7 @@ function buildDailyVerdictTableRows_(records) {
     ];
   });
 
-  rows.sort((left, right) => {
-    const leftKey = `${left[0]}|${left[1]}`;
-    const rightKey = `${right[0]}|${right[1]}`;
-    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
-  });
+  sortRowsNewestFirst_(rows, 1, null, null, 0);
 
   return rows;
 }
@@ -2888,11 +3090,7 @@ function buildHealthSummaryRows_(records) {
     ];
   });
 
-  rows.sort((left, right) => {
-    const leftKey = `${left[0]}|${left[1]}`;
-    const rightKey = `${right[0]}|${right[1]}`;
-    return leftKey < rightKey ? -1 : (leftKey > rightKey ? 1 : 0);
-  });
+  sortRowsNewestFirst_(rows, 1, null, null, 0);
 
   return rows;
 }
@@ -3156,9 +3354,10 @@ function rebuildAnalyticsCore_(options) {
   const opts = options || {};
   const rawRecords = collectRawRecords_();
   const cleanData = buildCleanSummaryData_(rawRecords);
+  const cleanRowsNewestFirst = sortRowsNewestFirst_(cleanData.cleanRows.slice(), 3, 4, 6, 0);
   const tableWriteOptions = { applyFormatting: true };
 
-  writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, cleanData.cleanRows, tableWriteOptions);
+  writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, cleanRowsNewestFirst, tableWriteOptions);
   writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, buildTimelineSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, buildDayPartSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(LEVEL_SUMMARY_SHEET_NAME, LEVEL_SUMMARY_HEADERS, buildLevelSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
@@ -3210,8 +3409,7 @@ function doPostUnlocked_(e) {
       .setMimeType(ContentService.MimeType.JSON);
   }
 
-  const targetRow = Math.max(sheet.getLastRow(), 1) + 1;
-  sheet.getRange(targetRow, 1, 1, HEADERS.length).setValues([[
+  const rowValues = [
     valueOrBlank(data.device_id),
     valueOrBlank(data.fw_version),
     valueOrBlank(data.build),
@@ -3248,9 +3446,8 @@ function doPostUnlocked_(e) {
     valueOrBlank(data.boot_seq),
     valueOrBlank(data.reset_reason),
     valueOrBlank(data.acoustic_rev)
-  ]]);
-  ensureHeaderRowValues_(sheet);
-  applyLogRowFormatting_(sheet, targetRow, 1);
+  ];
+  prependLogRow_(sheet, rowValues);
 
   return ContentService
     .createTextOutput(JSON.stringify({ ok: true }))
