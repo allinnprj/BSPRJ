@@ -604,7 +604,7 @@ function ensureHeaderFormatting_(sheet) {
   ensureHeaderRowValues_(sheet);
 
   sheet.setFrozenRows(1);
-  sheet.setFrozenColumns(1);
+  sheet.setFrozenColumns(0);
   sheet.setHiddenGridlines(false);
   const fullHeaderRange = sheet.getRange(1, 1, 1, HEADERS.length);
   fullHeaderRange

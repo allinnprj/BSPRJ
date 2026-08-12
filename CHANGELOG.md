@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets raw-table header and scrolling refinement - 2026-08-12
+
+1. Kept the alternating odd/even row shades in `log` and dated archives while preserving each column's semantic color family.
+2. Kept row `1` frozen and visually distinct with the matching darker header colors and bold text, while removing the frozen first column so horizontal scrolling behaves normally.
+3. Left all analytics-table styling, newest-first order, menu behavior, calculations, Telegram reports, and triggers unchanged.
+4. Extended the raw-table regression to verify one frozen header row, zero frozen columns, alternating odd/even body shades, stable parity for partial row formatting, and distinct header/body palettes.
+5. Firmware was not changed; version `0.1.61-EXP` build `115` remains current. The updated `Code.gs` still requires saving in Apps Script and one `Refresh all table layout/order` run for existing raw sheets.
+
 ## Google Sheets fast menu, unified log style, and newest-first tables - 2026-08-12
 
 1. Made `onOpen()` build the stable `⚙️ BS` menu from lightweight stored state instead of scanning every sheet and technical column before `addToUi()`, and added a minimal fallback menu if state loading fails.

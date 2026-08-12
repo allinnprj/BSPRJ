@@ -23,6 +23,11 @@ const hooks = `
   this.__sortRecords = sortRecords_;
   this.__prependLogRow = prependLogRow_;
   this.__getNewestDataDate = getNewestDataDate_;
+  this.__buildDataBackgrounds = buildDataBackgrounds_;
+  this.__buildDataBackgroundsForSheetRows = buildDataBackgroundsForSheetRows_;
+  this.__headerColors = HEADER_COLORS;
+  this.__dataColorsOdd = DATA_COLORS_ODD;
+  this.__dataColorsEven = DATA_COLORS_EVEN;
 `;
 vm.runInNewContext(`${source}\n${hooks}`, sandbox, { filename: codePath });
 
@@ -183,7 +188,25 @@ function getFunctionSource(functionName) {
 });
 assert.match(getFunctionSource('rebuildAnalyticsCore_'), /cleanRowsNewestFirst/);
 assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFontColor\('#274e13'\)/);
-assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFrozenColumns\(1\)/);
+assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFrozenRows\(1\)/);
+assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFrozenColumns\(0\)/);
+const rawBodyBackgrounds = JSON.parse(JSON.stringify(sandbox.__buildDataBackgrounds(3)));
+assert.notDeepStrictEqual(rawBodyBackgrounds[0], rawBodyBackgrounds[1]);
+assert.deepStrictEqual(rawBodyBackgrounds[0], rawBodyBackgrounds[2]);
+const appendedBodyBackgrounds = JSON.parse(JSON.stringify(sandbox.__buildDataBackgroundsForSheetRows(7, 2)));
+assert.notDeepStrictEqual(appendedBodyBackgrounds[0], appendedBodyBackgrounds[1]);
+assert.deepStrictEqual(appendedBodyBackgrounds[0], rawBodyBackgrounds[1]);
+assert.deepStrictEqual(appendedBodyBackgrounds[1], rawBodyBackgrounds[0]);
+assert.notDeepStrictEqual(
+  JSON.parse(JSON.stringify(sandbox.__headerColors)),
+  JSON.parse(JSON.stringify(sandbox.__dataColorsOdd))
+);
+assert.notDeepStrictEqual(
+  JSON.parse(JSON.stringify(sandbox.__headerColors)),
+  JSON.parse(JSON.stringify(sandbox.__dataColorsEven))
+);
+assert.match(getFunctionSource('buildDataBackgrounds_'), /%\s*2/);
+assert.match(getFunctionSource('buildDataBackgroundsForSheetRows_'), /%\s*2/);
 assert.match(chartsSource, /const verdictDisplayRows = verdictChartRows\.slice\(\)\.reverse\(\)/);
 assert.match(chartsSource, /setValues\(verdictDisplayRows\)/);
 assert.match(chartsSource, /setValues\(verdictChartRows\)/);
