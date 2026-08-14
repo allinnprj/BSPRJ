@@ -69,13 +69,13 @@
   `- Относительная статистика шума и классификация: 60%`
   `- Реальная dB-калибровка: 0%`
   `- INA3221 и солнечная зарядка: 100%`
-  `- Связь между контроллерами: 35%`
+  `- Связь между контроллерами: 40%`
   `- GPS и контекст места/времени: 65%`
   `- GSM/мобильная связь: 0%`
   `- Общее питание и автономная работа: 25%`
   `- Основная прошивка, логи, OTA и диагностика: 75%`
   `- Постоянная сборка и финальная полевая проверка: 10%`
-  `- Общая готовность проекта: 50%`
+  `- Общая готовность проекта: 51%`
 - Keep subsystem names flexible as the architecture becomes clearer. Split or rename a subsystem when that makes completed work and remaining work easier to understand, for example `Microphone and mechanics` separately from `Sound statistics` and `dB calibration`.
 - The overall percentage refers to the complete target system, including sound measurement, dB calibration, solar-controller integration, GPS, GSM, autonomous power, final assembly, and end-to-end field validation.
 - Treat percentages as expert estimates based on validated evidence. Do not use a simple arithmetic average when subsystems differ in importance.

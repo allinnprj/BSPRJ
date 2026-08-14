@@ -83,5 +83,6 @@ Reliability rules:
 
 - Heartbeat and bidirectional wiring: passed physically.
 - Planned sleep `OK -> SLP -> WAIT -> OK`: passed physically on WROOM build 118 and C3 build 184.
-- Telemetry `TEL -> ACK`, increasing sequence, real INA3221 values, and no duplicates during a normal link: pending manual upload and device proof for WROOM build 119 and C3 build 185.
+- Telemetry `TEL -> ACK`, increasing sequence, and real INA3221 values: passed physically on WROOM build 119 and C3 build 185 (`q=5` through `q=11`, INA `OK`, consistent power/state fields).
+- Forced ACK-loss retry/deduplication injection: deferred; source/build validation and nominal ACK transport are accepted for the next stage.
 - Cloud forwarding, commands, command ACK, authorization, and safe command failure: later stages.

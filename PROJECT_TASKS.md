@@ -84,7 +84,7 @@
 51. [x] Complete and validate the separate `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller.
 52. [x] Validate charge, discharge, voltage, current, and sleep behavior on the separate controller.
 53. [x] Select the accepted local communication protocol between the main BSPRJ ESP32 and the ESP32-C3 SuperMini: short protected `115200 8N1` UART with strict ASCII frames, documented in `CONTROLLER_UART_PROTOCOL.md`.
-54. [ ] Implement controller status, power telemetry, heartbeat, and safe communication-failure behavior.
+54. [x] Implement controller status, real INA3221 power telemetry, heartbeat, planned-sleep state, ACK/retry/deduplication, and safe timeout/drop behavior; nominal `TEL -> ACK` is physically validated on builds `119/185`.
 55. [ ] Keep the BSPRJ ESP32 as the primary noise, logging, and network controller; use it as the network gateway for the ESP32-C3 if integration testing confirms that path.
 56. [ ] Implement automatic `LOW_BAT` behavior from measured power data.
 57. [ ] Validate the main controller operating from the battery/converter path managed and monitored by the ESP32-C3 solar controller.

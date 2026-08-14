@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## C3 power telemetry physical validation - 2026-08-15
+
+1. The user manually uploaded WROOM `0.1.65-EXP` build `119` and C3 `1.2.0-c3` build `185`; both Telegram startup cards confirmed the intended builds and normal startup.
+2. WROOM physically accepted increasing real telemetry from C3, including `q=5` and later `q=11`, and transmitted ACK for each accepted frame. INA3221 stayed `OK`; representative values were Solar `992 mV / 0 mA`, Battery `12304 mV / 100..101 mA`, Load `7144 mV / 160 mA`, approximate SOC `60%`, Charge `OFF`, and mode `CLASSIC`.
+3. The values were stable and internally plausible for the observed night/off-charge state. No persistent duplicate or UART-offline condition was reported. The nominal diagnostic `TEL -> ACK` acceptance gate passes; forced ACK-loss injection is intentionally deferred because retry/deduplication is already source- and build-validated and is not required before cloud-forwarding work.
+
 ## C3 power telemetry TEL/ACK transport - 2026-08-15
 
 1. Added WROOM build `119` (`0.1.65-EXP`) strict parsing for version-1 C3 power telemetry: real Solar/Battery/Load millivolts and milliamps, approximate battery SOC, charge-output state, and Classic/Smart Auto mode.
