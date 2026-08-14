@@ -86,3 +86,36 @@ Reliability rules:
 - Telemetry `TEL -> ACK`, increasing sequence, and real INA3221 values: passed physically on WROOM build 119 and C3 build 185 (`q=5` through `q=11`, INA `OK`, consistent power/state fields).
 - Forced ACK-loss retry/deduplication injection: deferred; source/build validation and nominal ACK transport are accepted for the next stage.
 - Cloud forwarding, commands, command ACK, authorization, and safe command failure: later stages.
+
+## WROOM MQTT Gateway Stage
+
+WROOM build 120 publishes each newly accepted UART telemetry frame to the existing WQTT broker as one retained JSON message:
+
+```text
+bs/devices/<DEVICE_ID>/controller/c3/telemetry
+```
+
+Payload contract:
+
+```json
+{
+  "session": 123,
+  "sequence": 11,
+  "ina": "ok",
+  "solar": {"voltage_v": 0.992, "current_a": 0.000},
+  "battery": {"voltage_v": 12.304, "current_a": 0.100, "soc_pct": 60},
+  "load": {"voltage_v": 7.144, "current_a": 0.160},
+  "charge": "off",
+  "mode": "classic"
+}
+```
+
+Gateway rules:
+
+- The MQTT message is retained.
+- Successful cloud deduplication key is `(session, sequence)`.
+- A successfully published frame is never intentionally republished during the same WROOM runtime.
+- A failed MQTT publish is retried at most once every 5 seconds until a newer UART snapshot replaces it or publication succeeds.
+- Existing sound MQTT topics and Datacake fields are unchanged.
+- Datacake, Telegram, and Google Sheets forwarding are not part of build 120.
+- Physical acceptance requires `[MQTT] C3 telemetry -> q=<sequence> OK` for an already accepted `TEL ACK` sequence.

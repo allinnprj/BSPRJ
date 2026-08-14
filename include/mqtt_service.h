@@ -3,6 +3,7 @@
 #include <Arduino.h>
 
 #include "audio_sampler.h"
+#include "controller_link_service.h"
 
 struct MqttRuntimeState {
   AudioSnapshot snapshot;
@@ -30,6 +31,7 @@ class MqttService {
 
   void begin();
   void update(bool wifiConnected, const MqttRuntimeState &state);
+  bool publishControllerTelemetry(const ControllerTelemetrySnapshot &telemetry);
 
   bool isConfigured() const;
   bool isConnected() const;
@@ -82,4 +84,9 @@ class MqttService {
   String wqttBaseTopic_;
   String publishTopicPrefix_;
   String lastDatacakePublishedPeriod_;
+  uint32_t lastControllerPublishedSession_ = 0;
+  uint32_t lastControllerPublishedSequence_ = 0;
+  uint32_t lastControllerPublishAttemptSession_ = 0;
+  uint32_t lastControllerPublishAttemptSequence_ = 0;
+  unsigned long lastControllerPublishAttemptAt_ = 0;
 };

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## WROOM MQTT gateway for C3 telemetry - 2026-08-15
+
+1. Added WROOM build `120` (`0.1.66-EXP`) as the first cloud-gateway step. Every newly accepted C3 UART snapshot is serialized into one compact retained JSON message and published through the existing WQTT connection at `bs/devices/<DEVICE_ID>/controller/c3/telemetry`.
+2. The payload preserves UART session/sequence, INA status, Solar/Battery/Load voltage and signed current, approximate SOC, Charge state, and Classic/Smart Auto mode. The gateway publishes a `(session, sequence)` only once after success; a temporary MQTT failure is retried no faster than every 5 seconds.
+3. C3 firmware, UART framing, INA3221, Deep Sleep, GPS, charge logic, existing WROOM sound MQTT topics, Datacake, Telegram, Google Sheets, and local logging are unchanged. C3 stays on device-confirmed build `185` and does not require another upload for this step.
+4. Validation: `git diff --check` and `pio run -e esp32dev` -> SUCCESS, RAM `65,252 / 327,680` (`19.9%`), Flash `1,330,687 / 1,572,864` (`84.6%`), linked OTA-slot reserve `242,177` bytes, firmware `1,331,088` bytes, SHA-256 `1260A293E4BFE502D5B717382CAD53A9D36EE9CD2C195D3F14C403DD2B640090`. Manual WROOM upload and physical MQTT publish proof remain.
+
 ## C3 power telemetry physical validation - 2026-08-15
 
 1. The user manually uploaded WROOM `0.1.65-EXP` build `119` and C3 `1.2.0-c3` build `185`; both Telegram startup cards confirmed the intended builds and normal startup.

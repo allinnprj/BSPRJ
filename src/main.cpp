@@ -628,6 +628,9 @@ void updateMqttState(const AudioSnapshot &snapshot) {
   state.nightPercent = dayPartAveragePercent(dayPartStats[dayPartIndex(DayPart::Night)]);
 
   mqttService.update(wifiService.isConnected(), state);
+  if (controllerLinkService.hasTelemetry()) {
+    mqttService.publishControllerTelemetry(controllerLinkService.telemetry());
+  }
 }
 
 void scanI2cBus(TwoWire *wire) {

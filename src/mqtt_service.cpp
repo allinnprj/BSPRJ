@@ -16,6 +16,7 @@ constexpr unsigned long kWqttPeriodPublishIntervalMs = 300000UL;
 constexpr unsigned long kFastPublishIntervalMs = 60UL * 60UL * 1000UL;
 constexpr unsigned long kSlowPublishIntervalMs = 6UL * 60UL * 60UL * 1000UL;
 constexpr unsigned long kTextPublishIntervalMs = 60UL * 60UL * 1000UL;
+constexpr unsigned long kControllerPublishRetryIntervalMs = 5000UL;
 constexpr char kWqttTopicRoot[] = "bs/devices";
 constexpr char kDatacakeApiBaseUrl[] = "https://api.datacake.co/v1/devices/";
 constexpr char kFieldNowPct[] = "NOW_PCT";
@@ -133,6 +134,69 @@ void MqttService::update(bool wifiConnected, const MqttRuntimeState &state) {
       lastDatacakeTextPublishAt_ = nowMs;
     }
   }
+}
+
+bool MqttService::publishControllerTelemetry(
+    const ControllerTelemetrySnapshot &telemetry) {
+  if (!wqttConfigured_ || !wqttClient.connected() || telemetry.session == 0 ||
+      telemetry.sequence == 0) {
+    return false;
+  }
+  if (telemetry.session == lastControllerPublishedSession_ &&
+      telemetry.sequence == lastControllerPublishedSequence_) {
+    return true;
+  }
+
+  const unsigned long nowMs = millis();
+  const bool samePendingFrame =
+      telemetry.session == lastControllerPublishAttemptSession_ &&
+      telemetry.sequence == lastControllerPublishAttemptSequence_;
+  if (samePendingFrame && lastControllerPublishAttemptAt_ != 0 &&
+      nowMs - lastControllerPublishAttemptAt_ < kControllerPublishRetryIntervalMs) {
+    return false;
+  }
+  lastControllerPublishAttemptSession_ = telemetry.session;
+  lastControllerPublishAttemptSequence_ = telemetry.sequence;
+  lastControllerPublishAttemptAt_ = nowMs;
+
+  String payload;
+  payload.reserve(320);
+  payload += F("{\"session\":");
+  payload += telemetry.session;
+  payload += F(",\"sequence\":");
+  payload += telemetry.sequence;
+  payload += F(",\"ina\":\"");
+  payload += telemetry.valid ? F("ok") : F("error");
+  payload += F("\",\"solar\":{\"voltage_v\":");
+  payload += String(telemetry.solarMillivolts / 1000.0F, 3);
+  payload += F(",\"current_a\":");
+  payload += String(telemetry.solarMilliamps / 1000.0F, 3);
+  payload += F("},\"battery\":{\"voltage_v\":");
+  payload += String(telemetry.batteryMillivolts / 1000.0F, 3);
+  payload += F(",\"current_a\":");
+  payload += String(telemetry.batteryMilliamps / 1000.0F, 3);
+  payload += F(",\"soc_pct\":");
+  payload += static_cast<unsigned int>(telemetry.batterySocPercent);
+  payload += F("},\"load\":{\"voltage_v\":");
+  payload += String(telemetry.loadMillivolts / 1000.0F, 3);
+  payload += F(",\"current_a\":");
+  payload += String(telemetry.loadMilliamps / 1000.0F, 3);
+  payload += F("},\"charge\":\"");
+  payload += telemetry.chargeOutputOn ? F("on") : F("off");
+  payload += F("\",\"mode\":\"");
+  payload += telemetry.solarControlMode == 1 ? F("smart_auto") : F("classic");
+  payload += F("\"}");
+
+  const bool published =
+      publishWqttText("controller/c3/telemetry", payload, true);
+  Serial.print(F("[MQTT] C3 telemetry -> q="));
+  Serial.print(telemetry.sequence);
+  Serial.println(published ? F(" OK") : F(" FAIL"));
+  if (published) {
+    lastControllerPublishedSession_ = telemetry.session;
+    lastControllerPublishedSequence_ = telemetry.sequence;
+  }
+  return published;
 }
 
 bool MqttService::isConfigured() const {
