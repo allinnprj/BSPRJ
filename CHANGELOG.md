@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## C3 power telemetry TEL/ACK transport - 2026-08-15
+
+1. Added WROOM build `119` (`0.1.65-EXP`) strict parsing for version-1 C3 power telemetry: real Solar/Battery/Load millivolts and milliamps, approximate battery SOC, charge-output state, and Classic/Smart Auto mode.
+2. Every C3 frame uses a random boot session plus a monotonically increasing sequence. WROOM sends `ACK <session> <sequence>`, re-acknowledges exact duplicates without storing them twice, rejects malformed/out-of-range frames, logs accepted measurements, and exposes the latest sequence/age in `[STAT]`.
+3. Added C3 build `185`, which samples the existing INA3221 data approximately every 30 seconds while awake, keeps only one unacknowledged frame, retries it after a 2-second ACK timeout up to three times, and drops it safely before a later new sample. Existing PING/PONG, expected sleep, INA3221 decisions, GPS, charge, cloud, and Deep-Sleep logic remain unchanged.
+4. Added `CONTROLLER_UART_PROTOCOL.md` as the canonical strict frame, unit, retry, deduplication, and acceptance contract. This stage is diagnostic only: WROOM does not yet forward C3 telemetry to MQTT, Telegram, or Google Sheets and does not execute C3 commands.
+5. Validation: `git diff --check` and both builds passed. WROOM `pio run -e esp32dev` -> SUCCESS, RAM `65,228 / 327,680` (`19.9%`), Flash `1,328,947 / 1,572,864` (`84.5%`), linked OTA-slot reserve `243,917` bytes, firmware `1,329,344` bytes, SHA-256 `BE418D07567619E60E0F6562F62B5A62C5F2EBE7C5B8BDA07450CA868A848308`. C3 `pio run -e esp32c3_supermini_ota` -> SUCCESS, RAM `43,272 / 327,680` (`13.2%`), Flash `1,330,056 / 2,031,616` (`65.5%`), firmware `1,375,056` bytes, SHA-256 `9AA577CA327BD70F2E2D5D1589FEC0D465B80041ED72CA17A484B76E050DE5F5`. Upload and physical `TEL -> ACK` validation remain manual.
+
+## Expected-sleep UART physical validation - 2026-08-15
+
+1. The user manually uploaded WROOM `0.1.64-EXP` build `118` and C3 `1.2.0-c3` build `184`; both Telegram startup cards confirmed the intended firmware identities and normal startup.
+2. The physical link received `[UART] SLEEP -> C3 build 184 for 600 s`, then every 30-second status line reported `uart=SLP/b184` with a consistent countdown from `580 s` to `9 s`; no false `UART OFFLINE` occurred during the planned sleep.
+3. At the declared wake boundary WROOM reported `WAKE WAIT`, then automatically accepted C3 build `184` with `rtt=48 ms` and returned to `uart=OK/b184`. The complete `OK -> SLP -> WAIT -> OK` acceptance gate passed without restarting WROOM or touching the wiring.
+
 ## Expected C3 Deep-Sleep UART state - 2026-08-15
 
 1. The user-confirmed build `117/183` test completed the planned lifecycle `uart=OK -> uart=OFF -> uart=OK`: C3 entered a requested 10-minute Deep Sleep and automatically restored the link after wake with `rtt=7002 ms`.

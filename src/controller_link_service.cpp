@@ -21,6 +21,44 @@ bool parseUnsigned(const char*& cursor, uint32_t& value) {
   return true;
 }
 
+bool parseSigned(const char*& cursor, int32_t& value) {
+  const bool negative = *cursor == '-';
+  if (negative) {
+    ++cursor;
+  }
+  uint32_t magnitude = 0;
+  if (!parseUnsigned(cursor, magnitude)) {
+    return false;
+  }
+  if ((!negative && magnitude > static_cast<uint32_t>(INT32_MAX)) ||
+      (negative && magnitude > static_cast<uint32_t>(INT32_MAX) + 1U)) {
+    return false;
+  }
+  if (negative && magnitude == static_cast<uint32_t>(INT32_MAX) + 1U) {
+    value = INT32_MIN;
+  } else {
+    value = negative ? -static_cast<int32_t>(magnitude)
+                     : static_cast<int32_t>(magnitude);
+  }
+  return true;
+}
+
+bool parseNextUnsigned(const char*& cursor, uint32_t& value) {
+  if (*cursor != ' ') {
+    return false;
+  }
+  ++cursor;
+  return parseUnsigned(cursor, value);
+}
+
+bool parseNextSigned(const char*& cursor, int32_t& value) {
+  if (*cursor != ' ') {
+    return false;
+  }
+  ++cursor;
+  return parseSigned(cursor, value);
+}
+
 }  // namespace
 
 void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin) {
@@ -105,6 +143,18 @@ uint32_t ControllerLinkService::sleepRemainingSeconds(uint32_t nowMs) const {
   return (sleepUntilMs_ - nowMs + 999U) / 1000U;
 }
 
+bool ControllerLinkService::hasTelemetry() const {
+  return hasTelemetry_;
+}
+
+const ControllerTelemetrySnapshot& ControllerLinkService::telemetry() const {
+  return telemetry_;
+}
+
+uint32_t ControllerLinkService::telemetryAgeSeconds(uint32_t nowMs) const {
+  return hasTelemetry_ ? (nowMs - telemetry_.receivedAtMs) / 1000U : 0;
+}
+
 void ControllerLinkService::sendPing(uint32_t nowMs) {
   pendingSequence_ = nextSequence_++;
   pendingSinceMs_ = nowMs;
@@ -113,6 +163,13 @@ void ControllerLinkService::sendPing(uint32_t nowMs) {
   pingSent_ = true;
   serial_->print(F("PING "));
   serial_->println(pendingSequence_);
+}
+
+void ControllerLinkService::sendTelemetryAck(uint32_t session, uint32_t sequence) {
+  serial_->print(F("ACK "));
+  serial_->print(session);
+  serial_->print(' ');
+  serial_->println(sequence);
 }
 
 void ControllerLinkService::processInput(uint32_t nowMs) {
@@ -146,6 +203,79 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
   const char* cursor = rxLine_;
   uint32_t sequence = 0;
   uint32_t build = 0;
+  if (strncmp(cursor, "TEL ", 4) == 0) {
+    cursor += 4;
+    ControllerTelemetrySnapshot incoming = {};
+    uint32_t valid = 0;
+    uint32_t soc = 0;
+    uint32_t charge = 0;
+    uint32_t mode = 0;
+    if (!parseUnsigned(cursor, incoming.session) ||
+        !parseNextUnsigned(cursor, incoming.sequence) ||
+        !parseNextUnsigned(cursor, valid) ||
+        !parseNextSigned(cursor, incoming.solarMillivolts) ||
+        !parseNextSigned(cursor, incoming.solarMilliamps) ||
+        !parseNextSigned(cursor, incoming.batteryMillivolts) ||
+        !parseNextSigned(cursor, incoming.batteryMilliamps) ||
+        !parseNextSigned(cursor, incoming.loadMillivolts) ||
+        !parseNextSigned(cursor, incoming.loadMilliamps) ||
+        !parseNextUnsigned(cursor, soc) ||
+        !parseNextUnsigned(cursor, charge) ||
+        !parseNextUnsigned(cursor, mode) || *cursor != '\0' ||
+        incoming.session == 0 || incoming.sequence == 0 || valid > 1 ||
+        soc > 100 || charge > 1 || mode > 2 ||
+        incoming.solarMillivolts < -5000 || incoming.solarMillivolts > 100000 ||
+        incoming.batteryMillivolts < -5000 || incoming.batteryMillivolts > 100000 ||
+        incoming.loadMillivolts < -5000 || incoming.loadMillivolts > 100000 ||
+        incoming.solarMilliamps < -100000 || incoming.solarMilliamps > 100000 ||
+        incoming.batteryMilliamps < -100000 || incoming.batteryMilliamps > 100000 ||
+        incoming.loadMilliamps < -100000 || incoming.loadMilliamps > 100000) {
+      return;
+    }
+
+    sendTelemetryAck(incoming.session, incoming.sequence);
+    if (hasTelemetry_ && telemetry_.session == incoming.session &&
+        telemetry_.sequence == incoming.sequence) {
+      ++telemetryDuplicateCount_;
+      Serial.print(F("[UART] TEL DUP -> q="));
+      Serial.print(incoming.sequence);
+      Serial.println(F(" re-acked"));
+      return;
+    }
+
+    incoming.valid = valid != 0;
+    incoming.batterySocPercent = static_cast<uint8_t>(soc);
+    incoming.chargeOutputOn = charge != 0;
+    incoming.solarControlMode = static_cast<uint8_t>(mode);
+    incoming.receivedAtMs = nowMs;
+    telemetry_ = incoming;
+    hasTelemetry_ = true;
+    ++telemetryAcceptedCount_;
+    Serial.print(F("[UART] TEL ACK -> q="));
+    Serial.print(telemetry_.sequence);
+    Serial.print(F(" ina="));
+    Serial.print(telemetry_.valid ? F("OK") : F("ERR"));
+    Serial.print(F(" solar="));
+    Serial.print(telemetry_.solarMillivolts);
+    Serial.print(F("mV/"));
+    Serial.print(telemetry_.solarMilliamps);
+    Serial.print(F("mA battery="));
+    Serial.print(telemetry_.batteryMillivolts);
+    Serial.print(F("mV/"));
+    Serial.print(telemetry_.batteryMilliamps);
+    Serial.print(F("mA load="));
+    Serial.print(telemetry_.loadMillivolts);
+    Serial.print(F("mV/"));
+    Serial.print(telemetry_.loadMilliamps);
+    Serial.print(F("mA soc="));
+    Serial.print(telemetry_.batterySocPercent);
+    Serial.print(F("% charge="));
+    Serial.print(telemetry_.chargeOutputOn ? F("ON") : F("OFF"));
+    Serial.print(F(" mode="));
+    Serial.println(telemetry_.solarControlMode == 1 ? F("AUTO") : F("CLASSIC"));
+    return;
+  }
+
   if (strncmp(cursor, "SLEEP ", 6) == 0) {
     cursor += 6;
     uint32_t sleepSeconds = 0;

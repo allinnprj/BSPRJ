@@ -1000,6 +1000,13 @@ void loop() {
       Serial.print(controllerLinkService.sleepRemainingSeconds(nowMs));
       Serial.print(F("s"));
     }
+    if (controllerLinkService.hasTelemetry()) {
+      Serial.print(F(" tel=q"));
+      Serial.print(controllerLinkService.telemetry().sequence);
+      Serial.print(F("/"));
+      Serial.print(controllerLinkService.telemetryAgeSeconds(nowMs));
+      Serial.print(F("s"));
+    }
     Serial.println();
   }
 
