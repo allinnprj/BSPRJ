@@ -1,34 +1,34 @@
 ; BSPRJ <-> INA3221-C3 PRELIMINARY UART NETLIST
-; Status: PROVISIONAL_AUDIT_ONLY
+; Status: PIN_AUDIT_COMPLETE_WAITING_FOR_WIRING_STAGE
 ; Safety: DO NOT CONNECT WIRES FROM THIS FILE YET.
 ; Purpose: reserve and verify a low-power 3.3 V UART link before physical work.
 ; Final pin selection requires the exact board/module markings and exposed-pin check.
 
 [COMPONENTS]
-MCU_MAIN = ESP32_WROOM_32UE_CARRIER_EXACT_VARIANT_TBD
-MCU_C3   = ESP32_C3_SUPERMINI_EXACT_BOARD_TBD
-R_C3_TX  = SERIES_RESISTOR_PROVISIONAL_2K2
-R_MAIN_TX = SERIES_RESISTOR_PROVISIONAL_2K2
+MCU_MAIN = ESP32_WROOM_32U_EXTERNAL_ANTENNA_DEV_BOARD_USER_REFERENCE
+MCU_C3   = ESP32_C3_SUPERMINI_USB_C_USER_REFERENCE
+R_C3_TX  = SERIES_RESISTOR_2K2
+R_MAIN_TX = SERIES_RESISTOR_2K2
 
 [LOGIC_LEVEL]
 UART = 3V3_ONLY
 
-; ESP32-C3 native UART0 candidates. Official SoC mapping:
+; ESP32-C3 native UART0 pins. Official SoC mapping:
 ; GPIO20 = U0RXD, GPIO21 = U0TXD.
-; The actual SuperMini board labels and physical access still require confirmation.
-[NET_C3_TX_SOURCE_PROVISIONAL]
+; The supplied SuperMini images confirm both labels and physical access.
+[NET_C3_TX_SOURCE]
 MCU_C3.GPIO21_U0TXD
 R_C3_TX.1
 
-[NET_C3_TX_TO_MAIN_RX_PROVISIONAL]
+[NET_C3_TX_TO_MAIN_RX]
 R_C3_TX.2
-MCU_MAIN.GPIO16_U2RXD_CANDIDATE
+MCU_MAIN.GPIO16_U2RXD
 
-[NET_MAIN_TX_SOURCE_PROVISIONAL]
-MCU_MAIN.GPIO17_U2TXD_CANDIDATE
+[NET_MAIN_TX_SOURCE]
+MCU_MAIN.GPIO17_U2TXD
 R_MAIN_TX.1
 
-[NET_MAIN_TX_TO_C3_RX_PROVISIONAL]
+[NET_MAIN_TX_TO_C3_RX]
 R_MAIN_TX.2
 MCU_C3.GPIO20_U0RXD
 
@@ -42,9 +42,9 @@ MCU_MAIN.5V  --X-- MCU_C3.5V
 MCU_MAIN.EN  --X-- MCU_C3.EN
 MCU_MAIN.ANY --X-- MCU_C3.GPIO9_BOOT
 
-[PATH_SUMMARY_PROVISIONAL]
-C3_TO_MAIN = MCU_C3.GPIO21_U0TXD -> R_C3_TX.1 -> R_C3_TX.2 -> MCU_MAIN.GPIO16_U2RXD_CANDIDATE
-MAIN_TO_C3 = MCU_MAIN.GPIO17_U2TXD_CANDIDATE -> R_MAIN_TX.1 -> R_MAIN_TX.2 -> MCU_C3.GPIO20_U0RXD
+[PATH_SUMMARY]
+C3_TO_MAIN = MCU_C3.GPIO21_U0TXD -> R_C3_TX.1 -> R_C3_TX.2 -> MCU_MAIN.GPIO16_U2RXD
+MAIN_TO_C3 = MCU_MAIN.GPIO17_U2TXD -> R_MAIN_TX.1 -> R_MAIN_TX.2 -> MCU_C3.GPIO20_U0RXD
 GROUND = MCU_C3.GND -> MCU_MAIN.GND
 
 [EXISTING_MAIN_PIN_CONTRACT]
@@ -68,16 +68,16 @@ GPIO18 = USB_D_MINUS_DO_NOT_USE
 GPIO19 = USB_D_PLUS_DO_NOT_USE
 
 [MAIN_GPIO16_GPIO17_ACCEPTANCE_GATE]
-1 = Read the complete metal-can marking and carrier-board name/revision.
-2 = Confirm the module is not a QSPI-PSRAM variant that occupies GPIO16.
-3 = Confirm carrier pins labelled GPIO16/RX2 and GPIO17/TX2 are physically exposed.
-4 = Confirm no installed wire, peripheral, or board circuit uses either pin.
-5 = If any check fails, do not use GPIO16/GPIO17.
+1 = PASS: user reference identifies an ESP32-WROOM-32U external-antenna board.
+2 = PASS: the supplied 32U reference is not a QSPI-PSRAM WROOM-32E/32UE variant.
+3 = PASS: carrier pins GPIO16 and GPIO17 are visibly exposed and labelled.
+4 = PASS_SOURCE_AUDIT: current BSPRJ firmware and documented wiring use neither pin.
+5 = PHYSICAL_RECHECK_REQUIRED: read GPIO labels once more on the actual board before soldering.
 
 [C3_GPIO20_GPIO21_ACCEPTANCE_GATE]
-1 = Confirm the exact SuperMini board exposes pins labelled GPIO20/RX and GPIO21/TX.
-2 = Confirm USB upload uses native USB GPIO18/GPIO19 on this physical board.
-3 = Confirm USB upload and USB recovery still work before UART firmware is added.
+1 = PASS: supplied SuperMini images visibly expose GPIO20 and GPIO21.
+2 = PASS_DESIGN: USB-C uses the ESP32-C3 native USB GPIO18/GPIO19 path.
+3 = PHYSICAL_TEST_PENDING: confirm USB upload/recovery again before UART firmware is added.
 4 = WROOM must transmit nothing while C3 resets until the application UART handshake.
 5 = WROOM must discard C3 ROM boot text until a valid framed protocol message arrives.
 
@@ -86,29 +86,33 @@ RX_CANDIDATE = GPIO18
 TX_CANDIDATE = GPIO19
 RULE = Use only after physical-board and future-SIM800 pin audit.
 
-[PROVISIONAL_PHYSICAL_RULES]
+[PHYSICAL_RULES_FOR_NEXT_STAGE]
 1 = Disconnect Battery, Solar, both USB cables, and every bench supply first.
 2 = Never move or connect UART wiring while either controller is powered.
-3 = Keep both UART wires short, target 20 cm or less where practical.
+3 = Keep both UART wires at the user-confirmed planned maximum of 7-8 cm.
 4 = Route UART away from I2S, GPS, DC-DC switching nodes, and future SIM800 wiring.
-5 = Use one series resistor in each transmitter line; initial candidate is 2.2 kOhm.
+5 = Use one 2.2 kOhm series resistor in each transmitter line.
 6 = Series resistors reduce contention/back-power current but are not galvanic isolation.
 7 = Do not connect controller power rails; only signal lines and common GND are shared.
 
 [CONFIRMATION_REQUIRED_FROM_USER]
-MAIN_MODULE_FULL_MARKING = TBD
-MAIN_CARRIER_BOARD_MARKING = TBD
-MAIN_GPIO16_LABEL_VISIBLE = TBD
-MAIN_GPIO17_LABEL_VISIBLE = TBD
-C3_BOARD_MARKING = TBD
-C3_GPIO20_LABEL_VISIBLE = TBD
-C3_GPIO21_LABEL_VISIBLE = TBD
-PLANNED_UART_WIRE_LENGTH_CM = TBD
-AVAILABLE_SERIES_RESISTOR_VALUE = TBD
+MAIN_MODULE_FULL_MARKING = ESP32-WROOM-32U_IN_USER_REFERENCE_IMAGE
+MAIN_CARRIER_BOARD_MARKING = EXTERNAL_ANTENNA_DEV_BOARD_IN_USER_REFERENCE_IMAGE
+MAIN_GPIO16_LABEL_VISIBLE = YES
+MAIN_GPIO17_LABEL_VISIBLE = YES
+C3_BOARD_MARKING = ESP32-C3_SUPERMINI_IN_USER_REFERENCE_IMAGES
+C3_GPIO20_LABEL_VISIBLE = YES
+C3_GPIO21_LABEL_VISIBLE = YES
+PLANNED_UART_WIRE_LENGTH_CM = MAX_7_TO_8
+AVAILABLE_SERIES_RESISTOR_VALUE = ANY_REQUIRED_VALUE_AVAILABLE
+SELECTED_SERIES_RESISTOR_VALUE = 2K2_EACH_DIRECTION
 
 [CURRENT_VERDICT]
 C3_GPIO20_GPIO21_SOC_MAPPING = CONFIRMED
-C3_PHYSICAL_BOARD_ACCESS = NOT_CONFIRMED
+C3_PHYSICAL_BOARD_ACCESS = CONFIRMED_BY_USER_IMAGES
 MAIN_GPIO16_GPIO17_SOC_MAPPING = CONFIRMED
-MAIN_GPIO16_GPIO17_PSRAM_AND_CARRIER_ACCESS = NOT_CONFIRMED
-PHYSICAL_WIRING_AUTHORIZED = NO
+MAIN_GPIO16_GPIO17_32U_CARRIER_ACCESS = CONFIRMED_BY_USER_IMAGE
+UART_WIRE_LENGTH = ACCEPTED_MAX_8_CM
+SERIES_RESISTORS = SELECTED_2K2
+PHYSICAL_PIN_PLAN = APPROVED
+PHYSICAL_WIRING_AUTHORIZED = NO_WAITING_FOR_NEXT_STAGE_OK
