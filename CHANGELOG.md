@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## WROOM build 117 manual upload checkpoint - 2026-08-15
+
+1. The user manually uploaded WROOM firmware `0.1.63-EXP` build `117`; the Device Online screenshot confirms normal Wi-Fi, NTP, Telegram, and startup identity.
+2. C3 remains on build `183` and does not require another upload for this WROOM-only miss-threshold change. The remaining gate is 2-3 minutes of WROOM Serial evidence with stable `uart=OK/b183` and no false three-timeout `OFFLINE`.
+
 ## Three-miss UART offline hardening - 2026-08-15
 
 1. Added build `117` (`0.1.63-EXP`) to prevent one network-busy response delay from falsely declaring the C3 link offline.
