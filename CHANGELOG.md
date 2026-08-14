@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Expected C3 Deep-Sleep UART state - 2026-08-15
+
+1. The user-confirmed build `117/183` test completed the planned lifecycle `uart=OK -> uart=OFF -> uart=OK`: C3 entered a requested 10-minute Deep Sleep and automatically restored the link after wake with `rtt=7002 ms`.
+2. Added WROOM build `118` (`0.1.64-EXP`) support for strict `SLEEP <seconds> C3 <build>` frames. A valid frame changes the link to `SLP`, exposes the remote build and remaining sleep seconds in `[STAT]`, pauses PING traffic, and resumes wake probing at the declared time.
+3. C3 build `184` announces and flushes the planned sleep frame only after the sleep path has passed its cancellation checks and immediately before entering Deep Sleep. INA3221, GPS, charge control, Wi-Fi, cloud delivery, and wake scheduling are unchanged.
+4. Validation: `git diff --check` and both PlatformIO builds passed. WROOM `pio run -e esp32dev` -> SUCCESS, RAM `65,084 / 327,680` (`19.9%`), Flash `1,327,479 / 1,572,864` (`84.4%`), firmware `1,327,888` bytes, SHA-256 `1DCC9AF3AFC45ECBD70321DCA17211B173E10BB04E5FAB5E01882346559331C2`. C3 `pio run -e esp32c3_supermini_ota` -> SUCCESS, RAM `43,088 / 327,680` (`13.1%`), Flash `1,328,918 / 2,031,616` (`65.4%`), firmware `1,373,744` bytes, SHA-256 `2259495571F4413D371CAE55CD5D0BFC5A90E9A863E17805E4B770C579D45C32`. Both uploads and the physical `OK -> SLP -> OK` gate remain manual.
+
 ## WROOM build 117 manual upload checkpoint - 2026-08-15
 
 1. The user manually uploaded WROOM firmware `0.1.63-EXP` build `117`; the Device Online screenshot confirms normal Wi-Fi, NTP, Telegram, and startup identity.

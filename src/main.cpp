@@ -993,6 +993,12 @@ void loop() {
       Serial.print(F("/"));
       Serial.print(controllerLinkService.lastRttMs());
       Serial.print(F("ms"));
+    } else if (controllerLinkService.isSleeping()) {
+      Serial.print(F("/b"));
+      Serial.print(controllerLinkService.remoteBuild());
+      Serial.print(F("/"));
+      Serial.print(controllerLinkService.sleepRemainingSeconds(nowMs));
+      Serial.print(F("s"));
     }
     Serial.println();
   }

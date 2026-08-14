@@ -9,13 +9,16 @@ class ControllerLinkService {
 
   const char* stateText() const;
   bool isOnline() const;
+  bool isSleeping() const;
   uint32_t lastRttMs() const;
   uint32_t remoteBuild() const;
+  uint32_t sleepRemainingSeconds(uint32_t nowMs) const;
 
  private:
   enum class State : uint8_t {
     Waiting,
     Online,
+    Sleeping,
     Offline,
   };
 
@@ -27,6 +30,7 @@ class ControllerLinkService {
   static constexpr uint32_t PING_INTERVAL_MS = 5000;
   static constexpr uint32_t RESPONSE_TIMEOUT_MS = 10000;
   static constexpr uint8_t OFFLINE_MISS_THRESHOLD = 3;
+  static constexpr uint32_t MAX_EXPECTED_SLEEP_SECONDS = 86400;
   static constexpr size_t RX_LINE_CAPACITY = 64;
 
   HardwareSerial* serial_ = nullptr;
@@ -42,5 +46,6 @@ class ControllerLinkService {
   uint32_t lastPingAtMs_ = 0;
   uint32_t lastRttMs_ = 0;
   uint32_t remoteBuild_ = 0;
+  uint32_t sleepUntilMs_ = 0;
   uint8_t consecutiveMisses_ = 0;
 };

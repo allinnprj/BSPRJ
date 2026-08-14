@@ -41,6 +41,17 @@ void ControllerLinkService::update(uint32_t nowMs) {
 
   processInput(nowMs);
 
+  if (state_ == State::Sleeping) {
+    if (static_cast<int32_t>(nowMs - sleepUntilMs_) < 0) {
+      return;
+    }
+    state_ = State::Waiting;
+    pingPending_ = false;
+    pingSent_ = false;
+    consecutiveMisses_ = 0;
+    Serial.println(F("[UART] WAKE WAIT -> expected C3 wake window"));
+  }
+
   if (pingPending_ && nowMs - pendingSinceMs_ >= RESPONSE_TIMEOUT_MS) {
     pingPending_ = false;
     if (consecutiveMisses_ < OFFLINE_MISS_THRESHOLD) {
@@ -61,6 +72,8 @@ const char* ControllerLinkService::stateText() const {
   switch (state_) {
     case State::Online:
       return "OK";
+    case State::Sleeping:
+      return "SLP";
     case State::Offline:
       return "OFF";
     case State::Waiting:
@@ -73,12 +86,23 @@ bool ControllerLinkService::isOnline() const {
   return state_ == State::Online;
 }
 
+bool ControllerLinkService::isSleeping() const {
+  return state_ == State::Sleeping;
+}
+
 uint32_t ControllerLinkService::lastRttMs() const {
   return lastRttMs_;
 }
 
 uint32_t ControllerLinkService::remoteBuild() const {
   return remoteBuild_;
+}
+
+uint32_t ControllerLinkService::sleepRemainingSeconds(uint32_t nowMs) const {
+  if (state_ != State::Sleeping || static_cast<int32_t>(nowMs - sleepUntilMs_) >= 0) {
+    return 0;
+  }
+  return (sleepUntilMs_ - nowMs + 999U) / 1000U;
 }
 
 void ControllerLinkService::sendPing(uint32_t nowMs) {
@@ -122,6 +146,32 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
   const char* cursor = rxLine_;
   uint32_t sequence = 0;
   uint32_t build = 0;
+  if (strncmp(cursor, "SLEEP ", 6) == 0) {
+    cursor += 6;
+    uint32_t sleepSeconds = 0;
+    if (!parseUnsigned(cursor, sleepSeconds) ||
+        strncmp(cursor, " C3 ", 4) != 0) {
+      return;
+    }
+    cursor += 4;
+    if (!parseUnsigned(cursor, build) || *cursor != '\0' ||
+        sleepSeconds == 0 || sleepSeconds > MAX_EXPECTED_SLEEP_SECONDS) {
+      return;
+    }
+
+    pingPending_ = false;
+    consecutiveMisses_ = 0;
+    remoteBuild_ = build;
+    sleepUntilMs_ = nowMs + sleepSeconds * 1000U;
+    state_ = State::Sleeping;
+    Serial.print(F("[UART] SLEEP -> C3 build "));
+    Serial.print(remoteBuild_);
+    Serial.print(F(" for "));
+    Serial.print(sleepSeconds);
+    Serial.println(F(" s"));
+    return;
+  }
+
   if (strncmp(cursor, "PONG ", 5) != 0) {
     return;
   }
