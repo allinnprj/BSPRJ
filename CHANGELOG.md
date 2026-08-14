@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## C3 build 183 manual upload checkpoint - 2026-08-15
+
+1. The user manually uploaded C3 firmware `1.2.0-c3` build `183`; the Telegram Online screenshot confirms normal Wi-Fi startup, Charge OFF/GPIO3 LOW, and Sleep OFF.
+2. Both ends of the minimal UART test are now running. The remaining acceptance gate is a WROOM Serial Monitor line showing a valid C3 build-183 PONG; readiness is unchanged until that frame is observed.
+
+## WROOM build 116 manual upload checkpoint - 2026-08-15
+
+1. The user manually uploaded WROOM firmware `0.1.62-EXP` build `116` and confirmed the normal Telegram `Device Online` message from `bs-esp32-01`.
+2. This confirms the WROOM image starts and its existing Wi-Fi/Telegram path remains operational. C3 build `183` is not yet uploaded, so UART PING/PONG remains physically unvalidated and readiness is unchanged.
+
 ## Minimal C3-WROOM UART PING/PONG - 2026-08-15
 
 1. Added build `116` (`0.1.62-EXP`) with a dedicated UART2 controller-link service on WROOM GPIO16/RX and GPIO17/TX at `115200 8N1`.
