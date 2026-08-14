@@ -26,6 +26,7 @@ class ControllerLinkService {
   static constexpr uint32_t BAUD_RATE = 115200;
   static constexpr uint32_t PING_INTERVAL_MS = 5000;
   static constexpr uint32_t RESPONSE_TIMEOUT_MS = 10000;
+  static constexpr uint8_t OFFLINE_MISS_THRESHOLD = 3;
   static constexpr size_t RX_LINE_CAPACITY = 64;
 
   HardwareSerial* serial_ = nullptr;
@@ -41,4 +42,5 @@ class ControllerLinkService {
   uint32_t lastPingAtMs_ = 0;
   uint32_t lastRttMs_ = 0;
   uint32_t remoteBuild_ = 0;
+  uint8_t consecutiveMisses_ = 0;
 };

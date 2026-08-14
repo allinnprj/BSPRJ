@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## Three-miss UART offline hardening - 2026-08-15
+
+1. Added build `117` (`0.1.63-EXP`) to prevent one network-busy response delay from falsely declaring the C3 link offline.
+2. WROOM now changes the UART state to `OFF` only after three consecutive `10 s` PONG timeouts. Any valid matching PONG immediately resets the miss counter and restores or preserves `OK`.
+3. PING/PONG framing, GPIO16/17, `115200 8N1`, C3 build `183`, Deep-Sleep behavior, Wi-Fi, Telegram, MQTT, Google Sheets, sound sampling, and all other controller logic remain unchanged.
+4. Validation: focused source contract and `git diff --check` pass; `pio run -e esp32dev` -> SUCCESS. RAM `65,068 / 327,680` (`19.9%`), Flash `1,326,923 / 1,572,864` (`84.4%`), firmware `1,327,328` bytes / SHA-256 `127FEA7F5EFC89CE0E829DA0D1668DD58B7809766CF84C612816966526C50538`. Upload and physical no-false-offline validation remain manual.
+
+## Minimal UART physical PING/PONG validation - 2026-08-15
+
+1. WROOM build `116` received a valid numbered PONG from C3 build `183`, proving the installed GPIO17-to-GPIO20 and GPIO21-to-GPIO16 bidirectional UART path at `115200 8N1`.
+2. The first valid response during C3 network startup arrived after `13,104 ms`. The current `10 s` single-response threshold therefore produced one false `OFFLINE`; the link recovered automatically with an `870 ms` response and `[STAT] uart=OK/b183/870ms`.
+3. Wiring, resistor selection, parsing, build identity, and automatic recovery pass the minimal-link gate. Offline detection still needs software hardening before Deep-Sleep behavior and the full telemetry/command protocol are accepted.
+4. The WROOM core-dump partition warning is unrelated to UART: the custom partition table has no core-dump partition, and the controller continued normal startup.
+
 ## C3 build 183 manual upload checkpoint - 2026-08-15
 
 1. The user manually uploaded C3 firmware `1.2.0-c3` build `183`; the Telegram Online screenshot confirms normal Wi-Fi startup, Charge OFF/GPIO3 LOW, and Sleep OFF.

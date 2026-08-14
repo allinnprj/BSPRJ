@@ -43,9 +43,12 @@ void ControllerLinkService::update(uint32_t nowMs) {
 
   if (pingPending_ && nowMs - pendingSinceMs_ >= RESPONSE_TIMEOUT_MS) {
     pingPending_ = false;
-    if (state_ != State::Offline) {
+    if (consecutiveMisses_ < OFFLINE_MISS_THRESHOLD) {
+      ++consecutiveMisses_;
+    }
+    if (consecutiveMisses_ >= OFFLINE_MISS_THRESHOLD && state_ != State::Offline) {
       state_ = State::Offline;
-      Serial.println(F("[UART] OFFLINE -> no valid C3 PONG"));
+      Serial.println(F("[UART] OFFLINE -> 3 consecutive C3 PONG timeouts"));
     }
   }
 
@@ -133,6 +136,7 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
   }
 
   pingPending_ = false;
+  consecutiveMisses_ = 0;
   lastRttMs_ = nowMs - pendingSinceMs_;
   remoteBuild_ = build;
   if (state_ != State::Online) {
