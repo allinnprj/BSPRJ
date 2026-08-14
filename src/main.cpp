@@ -6,6 +6,7 @@
 
 #include "audio_sampler.h"
 #include "button_service.h"
+#include "controller_link_service.h"
 #include "display_view.h"
 #include "google_sheets_service.h"
 #include "log_service.h"
@@ -24,6 +25,8 @@ static constexpr uint8_t I2S_BCLK_PIN = 26;
 static constexpr uint8_t I2S_WS_PIN = 25;
 static constexpr uint8_t I2S_DATA_PIN = 32;
 static constexpr uint8_t BUTTON_PIN = 27;
+static constexpr uint8_t CONTROLLER_UART_RX_PIN = 16;
+static constexpr uint8_t CONTROLLER_UART_TX_PIN = 17;
 static constexpr uint8_t OLED_ADDRESS = 0x3C;
 static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 1000;
 static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 2000;
@@ -98,6 +101,7 @@ struct GoogleSheetsAccumulator {
 
 AudioSampler audioSampler;
 ButtonService buttonService;
+ControllerLinkService controllerLinkService;
 DisplayView displayView;
 GoogleSheetsService googleSheetsService;
 LogService logService;
@@ -783,6 +787,7 @@ void setup() {
   Serial.print(I2S_WS_PIN);
   Serial.print(F(" DATA="));
   Serial.println(I2S_DATA_PIN);
+  controllerLinkService.begin(Serial2, CONTROLLER_UART_RX_PIN, CONTROLLER_UART_TX_PIN);
 
   wifiService.begin();
   if (!audioSampler.begin(I2S_BCLK_PIN, I2S_WS_PIN, I2S_DATA_PIN)) {
@@ -835,6 +840,7 @@ void setup() {
 
 void loop() {
   unsigned long nowMs = millis();
+  controllerLinkService.update(nowMs);
   ButtonEvent buttonEvent = buttonService.update();
   if (buttonEvent == ButtonEvent::ShortPress) {
     if (displayView.isEnabled()) {
@@ -978,6 +984,15 @@ void loop() {
       Serial.print(F("C/"));
       Serial.print(latestSht31Reading.humidityPct, 1);
       Serial.print(F("%"));
+    }
+    Serial.print(F(" uart="));
+    Serial.print(controllerLinkService.stateText());
+    if (controllerLinkService.isOnline()) {
+      Serial.print(F("/b"));
+      Serial.print(controllerLinkService.remoteBuild());
+      Serial.print(F("/"));
+      Serial.print(controllerLinkService.lastRttMs());
+      Serial.print(F("ms"));
     }
     Serial.println();
   }

@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Minimal C3-WROOM UART PING/PONG - 2026-08-15
+
+1. Added build `116` (`0.1.62-EXP`) with a dedicated UART2 controller-link service on WROOM GPIO16/RX and GPIO17/TX at `115200 8N1`.
+2. WROOM sends numbered `PING` frames, accepts only the matching strict `PONG <sequence> C3 <build>` response, and ignores unrelated or malformed input including ESP32-C3 UART0 boot text.
+3. The existing 30-second Serial status line now exposes `uart=WAIT`, `uart=OFF`, or `uart=OK/b<build>/<rtt>ms`; state transitions are logged without adding cloud, display, or local-log traffic.
+4. Wi-Fi, Telegram, MQTT, Google Sheets, I2S sampling, sound statistics, OLED behavior, and all existing GPIO assignments remain unchanged. C3 Deep Sleep is expected to appear offline until the responder wakes and answers a later PING.
+5. Validation: `git diff --check` and `pio run -e esp32dev` -> SUCCESS; RAM `65,068 / 327,680` (`19.9%`), Flash `1,326,879 / 1,572,864` (`84.4%`), firmware `1,327,280` bytes / SHA-256 `72877DC1D548A010C05877EE5844B0228FE276974FDC97F01FFE5C275B0D5E51`. Upload and physical PING/PONG validation remain manual.
+
 ## Google Sheets layout-refresh and chart-category resilience - 2026-08-12
 
 1. Removed chart rebuilding from `Refresh all table layout/order`, so this maintenance command now has one responsibility and cannot report a chart-data error after successfully applying table styles and row order.
