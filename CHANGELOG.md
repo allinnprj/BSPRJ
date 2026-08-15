@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Short Telegram C3 status command and clean-flash preparation - 2026-08-15
+
+1. Added WROOM build `124` (`0.1.70-EXP`) as a small command-interface cleanup after the build `123` device log confirmed regular 30-second statistics and sequential C3 telemetry without the previous approximately 71-second Telegram stall.
+2. Replaced the incoming read-only command `/c3_status` with the shorter `/c3sts`, including bot-suffix parsing and serial diagnostics. The old command is no longer accepted, so the interface has one unambiguous spelling.
+3. No UART frame, C3 wake/control action, C3 firmware behavior, cloud payload, audio path, or stored-data format changed. C3 remains on build `185` and requires no upload.
+4. A full WROOM flash erase is required before the manual USB upload of build `124`. This deliberately removes the old firmware, LittleFS local log, and all NVS state, including persisted Telegram `update_id`; it is a deployment operation and is not performed by the firmware itself.
+5. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,284 / 327,680` (`19.9%`), Flash `1,338,191 / 1,572,864` (`85.1%`), linked OTA-slot reserve `234,673` bytes, firmware `1,338,592` bytes, SHA-256 `84BB17D9435C955A87A295979FDE417454E806EA5AD76F96ACEA918B91109097`. Full WROOM erase, manual USB upload, and physical `/c3sts` validation remain.
+
 ## Telegram scheduling hardening after build 122 device log - 2026-08-15
 
 1. Added WROOM build `123` (`0.1.69-EXP`) after combined serial/Telegram evidence proved that build `122` command authorization, freshness filtering, bot-suffix handling, NVS update tracking, and recovery worked, but consecutive synchronous Telegram messages could block the main loop for about 71 seconds. The affected startup showed UART RTT `68933 ms`, three duplicate `q=2` retries, and later transient Telegram/MQTT/UART recovery events.

@@ -160,13 +160,13 @@ bool parseJsonStringField(const String &source, const char *quotedKey,
 
 bool isStatusCommand(String command) {
   command.trim();
-  if (command == F("/c3_status")) {
+  if (command == F("/c3sts")) {
     return true;
   }
-  if (!command.startsWith(F("/c3_status@"))) {
+  if (!command.startsWith(F("/c3sts@"))) {
     return false;
   }
-  return command.indexOf(' ') < 0 && command.length() > strlen("/c3_status@");
+  return command.indexOf(' ') < 0 && command.length() > strlen("/c3sts@");
 }
 
 }  // namespace
@@ -195,7 +195,7 @@ void TelegramAlertService::begin() {
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /c3_status poll=60s last_update="));
+      Serial.print(F("[TG] commands ready -> /c3sts poll=60s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
@@ -315,7 +315,7 @@ void TelegramAlertService::updateCommands(
   if (statusReplyPending_) {
     if (currentMs - statusReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
       statusReplyPending_ = false;
-      Serial.println(F("[TG] command /c3_status -> expired before reply"));
+      Serial.println(F("[TG] command /c3sts -> expired before reply"));
       return;
     }
     if (currentMs - statusReplyQueuedAtMs_ < kSendSpacingMs ||
@@ -327,7 +327,7 @@ void TelegramAlertService::updateCommands(
     }
     lastStatusReplyAttemptAtMs_ = currentMs;
     const bool sent = sendControllerStatus_(controllerLink, currentMs);
-    Serial.print(F("[TG] command /c3_status -> "));
+    Serial.print(F("[TG] command /c3sts -> "));
     Serial.println(sent ? F("OK") : F("FAIL"));
     if (sent) {
       statusReplyPending_ = false;
@@ -613,13 +613,13 @@ void TelegramAlertService::processCommandUpdates_(
     return;
   }
   if (statusRequestCount > 1) {
-    Serial.print(F("[TG] command coalesced -> /c3_status x"));
+    Serial.print(F("[TG] command coalesced -> /c3sts x"));
     Serial.println(statusRequestCount);
   }
   statusReplyPending_ = true;
   statusReplyQueuedAtMs_ = millis();
   lastStatusReplyAttemptAtMs_ = 0;
-  Serial.println(F("[TG] command /c3_status -> queued"));
+  Serial.println(F("[TG] command /c3sts -> queued"));
 }
 
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,

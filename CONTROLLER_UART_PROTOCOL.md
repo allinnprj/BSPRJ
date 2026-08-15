@@ -151,10 +151,10 @@ Physical acceptance passed on 2026-08-15:
 
 ## WROOM Telegram Read-only Command Input
 
-WROOM build 122 adds only one incoming Telegram command:
+WROOM build 124 accepts only one incoming Telegram command. Builds 122/123 used the longer historical spelling `/c3_status`; it is intentionally replaced, not retained as an alias:
 
 ```text
-/c3_status
+/c3sts
 ```
 
 Command contract:
@@ -169,12 +169,13 @@ Command contract:
 - If C3 telemetry has not arrived, the reply says `Waiting for C3`.
 - No UART command, C3 wake, Wi-Fi/OTA control, Deep-Sleep change, or C3 firmware change exists in this stage.
 
-Physical acceptance requires:
+Build 124 physical acceptance requires:
 
-- WROOM startup card `0.1.68-EXP build 122`.
-- Startup log `[TG] commands ready -> /c3_status poll=60s last_update=<id>`.
-- A fresh authorized `/c3_status` returns the `C3 Controller` card and logs `[TG] command /c3_status -> OK`.
-- After a WROOM restart, the already consumed Telegram update must not produce another `[TG] command /c3_status -> OK` or a second command reply. The normal one-per-boot automatic `C3 Controller` card is expected and is not a replay.
+- WROOM startup card `0.1.70-EXP build 124` after a full flash erase and manual USB upload.
+- Startup log `[TG] commands ready -> /c3sts poll=60s last_update=0` on the first clean boot.
+- A fresh authorized `/c3sts` returns the `C3 Controller` card and logs `[TG] command /c3sts -> OK`.
+- The removed `/c3_status` spelling produces no command reply.
+- After a later WROOM restart, the already consumed Telegram update must not produce another `[TG] command /c3sts -> OK` or a second command reply. The normal one-per-boot automatic `C3 Controller` card is expected and is not a replay.
 
 ## WROOM Telegram Scheduling Hardening
 
@@ -196,3 +197,9 @@ Build 123 physical acceptance requires:
 - Startup Telegram activity does not produce UART RTT above the 10-second heartbeat timeout or repeated telemetry caused by a delayed ACK.
 - Two fresh `/c3_status` messages before one poll produce `command coalesced`, one queued reply, and one returned card.
 - A consumed command does not execute again after WROOM restart.
+
+## WROOM Short Command and Full-Erase Gate
+
+Build 124 changes only the user-facing read-only Telegram spelling from `/c3_status` to `/c3sts`. Before its first USB upload, erase the complete WROOM flash. The erase intentionally clears the previous application, LittleFS `/sound_log.csv`, and NVS namespaces such as the persisted Telegram update identifier. C3 build 185 and the physical UART link remain untouched.
+
+After the erase, manual USB upload, and clean boot, validate `/c3sts` coalescing and no-replay behavior again because NVS starts empty.
