@@ -16,6 +16,12 @@ The main question is not "how many decibels?" yet. The main question is:
 
 After the `INMP441` migration, the most important raw sound clue is usually `AVG P2P`, while `NOW %`, `H %`, and `M %` are the human-readable scaled values.
 
+## Remote Diagnostic Journal
+
+`/diagnostics.log` is the current tab-separated WROOM service journal; `/diagnostics-prev.log` is the single rotated previous file. Each file is limited to about `128 KB` and is downloadable from the WROOM log web page. This journal is for fault and timing analysis, while `/log.csv` remains the analytical 10-minute sound dataset.
+
+The fixed columns are `date`, `time`, `uptime_s`, `build`, `event`, and `details`. Important events are `BOOT`, `HEALTH`, `WIFI_STATE`, `MQTT_STATE`, `UART_STATE`, `C3_TEL`, `C3_DUP`, `GS_RETRY`, `GS_UPLOAD`, `GS_DROP`, `SHT31_STATE`, `SHT31_REINIT`, `OTA_START`, `OTA_END`, `OTA_ERROR`, and `SCHEDULED_RESTART`. `HEALTH` is a complete five-minute snapshot; transition events preserve the exact moment a subsystem changed state.
+
 ## Time Terms
 
 ### `DATE`

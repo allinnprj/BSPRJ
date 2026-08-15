@@ -31,6 +31,7 @@ static constexpr uint8_t OLED_ADDRESS = 0x3C;
 static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 1000;
 static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 2000;
 static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 30000;
+static constexpr unsigned long DIAGNOSTIC_HEALTH_INTERVAL_MS = 300000UL;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
 static constexpr uint8_t GOOGLE_SHEETS_QUEUE_SIZE = 6;
@@ -115,6 +116,7 @@ AudioSnapshot latestSnapshot;
 Sht31Reading latestSht31Reading;
 unsigned long lastDisplayAt = 0;
 unsigned long lastSerialLogAt = 0;
+unsigned long lastDiagnosticHealthAt = 0;
 unsigned long lastGoogleSheetsAttemptAt = 0;
 unsigned long lastDisplayInteractionAt = 0;
 unsigned long lastMeanPersistAt = 0;
@@ -136,6 +138,20 @@ GoogleSheetsWindowRecord pendingSheetsUploads[GOOGLE_SHEETS_QUEUE_SIZE];
 uint8_t pendingSheetsHead = 0;
 uint8_t pendingSheetsTail = 0;
 uint8_t pendingSheetsCount = 0;
+uint32_t sheetsAttemptCount = 0;
+uint32_t sheetsSuccessCount = 0;
+uint32_t sheetsFailureCount = 0;
+uint32_t sheetsDropCount = 0;
+uint16_t currentSheetsWindowAttempts = 0;
+unsigned long currentSheetsFirstAttemptAt = 0;
+String currentSheetsAttemptWindowKey;
+bool diagnosticStatesInitialized = false;
+bool lastDiagnosticWifiConnected = false;
+bool lastDiagnosticMqttConnected = false;
+String lastDiagnosticWifiSsid;
+String lastDiagnosticControllerState;
+uint32_t lastDiagnosticTelemetryAcceptedCount = 0;
+uint32_t lastDiagnosticTelemetryDuplicateCount = 0;
 
 const char *signalStateText(SignalState state) {
   switch (state) {
@@ -453,6 +469,12 @@ bool enqueueGoogleSheetsUpload(const GoogleSheetsWindowRecord &record) {
   if (pendingSheetsCount >= GOOGLE_SHEETS_QUEUE_SIZE) {
     Serial.print(F("[GS] queue full -> drop oldest window "));
     Serial.println(pendingSheetsUploads[pendingSheetsHead].windowKey);
+    String details = F("window=");
+    details += pendingSheetsUploads[pendingSheetsHead].windowKey;
+    details += F(" queue=");
+    details += pendingSheetsCount;
+    logService.appendDiagnosticEvent(F("GS_DROP"), details);
+    sheetsDropCount++;
     pendingSheetsHead = static_cast<uint8_t>((pendingSheetsHead + 1) % GOOGLE_SHEETS_QUEUE_SIZE);
     pendingSheetsCount--;
   }
@@ -567,8 +589,24 @@ void uploadPendingGoogleSheetsWindow() {
   lastGoogleSheetsAttemptAt = nowMs;
 
   GoogleSheetsWindowRecord &nextRecord = frontPendingGoogleSheetsUpload();
-  if (googleSheetsService.appendWindowAggregate(nextRecord, PROJECT_VERSION,
-                                                PROJECT_BUILD)) {
+  if (currentSheetsAttemptWindowKey != nextRecord.windowKey) {
+    currentSheetsAttemptWindowKey = nextRecord.windowKey;
+    currentSheetsWindowAttempts = 0;
+    currentSheetsFirstAttemptAt = nowMs;
+  }
+  currentSheetsWindowAttempts++;
+  sheetsAttemptCount++;
+  if (googleSheetsService.appendWindowAggregate(nextRecord, PROJECT_VERSION, PROJECT_BUILD)) {
+    sheetsSuccessCount++;
+    String details = F("window=");
+    details += nextRecord.windowKey;
+    details += F(" attempts=");
+    details += currentSheetsWindowAttempts;
+    details += F(" delay_s=");
+    details += (nowMs - currentSheetsFirstAttemptAt) / 1000U;
+    details += F(" queue_before=");
+    details += pendingSheetsCount;
+    logService.appendDiagnosticEvent(F("GS_UPLOAD"), details);
     Serial.print(F("[GS] uploaded window -> "));
     Serial.print(nextRecord.timeFromText);
     Serial.print(F(".."));
@@ -579,6 +617,18 @@ void uploadPendingGoogleSheetsWindow() {
     popPendingGoogleSheetsUpload();
     Serial.println(pendingSheetsCount);
     lastGoogleSheetsAttemptAt = 0;
+    currentSheetsAttemptWindowKey = String();
+    currentSheetsWindowAttempts = 0;
+    currentSheetsFirstAttemptAt = 0;
+  } else {
+    sheetsFailureCount++;
+    if (currentSheetsWindowAttempts == 1) {
+      String details = F("window=");
+      details += nextRecord.windowKey;
+      details += F(" queue=");
+      details += pendingSheetsCount;
+      logService.appendDiagnosticEvent(F("GS_RETRY"), details);
+    }
   }
 }
 
@@ -633,6 +683,201 @@ void updateMqttState(const AudioSnapshot &snapshot) {
   }
 }
 
+const char *controllerModeText(uint8_t mode) {
+  return mode == 1 ? "AUTO" : (mode == 2 ? "MANUAL" : "CLASSIC");
+}
+
+String controllerLinkDiagnosticDetails(uint32_t nowMs) {
+  String details;
+  details.reserve(120);
+  details += F("state=");
+  details += controllerLinkService.stateText();
+  details += F(" build=");
+  details += controllerLinkService.remoteBuild();
+  details += F(" rtt_ms=");
+  details += controllerLinkService.lastRttMs();
+  if (controllerLinkService.isSleeping()) {
+    details += F(" sleep_left_s=");
+    details += controllerLinkService.sleepRemainingSeconds(nowMs);
+  }
+  if (controllerLinkService.hasTelemetry()) {
+    details += F(" q=");
+    details += controllerLinkService.telemetry().sequence;
+    details += F(" tel_age_s=");
+    details += controllerLinkService.telemetryAgeSeconds(nowMs);
+  }
+  return details;
+}
+
+String controllerTelemetryDiagnosticDetails(uint32_t nowMs) {
+  if (!controllerLinkService.hasTelemetry()) {
+    return F("none");
+  }
+  const ControllerTelemetrySnapshot &telemetry = controllerLinkService.telemetry();
+  String details;
+  details.reserve(220);
+  details += F("session=");
+  details += telemetry.session;
+  details += F(" q=");
+  details += telemetry.sequence;
+  details += F(" age_s=");
+  details += controllerLinkService.telemetryAgeSeconds(nowMs);
+  details += F(" ina=");
+  details += telemetry.valid ? F("OK") : F("ERR");
+  details += F(" solar_mV_mA=");
+  details += telemetry.solarMillivolts;
+  details += '/';
+  details += telemetry.solarMilliamps;
+  details += F(" battery_mV_mA_soc=");
+  details += telemetry.batteryMillivolts;
+  details += '/';
+  details += telemetry.batteryMilliamps;
+  details += '/';
+  details += telemetry.batterySocPercent;
+  details += F(" load_mV_mA=");
+  details += telemetry.loadMillivolts;
+  details += '/';
+  details += telemetry.loadMilliamps;
+  details += F(" charge=");
+  details += telemetry.chargeOutputOn ? F("ON") : F("OFF");
+  details += F(" mode=");
+  details += controllerModeText(telemetry.solarControlMode);
+  return details;
+}
+
+void updateDiagnosticEvents(uint32_t nowMs) {
+  const bool wifiConnected = wifiService.isConnected();
+  const bool mqttConnected = mqttService.isConnected();
+  const String wifiSsid = wifiService.ssidString();
+  const String controllerState = controllerLinkService.stateText();
+
+  if (!diagnosticStatesInitialized || wifiConnected != lastDiagnosticWifiConnected ||
+      wifiSsid != lastDiagnosticWifiSsid) {
+    String details = wifiConnected ? F("state=OK") : F("state=OFF");
+    details += F(" ssid=");
+    details += wifiSsid;
+    details += F(" ip=");
+    details += wifiService.ipAddressString();
+    details += F(" signal_pct=");
+    details += wifiService.signalPercent();
+    details += F(" rssi_dbm=");
+    details += wifiService.rssiDbm();
+    logService.appendDiagnosticEvent(F("WIFI_STATE"), details);
+  }
+
+  if (!diagnosticStatesInitialized || mqttConnected != lastDiagnosticMqttConnected) {
+    logService.appendDiagnosticEvent(F("MQTT_STATE"),
+                                     mqttConnected ? F("state=OK") : F("state=OFF"));
+  }
+
+  if (!diagnosticStatesInitialized || controllerState != lastDiagnosticControllerState) {
+    logService.appendDiagnosticEvent(F("UART_STATE"), controllerLinkDiagnosticDetails(nowMs));
+  }
+
+  const uint32_t acceptedCount = controllerLinkService.telemetryAcceptedCount();
+  if (acceptedCount != lastDiagnosticTelemetryAcceptedCount) {
+    logService.appendDiagnosticEvent(F("C3_TEL"), controllerTelemetryDiagnosticDetails(nowMs));
+  }
+
+  const uint32_t duplicateCount = controllerLinkService.telemetryDuplicateCount();
+  if (duplicateCount != lastDiagnosticTelemetryDuplicateCount) {
+    String details = F("total=");
+    details += duplicateCount;
+    details += F(" delta=");
+    details += duplicateCount - lastDiagnosticTelemetryDuplicateCount;
+    logService.appendDiagnosticEvent(F("C3_DUP"), details);
+  }
+
+  lastDiagnosticWifiConnected = wifiConnected;
+  lastDiagnosticWifiSsid = wifiSsid;
+  lastDiagnosticMqttConnected = mqttConnected;
+  lastDiagnosticControllerState = controllerState;
+  lastDiagnosticTelemetryAcceptedCount = acceptedCount;
+  lastDiagnosticTelemetryDuplicateCount = duplicateCount;
+  diagnosticStatesInitialized = true;
+}
+
+void appendDiagnosticHealth(uint32_t nowMs) {
+  if (lastDiagnosticHealthAt != 0 &&
+      nowMs - lastDiagnosticHealthAt < DIAGNOSTIC_HEALTH_INTERVAL_MS) {
+    return;
+  }
+  lastDiagnosticHealthAt = nowMs;
+
+  String details;
+  details.reserve(620);
+  details += F("version=");
+  details += F(PROJECT_VERSION);
+  details += F(" boot_seq=");
+  details += currentBootSequence;
+  details += F(" reset=");
+  details += currentResetReason;
+  details += F(" power_uptime_min=");
+  details += powerUptimeMinutes();
+  details += F(" heap=");
+  details += ESP.getFreeHeap();
+  details += '/';
+  details += ESP.getMinFreeHeap();
+  details += F(" wifi=");
+  details += wifiService.isConnected() ? F("OK") : F("OFF");
+  details += '/';
+  details += wifiService.ssidString();
+  details += '/';
+  details += wifiService.signalPercent();
+  details += F("pct/");
+  details += wifiService.rssiDbm();
+  details += F("dBm time=");
+  details += timeService.isSynced() ? F("SYNC") : F("WAIT");
+  details += F(" noise=");
+  details += latestSnapshot.currentLevel;
+  details += '/';
+  details += latestSnapshot.hourAverage;
+  details += '/';
+  details += latestSnapshot.totalAverage;
+  details += F(" pct=");
+  details += latestSnapshot.currentPercent;
+  details += '/';
+  details += latestSnapshot.hourPercent;
+  details += '/';
+  details += latestSnapshot.totalPercent;
+  details += F(" p2p=");
+  details += latestSnapshot.peakToPeak;
+  details += F(" sig=");
+  details += signalStateText(latestSnapshot.signalState);
+  details += F(" env=");
+  if (latestSht31Reading.available) {
+    details += String(latestSht31Reading.temperatureC, 1);
+    details += F("C/");
+    details += String(latestSht31Reading.humidityPct, 1);
+    details += '%';
+  } else {
+    details += F("OFF");
+  }
+  details += F(" uart[");
+  details += controllerLinkDiagnosticDetails(nowMs);
+  details += F("] tel[");
+  details += controllerTelemetryDiagnosticDetails(nowMs);
+  details += F("] uart_counts=accepted:");
+  details += controllerLinkService.telemetryAcceptedCount();
+  details += F(",dup:");
+  details += controllerLinkService.telemetryDuplicateCount();
+  details += F(",offline:");
+  details += controllerLinkService.offlineTransitionCount();
+  details += F(" mqtt=");
+  details += mqttService.isConnected() ? F("OK") : F("OFF");
+  details += F(" gs=q:");
+  details += pendingSheetsCount;
+  details += F(",attempt:");
+  details += sheetsAttemptCount;
+  details += F(",ok:");
+  details += sheetsSuccessCount;
+  details += F(",fail:");
+  details += sheetsFailureCount;
+  details += F(",drop:");
+  details += sheetsDropCount;
+  logService.appendDiagnosticEvent(F("HEALTH"), details);
+}
+
 void scanI2cBus(TwoWire *wire) {
   Serial.println(F("[I2C] scan start"));
   uint8_t foundCount = 0;
@@ -661,6 +906,7 @@ void updateSht31Health(const AudioSnapshot &snapshot) {
   if (latestSht31Reading.available) {
     if (sht31LostLogged) {
       sht31LostLogged = false;
+      logService.appendDiagnosticEvent(F("SHT31_STATE"), F("state=RECOVERED"));
       logService.appendRuntimeEvent(F("SHT31_RECOVER"), currentDateText(), currentTimeText(),
                                     PROJECT_BUILD, currentBootSequence, currentResetReason,
                                     powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
@@ -676,6 +922,7 @@ void updateSht31Health(const AudioSnapshot &snapshot) {
 
   if (!sht31LostLogged && sht31UnavailableSeconds >= SHT31_LOST_WARN_SECONDS) {
     sht31LostLogged = true;
+    logService.appendDiagnosticEvent(F("SHT31_STATE"), F("state=LOST"));
     logService.appendRuntimeEvent(F("SHT31_LOST"), currentDateText(), currentTimeText(),
                                   PROJECT_BUILD, currentBootSequence, currentResetReason,
                                   powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
@@ -700,6 +947,11 @@ void updateSht31Health(const AudioSnapshot &snapshot) {
                                   PROJECT_BUILD, currentBootSequence, currentResetReason,
                                   powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
                                   wifiService.rssiDbm());
+    String details = F("attempt=");
+    details += sht31RecoverCount;
+    details += F(" result=");
+    details += recovered ? F("OK") : F("FAIL");
+    logService.appendDiagnosticEvent(F("SHT31_REINIT"), details);
   }
 }
 
@@ -712,6 +964,7 @@ void beginOta() {
         String type = ArduinoOTA.getCommand() == U_FLASH ? F("sketch") : F("filesystem");
         Serial.print(F("[OTA] start -> "));
         Serial.println(type);
+        logService.appendDiagnosticEvent(F("OTA_START"), String(F("type=")) + type);
         logService.appendRuntimeEvent(F("OTA_START"), currentDateText(), currentTimeText(),
                                       PROJECT_BUILD, currentBootSequence, currentResetReason,
                                       powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
@@ -719,6 +972,7 @@ void beginOta() {
       })
       .onEnd([]() {
         Serial.println(F("[OTA] end"));
+        logService.appendDiagnosticEvent(F("OTA_END"), F("result=OK"));
         logService.appendRuntimeEvent(F("OTA_END"), currentDateText(), currentTimeText(),
                                       PROJECT_BUILD, currentBootSequence, currentResetReason,
                                       powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
@@ -737,6 +991,8 @@ void beginOta() {
       .onError([](ota_error_t error) {
         Serial.print(F("[OTA] error -> "));
         Serial.println(static_cast<int>(error));
+        logService.appendDiagnosticEvent(F("OTA_ERROR"),
+                                         String(F("code=")) + static_cast<int>(error));
         logService.appendRuntimeEvent(F("OTA_ERROR"), currentDateText(), currentTimeText(),
                                       PROJECT_BUILD, currentBootSequence, currentResetReason,
                                       powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
@@ -802,6 +1058,13 @@ void setup() {
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
+  String bootDetails = F("version=");
+  bootDetails += F(PROJECT_VERSION);
+  bootDetails += F(" boot_seq=");
+  bootDetails += currentBootSequence;
+  bootDetails += F(" reset=");
+  bootDetails += currentResetReason;
+  logService.appendDiagnosticEvent(F("BOOT"), bootDetails);
   logService.appendRuntimeEvent(F("BOOT"), String(), String(), PROJECT_BUILD, currentBootSequence,
                                 currentResetReason, powerUptimeMinutes(),
                                 formatCompactUptime(powerUptimeMs()), wifiService.rssiDbm());
@@ -905,6 +1168,8 @@ void loop() {
   telegramAlertService.updateCommands(
       wifiService.isConnected(), timeService.isSynced(), wifiService.rssiDbm(),
       wifiService.signalPercent(), wifiSsid, controllerLinkService);
+  updateDiagnosticEvents(nowMs);
+  appendDiagnosticHealth(nowMs);
   if (!otaStarted && latestSnapshot.statsUpdated &&
       nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
     if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {
@@ -1035,6 +1300,8 @@ void loop() {
                                   PROJECT_BUILD, currentBootSequence, currentResetReason,
                                   powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
                                   wifiService.rssiDbm());
+    logService.appendDiagnosticEvent(F("SCHEDULED_RESTART"),
+                                     F("reason=24h_window_delivered"));
     Serial.println(F("[SYS] scheduled restart -> keeping power-session uptime"));
     delay(150);
     ESP.restart();

@@ -16,6 +16,7 @@ class LogService {
                           uint32_t buildNumber, uint32_t bootSequence,
                           const String &resetReason, uint32_t uptimeMinutes,
                           const String &uptimeText, int32_t wifiRssiDbm);
+  void appendDiagnosticEvent(const String &eventText, const String &details);
 
   bool isReady() const;
   bool webServerStarted() const;

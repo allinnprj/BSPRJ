@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Rotating Wi-Fi diagnostic log for balcony operation - 2026-08-15
+
+1. Added WROOM build `127` (`0.1.73-EXP`) with a dedicated tab-separated `/diagnostics.log`, independent from the 10-minute analytical `/sound_log.csv`. It records exact state transitions and compact analysis-ready evidence without requiring a continuously attached USB serial monitor.
+2. Recorded events include boot/reset, Wi-Fi network and signal context, MQTT and UART state transitions, every accepted C3 telemetry frame, duplicate-frame counters, C3 sleep/wake context, INA3221/solar/battery/load values, SHT31 loss/recovery, Google Sheets queue/retry/delivery/drop state, OTA start/result, and scheduled restart. A complete `HEALTH` snapshot is added every five minutes with sound, environment, heap, cloud, UART, and telemetry counters.
+3. The active diagnostic file rotates at `128 KB`; one previous file is retained as `/diagnostics-prev.log`, limiting the pair to approximately `256 KB`. Both files are downloadable from the existing WROOM log page. `Clear log` still clears only the analytical active CSV, while `Clear ALL logs` also clears both diagnostic files and recreates a fresh header.
+4. C3 protocol, C3 firmware build `185`, Deep Sleep decisions, sound calculations, Telegram commands, MQTT payloads, Google Sheets schema, and existing analytical CSV semantics are unchanged. C3 requires no upload.
+5. Validation: `pio run -e esp32dev` -> SUCCESS. Final size metrics and physical WROOM OTA/download evidence are recorded after the release build below.
+
 ## UART liveness hardening from build 125 field evidence - 2026-08-15
 
 1. Added WROOM build `126` (`0.1.72-EXP`) after the build `125` logs showed `32` short awake-state `UART OFFLINE` transitions during approximately `4 h 52 min`, while all `318` accepted C3 telemetry frames were still acknowledged and published to MQTT. Every link transition recovered automatically; median visible outage was `2.103 s` and maximum was `15.442 s`.

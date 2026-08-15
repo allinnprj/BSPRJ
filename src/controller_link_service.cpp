@@ -100,6 +100,7 @@ void ControllerLinkService::update(uint32_t nowMs) {
     if (consecutiveMisses_ >= OFFLINE_MISS_THRESHOLD &&
         !validTrafficRecentlySeen && state_ != State::Offline) {
       state_ = State::Offline;
+      ++offlineTransitionCount_;
       Serial.println(F("[UART] OFFLINE -> PONG timeouts and 90 s without valid C3 traffic"));
     }
   }
@@ -156,6 +157,18 @@ const ControllerTelemetrySnapshot& ControllerLinkService::telemetry() const {
 
 uint32_t ControllerLinkService::telemetryAgeSeconds(uint32_t nowMs) const {
   return hasTelemetry_ ? (nowMs - telemetry_.receivedAtMs) / 1000U : 0;
+}
+
+uint32_t ControllerLinkService::telemetryAcceptedCount() const {
+  return telemetryAcceptedCount_;
+}
+
+uint32_t ControllerLinkService::telemetryDuplicateCount() const {
+  return telemetryDuplicateCount_;
+}
+
+uint32_t ControllerLinkService::offlineTransitionCount() const {
+  return offlineTransitionCount_;
 }
 
 void ControllerLinkService::sendPing(uint32_t nowMs) {

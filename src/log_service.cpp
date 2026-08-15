@@ -9,12 +9,16 @@ namespace {
 
 constexpr char kLogPath[] = "/sound_log.csv";
 constexpr char kLegacyLogPath[] = "/sound_log_legacy.csv";
+constexpr char kDiagnosticLogPath[] = "/diagnostics.log";
+constexpr char kPreviousDiagnosticLogPath[] = "/diagnostics-prev.log";
+constexpr size_t kDiagnosticLogMaxBytes = 128U * 1024U;
 constexpr char kLogHeader[] =
     "event,date,time_from,time_to,part,build,boot_seq,reset_reason,uptime_min,uptime_text,"
     "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_p95,p2p_min,p2p_max,p2p_stable_max,"
     "session_p2p_min,session_p2p_max,session_p2p_stable_max,raw_min,raw_max,signal,"
     "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,"
     "free_heap,min_free_heap,wifi_dbm,acoustic_rev";
+constexpr char kDiagnosticLogHeader[] = "date\ttime\tuptime_s\tbuild\tevent\tdetails";
 WebServer logServer(80);
 bool logClearedByWeb = false;
 String currentDateText;
@@ -158,7 +162,9 @@ struct LogStorageStats {
   size_t usedBytes = 0;
   size_t activeLogBytes = 0;
   size_t archivedLogBytes = 0;
+  size_t diagnosticLogBytes = 0;
   uint16_t archivedLogCount = 0;
+  uint8_t diagnosticLogCount = 0;
 };
 
 LogStorageStats collectLogStorageStats() {
@@ -166,6 +172,10 @@ LogStorageStats collectLogStorageStats() {
   stats.totalBytes = LittleFS.totalBytes();
   stats.usedBytes = LittleFS.usedBytes();
   stats.activeLogBytes = fileSizeForPath(kLogPath);
+  stats.diagnosticLogBytes = fileSizeForPath(kDiagnosticLogPath) +
+                             fileSizeForPath(kPreviousDiagnosticLogPath);
+  stats.diagnosticLogCount = (LittleFS.exists(kDiagnosticLogPath) ? 1 : 0) +
+                             (LittleFS.exists(kPreviousDiagnosticLogPath) ? 1 : 0);
 
   File root = LittleFS.open("/");
   File file = root.openNextFile();
@@ -200,6 +210,10 @@ void appendStorageSummary(String &body) {
   body += String(stats.archivedLogCount);
   body += F(" files, ");
   body += formatBytes(stats.archivedLogBytes);
+  body += F("<br>Diagnostic logs: ");
+  body += String(stats.diagnosticLogCount);
+  body += F(" files, ");
+  body += formatBytes(stats.diagnosticLogBytes);
   body += F("</p>");
 }
 
@@ -219,6 +233,58 @@ bool createFreshLogFile() {
   file.println(kLogHeader);
   file.close();
   return true;
+}
+
+bool createFreshDiagnosticLogFile() {
+  File file = LittleFS.open(kDiagnosticLogPath, FILE_WRITE);
+  if (!file) {
+    Serial.println(F("[DLOG] failed to create diagnostic log"));
+    return false;
+  }
+  file.println(kDiagnosticLogHeader);
+  file.close();
+  return true;
+}
+
+void ensureDiagnosticLog() {
+  if (!LittleFS.exists(kDiagnosticLogPath)) {
+    createFreshDiagnosticLogFile();
+    return;
+  }
+
+  File existing = LittleFS.open(kDiagnosticLogPath, FILE_READ);
+  String header = existing ? existing.readStringUntil('\n') : String();
+  if (existing) {
+    existing.close();
+  }
+  header.trim();
+  if (header != kDiagnosticLogHeader) {
+    LittleFS.remove(kDiagnosticLogPath);
+    createFreshDiagnosticLogFile();
+  }
+}
+
+String sanitizeDiagnosticField(String value) {
+  value.replace('\t', ' ');
+  value.replace('\r', ' ');
+  value.replace('\n', ' ');
+  return value;
+}
+
+bool rotateDiagnosticLogIfNeeded(size_t incomingBytes) {
+  if (fileSizeForPath(kDiagnosticLogPath) + incomingBytes <= kDiagnosticLogMaxBytes) {
+    return true;
+  }
+  if (LittleFS.exists(kPreviousDiagnosticLogPath)) {
+    LittleFS.remove(kPreviousDiagnosticLogPath);
+  }
+  if (LittleFS.exists(kDiagnosticLogPath) &&
+      !LittleFS.rename(kDiagnosticLogPath, kPreviousDiagnosticLogPath)) {
+    Serial.println(F("[DLOG] rotation failed"));
+    return false;
+  }
+  Serial.println(F("[DLOG] rotated -> /diagnostics-prev.log"));
+  return createFreshDiagnosticLogFile();
 }
 
 void ensureHeader() {
@@ -253,6 +319,10 @@ void handleRoot() {
   body += F("<p class=\"muted\">Active log: <b>/log.csv</b></p>");
   appendStorageSummary(body);
   body += F("<p><a class=\"btn\" href=\"/log.csv\" download>Download active log</a>");
+  body += F("<a class=\"btn\" href=\"/diagnostics.log\" download>Download diagnostics</a>");
+  if (LittleFS.exists(kPreviousDiagnosticLogPath)) {
+    body += F("<a class=\"btn ghost\" href=\"/diagnostics-prev.log\" download>Download previous diagnostics</a>");
+  }
   body += F("<a class=\"btn ghost\" href=\"/archive-log\">Archive current log</a>");
   body += F("<a class=\"btn danger\" href=\"/clear-log\">Clear log</a>");
   body += F("<a class=\"btn danger\" href=\"/clear-all-logs\">Clear ALL logs</a></p>");
@@ -371,12 +441,13 @@ void handleClearAllLogsConfirm() {
   const LogStorageStats stats = collectLogStorageStats();
   String body = pageStart(F("Clear ALL BS Noise Logs"));
   body += F("<h3>Clear ALL logs?</h3>");
-  body += F("<p>This deletes the active log, all archived logs, and the legacy log from LittleFS. ");
+  body += F("<p>This deletes the active log, all archived logs, the legacy log, and diagnostic logs from LittleFS. ");
   body += F("Google Sheets data is not touched.</p>");
   body += F("<p class=\"muted\">Will remove approximately ");
-  body += formatBytes(stats.activeLogBytes + stats.archivedLogBytes);
+  body += formatBytes(stats.activeLogBytes + stats.archivedLogBytes + stats.diagnosticLogBytes);
   body += F(" from ");
-  body += String(stats.archivedLogCount + (stats.activeLogBytes > 0 ? 1 : 0));
+  body += String(stats.archivedLogCount + stats.diagnosticLogCount +
+                 (stats.activeLogBytes > 0 ? 1 : 0));
   body += F(" local log files.</p>");
   body += F("<p><a class=\"btn danger\" href=\"/clear-all-logs-confirm\">Confirm clear ALL</a>");
   body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
@@ -393,6 +464,17 @@ void handleClearAllLogsAction() {
     if (LittleFS.remove(kLogPath)) {
       deletedBytes += fileSize;
       deletedCount++;
+    }
+  }
+
+  const char *diagnosticPaths[] = {kDiagnosticLogPath, kPreviousDiagnosticLogPath};
+  for (const char *path : diagnosticPaths) {
+    if (LittleFS.exists(path)) {
+      const size_t fileSize = fileSizeForPath(path);
+      if (LittleFS.remove(path)) {
+        deletedBytes += fileSize;
+        deletedCount++;
+      }
     }
   }
 
@@ -414,6 +496,10 @@ void handleClearAllLogsAction() {
 
   if (!createFreshLogFile()) {
     logServer.send(500, "text/plain", "failed to create new log after clear all\n");
+    return;
+  }
+  if (!createFreshDiagnosticLogFile()) {
+    logServer.send(500, "text/plain", "failed to create new diagnostic log after clear all\n");
     return;
   }
   logClearedByWeb = true;
@@ -475,6 +561,21 @@ void handleArchiveDownload() {
   file.close();
 }
 
+void handleDiagnosticDownload(const char *path) {
+  if (!LittleFS.exists(path)) {
+    logServer.send(404, "text/plain", "diagnostic log not found\n");
+    return;
+  }
+  File file = LittleFS.open(path, FILE_READ);
+  if (!file) {
+    logServer.send(500, "text/plain", "failed to open diagnostic log\n");
+    return;
+  }
+  sendCsvDownloadHeader(fileNameFromPath(path));
+  logServer.streamFile(file, "text/plain");
+  file.close();
+}
+
 }  // namespace
 
 void LogService::begin() {
@@ -485,7 +586,8 @@ void LogService::begin() {
   }
 
   ensureHeader();
-  Serial.println(F("[LOG] LittleFS ready -> /sound_log.csv"));
+  ensureDiagnosticLog();
+  Serial.println(F("[LOG] LittleFS ready -> /sound_log.csv + /diagnostics.log"));
 }
 
 void LogService::update(bool wifiConnected, const String &ipAddress) {
@@ -496,6 +598,10 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
   if (wifiConnected && (!serverStarted_ || ipAddress != lastIpAddress_)) {
     logServer.on("/", handleRoot);
     logServer.on("/log.csv", HTTP_GET, handleLogDownload);
+    logServer.on("/diagnostics.log", HTTP_GET,
+                 []() { handleDiagnosticDownload(kDiagnosticLogPath); });
+    logServer.on("/diagnostics-prev.log", HTTP_GET,
+                 []() { handleDiagnosticDownload(kPreviousDiagnosticLogPath); });
     logServer.on("/archive-log", HTTP_GET, handleArchiveLogConfirm);
     logServer.on("/archive-log-confirm", HTTP_GET, handleArchiveLogAction);
     logServer.on("/download-archive", HTTP_GET, handleArchiveDownload);
@@ -688,4 +794,36 @@ bool LogService::isReady() const {
 
 bool LogService::webServerStarted() const {
   return serverStarted_;
+}
+
+void LogService::appendDiagnosticEvent(const String &eventText, const String &details) {
+  if (!ready_ || eventText.isEmpty()) {
+    return;
+  }
+
+  const String safeEvent = sanitizeDiagnosticField(eventText);
+  const String safeDetails = sanitizeDiagnosticField(details);
+  const size_t estimatedBytes = currentDateText.length() + currentTimeText.length() +
+                                safeEvent.length() + safeDetails.length() + 40U;
+  if (!rotateDiagnosticLogIfNeeded(estimatedBytes)) {
+    return;
+  }
+
+  File file = LittleFS.open(kDiagnosticLogPath, FILE_APPEND);
+  if (!file) {
+    Serial.println(F("[DLOG] append failed"));
+    return;
+  }
+  file.print(currentDateText);
+  file.print('\t');
+  file.print(currentTimeText);
+  file.print('\t');
+  file.print(millis() / 1000U);
+  file.print('\t');
+  file.print(PROJECT_BUILD);
+  file.print('\t');
+  file.print(safeEvent);
+  file.print('\t');
+  file.println(safeDetails);
+  file.close();
 }
