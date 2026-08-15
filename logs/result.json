@@ -1,28 +1,64 @@
 {
- "name": "myhapb_bot",
- "type": "bot_chat",
- "id": 7627885844,
+ "name": "Bakinin Sesi",
+ "type": "private_supergroup",
+ "id": 3919527889,
  "messages": [
   {
-   "id": 306976,
+   "id": 1714,
    "type": "message",
-   "date": "2026-08-15T13:34:17",
-   "date_unixtime": "1786786457",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:43:08",
+   "date_unixtime": "1786794188",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
     "🟢 ",
     {
      "type": "bold",
-     "text": "Online — 🟦 Smart Auto"
+     "text": "Device Online"
     },
-    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    "\nDevice: ",
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    "\nVersion: ",
+    {
+     "type": "code",
+     "text": "0.1.70-EXP"
+    },
+    " build ",
+    {
+     "type": "code",
+     "text": "124"
+    },
+    "\nIP: ",
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-43 dBm)\nTime: ",
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    "\nUptime: 0 d 0 h 0 m\n\n🔗 ",
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
-    "\nWi-Fi: 100% (-48 dBm) NKAANNE_plus (P1)\nBoot: USB Reset\nUptime: 0 d 0 h 0 m\nChip temp: 63.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟦 Smart Auto"
+    "\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    ""
    ],
    "text_entities": [
     {
@@ -31,621 +67,522 @@
     },
     {
      "type": "bold",
-     "text": "Online — 🟦 Smart Auto"
+     "text": "Device Online"
     },
     {
      "type": "plain",
-     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+     "text": "\nDevice: "
+    },
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: "
+    },
+    {
+     "type": "code",
+     "text": "0.1.70-EXP"
+    },
+    {
+     "type": "plain",
+     "text": " build "
+    },
+    {
+     "type": "code",
+     "text": "124"
+    },
+    {
+     "type": "plain",
+     "text": "\nIP: "
+    },
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-43 dBm)\nTime: "
+    },
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    {
+     "type": "plain",
+     "text": "\nUptime: 0 d 0 h 0 m\n\n🔗 "
     },
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
     {
      "type": "plain",
-     "text": "\nWi-Fi: 100% (-48 dBm) NKAANNE_plus (P1)\nBoot: USB Reset\nUptime: 0 d 0 h 0 m\nChip temp: 63.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟦 Smart Auto"
+     "text": "\n🔗 "
+    },
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "url",
-      "text": "🔗 Statistics",
-      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "📍 Location",
-      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
-      "data": ""
-     }
-    ]
    ]
   },
   {
-   "id": 306977,
+   "id": 1715,
    "type": "message",
-   "date": "2026-08-15T13:35:50",
-   "date_unixtime": "1786786550",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:43:15",
+   "date_unixtime": "1786794195",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
-    "📊 ",
+    "🔗 ",
     {
      "type": "bold",
-     "text": "INA3221 Status — 🟦 Smart Auto"
+     "text": "C3 Controller"
     },
-    "\nState: HW OK (0x40)\n\nSolar: 0,33 V / 0,00 A / 0,00 W\nBattery: 12,10 V / -0,09 A / -1,13 W\nLoad: 7,14 V / 0,15 A / 1,06 W\nBattery SOC: ~38%\nBattery flow: Discharging\nSmart Auto: CHECK ON 0/2\n\n",
+    "\nLink: ",
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "OK"
     },
-    " Deep | Awake 10 min -> Sleep 90 min\nCounters: D 0/0\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟦 Smart Auto"
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "1"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.136 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.456 V"
+    },
+    " / 130 mA · ",
+    {
+     "type": "bold",
+     "text": "72%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 173 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "📊 "
+     "text": "🔗 "
     },
     {
      "type": "bold",
-     "text": "INA3221 Status — 🟦 Smart Auto"
+     "text": "C3 Controller"
     },
     {
      "type": "plain",
-     "text": "\nState: HW OK (0x40)\n\nSolar: 0,33 V / 0,00 A / 0,00 W\nBattery: 12,10 V / -0,09 A / -1,13 W\nLoad: 7,14 V / 0,15 A / 1,06 W\nBattery SOC: ~38%\nBattery flow: Discharging\nSmart Auto: CHECK ON 0/2\n\n"
+     "text": "\nLink: "
     },
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "OK"
     },
     {
      "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 90 min\nCounters: D 0/0\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟦 Smart Auto"
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "1"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.136 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.456 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 130 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "72%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 173 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Check now",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Status",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     }
-    ]
    ]
   },
   {
-   "id": 306978,
+   "id": 1716,
    "type": "message",
-   "date": "2026-08-15T13:36:14",
-   "date_unixtime": "1786786574",
+   "date": "2026-08-15T15:44:12",
+   "date_unixtime": "1786794252",
    "from": "Imran Nadiroglu",
    "from_id": "user354183947",
    "text": [
     {
      "type": "bot_command",
-     "text": "/status"
+     "text": "/c3sts@esp32sp_bot"
     }
    ],
    "text_entities": [
     {
      "type": "bot_command",
-     "text": "/status"
+     "text": "/c3sts@esp32sp_bot"
     }
    ]
   },
   {
-   "id": 306979,
+   "id": 1717,
    "type": "message",
-   "date": "2026-08-15T13:36:16",
-   "date_unixtime": "1786786576",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:44:43",
+   "date_unixtime": "1786794283",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
-    "📋 ",
+    "🔗 ",
     {
      "type": "bold",
-     "text": "Status"
+     "text": "C3 Controller"
     },
-    "\nVersion: 1.2.0-c3 build 185\nIP: ",
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 13:36\nBoot: USB Reset\nUptime: 0 d 0 h 2 m\nChip temp: 65.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 0,34 V / 0,00 A / 0,00 W\nBattery: 12,10 V / -0,10 A / -1,21 W\nLoad: 7,14 V / 0,16 A / 1,12 W\nBattery SOC: ~37%\nBattery flow: Discharging\n\n",
+    "\nLink: ",
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "OK"
     },
-    " Deep | Awake 10 min -> Sleep 90 min\nCounters: D 0/0\nDeep: 90 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟦 Smart Auto\nOTA: disabled"
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "4"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "19 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.056 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.448 V"
+    },
+    " / 48 mA · ",
+    {
+     "type": "bold",
+     "text": "71%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.160 V"
+    },
+    " / 75 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "📋 "
+     "text": "🔗 "
     },
     {
      "type": "bold",
-     "text": "Status"
+     "text": "C3 Controller"
     },
     {
      "type": "plain",
-     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
-    },
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    {
-     "type": "plain",
-     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 13:36\nBoot: USB Reset\nUptime: 0 d 0 h 2 m\nChip temp: 65.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 0,34 V / 0,00 A / 0,00 W\nBattery: 12,10 V / -0,10 A / -1,21 W\nLoad: 7,14 V / 0,16 A / 1,12 W\nBattery SOC: ~37%\nBattery flow: Discharging\n\n"
+     "text": "\nLink: "
     },
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "OK"
     },
     {
      "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 90 min\nCounters: D 0/0\nDeep: 90 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟦 Smart Auto\nOTA: disabled"
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "4"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "19 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.056 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.448 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 48 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "71%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.160 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 75 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Check now",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Settings",
-      "dataBase64": "bWVudV9zZXR0aW5ncw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Power",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Enable OTA",
-      "dataBase64": "b3RhX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Sleep 1 М",
-      "dataBase64": "c2xlZXBfaW5fMV9taW4",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Restart",
-      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
-      "data": ""
-     }
-    ]
    ]
   },
   {
-   "id": 306980,
+   "id": 1718,
    "type": "message",
-   "date": "2026-08-15T13:36:51",
-   "date_unixtime": "1786786611",
+   "date": "2026-08-15T15:46:03",
+   "date_unixtime": "1786794363",
    "from": "Imran Nadiroglu",
    "from_id": "user354183947",
    "text": [
     {
      "type": "bot_command",
-     "text": "/status"
+     "text": "/c3sts@esp32sp_bot"
     }
    ],
    "text_entities": [
     {
      "type": "bot_command",
-     "text": "/status"
+     "text": "/c3sts@esp32sp_bot"
     }
    ]
   },
   {
-   "id": 306981,
+   "id": 1719,
    "type": "message",
-   "date": "2026-08-15T13:36:53",
-   "date_unixtime": "1786786613",
-   "edited": "2026-08-15T13:48:46",
-   "edited_unixtime": "1786787326",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📋 ",
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    "\nVersion: 1.2.0-c3 build 185\nIP: ",
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    "\nWi-Fi: 100% (-50 dBm) NKAANNE_plus (P1)\nTime: Synced Time 13:48\nBoot: USB Reset\nUptime: 0 d 0 h 14 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 13,14 V / 0,93 A / 12,26 W\nBattery: 12,61 V / +0,77 A / +9,74 W\nLoad: 7,14 V / 0,24 A / 1,72 W\nBattery SOC: ~83%\nBattery flow: Charging\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " OFF\nCounters: D 0/0\nDeep: 10 min / Awake interval: 10 min\n\nCharge: ON\nGPIO3: HIGH\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)\nOTA: disabled"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📋 "
-    },
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    {
-     "type": "plain",
-     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
-    },
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    {
-     "type": "plain",
-     "text": "\nWi-Fi: 100% (-50 dBm) NKAANNE_plus (P1)\nTime: Synced Time 13:48\nBoot: USB Reset\nUptime: 0 d 0 h 14 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 13,14 V / 0,93 A / 12,26 W\nBattery: 12,61 V / +0,77 A / +9,74 W\nLoad: 7,14 V / 0,24 A / 1,72 W\nBattery SOC: ~83%\nBattery flow: Charging\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " OFF\nCounters: D 0/0\nDeep: 10 min / Awake interval: 10 min\n\nCharge: ON\nGPIO3: HIGH\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)\nOTA: disabled"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch OFF",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Settings",
-      "dataBase64": "bWVudV9zZXR0aW5ncw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Power",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Enable OTA",
-      "dataBase64": "b3RhX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Sleep 1 М",
-      "dataBase64": "c2xlZXBfaW5fMV9taW4",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Restart",
-      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 306982,
-   "type": "service",
-   "date": "2026-08-15T13:38:46",
-   "date_unixtime": "1786786726",
-   "actor": "Imran Nadiroglu",
-   "actor_id": "user354183947",
-   "action": "pin_message",
-   "message_id": 306976,
-   "text": "",
-   "text_entities": []
-  },
-  {
-   "id": 306983,
-   "type": "message",
-   "date": "2026-08-15T13:39:15",
-   "date_unixtime": "1786786755",
-   "from": "Imran Nadiroglu",
-   "from_id": "user354183947",
-   "text": [
-    {
-     "type": "bot_command",
-     "text": "/slpoff"
-    }
-   ],
-   "text_entities": [
-    {
-     "type": "bot_command",
-     "text": "/slpoff"
-    }
-   ]
-  },
-  {
-   "id": 306984,
-   "type": "message",
-   "date": "2026-08-15T13:39:16",
-   "date_unixtime": "1786786756",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": "Sleep mode disabled.",
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "Sleep mode disabled."
-    }
-   ]
-  },
-  {
-   "id": 306986,
-   "type": "message",
-   "date": "2026-08-15T13:49:00",
-   "date_unixtime": "1786787340",
-   "from": "Imran Nadiroglu",
-   "from_id": "user354183947",
-   "text": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ],
-   "text_entities": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ]
-  },
-  {
-   "id": 306987,
-   "type": "message",
-   "date": "2026-08-15T13:49:01",
-   "date_unixtime": "1786787341",
-   "edited": "2026-08-15T14:30:43",
-   "edited_unixtime": "1786789843",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📋 ",
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    "\nVersion: 1.2.0-c3 build 185\nIP: ",
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 14:30\nBoot: USB Reset\nUptime: 0 d 0 h 56 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 3,06 V / 0,00 A / 0,00 W\nBattery: 12,69 V / -0,14 A / -1,81 W\nLoad: 7,14 V / 0,25 A / 1,79 W\nBattery SOC: ~89%\nBattery flow: Discharging\nEnergy: used 0,00Ah/0,0Wh | charged +0,34Ah/+4,4Wh\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " OFF\nCounters: D 0/0\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)\nOTA: disabled"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📋 "
-    },
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    {
-     "type": "plain",
-     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
-    },
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    {
-     "type": "plain",
-     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 14:30\nBoot: USB Reset\nUptime: 0 d 0 h 56 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 3,06 V / 0,00 A / 0,00 W\nBattery: 12,69 V / -0,14 A / -1,81 W\nLoad: 7,14 V / 0,25 A / 1,79 W\nBattery SOC: ~89%\nBattery flow: Discharging\nEnergy: used 0,00Ah/0,0Wh | charged +0,34Ah/+4,4Wh\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " OFF\nCounters: D 0/0\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)\nOTA: disabled"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch ON",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Settings",
-      "dataBase64": "bWVudV9zZXR0aW5ncw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Power",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Enable OTA",
-      "dataBase64": "b3RhX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Sleep 1 М",
-      "dataBase64": "c2xlZXBfaW5fMV9taW4",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Restart",
-      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 306992,
-   "type": "message",
-   "date": "2026-08-15T14:31:32",
-   "date_unixtime": "1786789892",
-   "from": "Imran Nadiroglu",
-   "from_id": "user354183947",
-   "text": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ],
-   "text_entities": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ]
-  },
-  {
-   "id": 306993,
-   "type": "message",
-   "date": "2026-08-15T14:31:44",
-   "date_unixtime": "1786789904",
-   "edited": "2026-08-15T14:34:21",
-   "edited_unixtime": "1786790061",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": "Restart controller?",
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "Restart controller?"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Yes",
-      "dataBase64": "cmVzdGFydF95ZXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "No",
-      "dataBase64": "cmVzdGFydF9ubw",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 306994,
-   "type": "message",
-   "date": "2026-08-15T14:34:39",
-   "date_unixtime": "1786790079",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:46:19",
+   "date_unixtime": "1786794379",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
     "🟢 ",
     {
      "type": "bold",
-     "text": "Online — 🟧 Classic"
+     "text": "Device Online"
     },
-    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    "\nDevice: ",
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    "\nVersion: ",
+    {
+     "type": "code",
+     "text": "0.1.70-EXP"
+    },
+    " build ",
+    {
+     "type": "code",
+     "text": "124"
+    },
+    "\nIP: ",
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-46 dBm)\nTime: ",
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    "\nUptime: 0 d 0 h 0 m\n\n🔗 ",
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
-    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nBoot: Soft Restart\nUptime: 0 d 0 h 0 m\nChip temp: 64.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
+    "\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    ""
    ],
    "text_entities": [
     {
@@ -654,299 +591,755 @@
     },
     {
      "type": "bold",
-     "text": "Online — 🟧 Classic"
+     "text": "Device Online"
     },
     {
      "type": "plain",
-     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+     "text": "\nDevice: "
+    },
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: "
+    },
+    {
+     "type": "code",
+     "text": "0.1.70-EXP"
+    },
+    {
+     "type": "plain",
+     "text": " build "
+    },
+    {
+     "type": "code",
+     "text": "124"
+    },
+    {
+     "type": "plain",
+     "text": "\nIP: "
+    },
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-46 dBm)\nTime: "
+    },
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    {
+     "type": "plain",
+     "text": "\nUptime: 0 d 0 h 0 m\n\n🔗 "
     },
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
     {
      "type": "plain",
-     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nBoot: Soft Restart\nUptime: 0 d 0 h 0 m\nChip temp: 64.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "url",
-      "text": "🔗 Statistics",
-      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "📍 Location",
-      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 306995,
-   "type": "message",
-   "date": "2026-08-15T14:35:20",
-   "date_unixtime": "1786790120",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📊 ",
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    "\nState: HW OK (0x40)\n\nSolar: 1,03 V / 0,00 A / 0,00 W\nBattery: 12,38 V / -0,10 A / -1,28 W\nLoad: 7,15 V / 0,16 A / 1,15 W\nBattery SOC: ~66%\nBattery flow: Discharging\nEnergy: used 0,00Ah/0,0Wh | charged +0,34Ah/+4,4Wh\nClassic: standby (Sleep OFF)\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " OFF\nCounters: D 0/0\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📊 "
-    },
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    {
-     "type": "plain",
-     "text": "\nState: HW OK (0x40)\n\nSolar: 1,03 V / 0,00 A / 0,00 W\nBattery: 12,38 V / -0,10 A / -1,28 W\nLoad: 7,15 V / 0,16 A / 1,15 W\nBattery SOC: ~66%\nBattery flow: Discharging\nEnergy: used 0,00Ah/0,0Wh | charged +0,34Ah/+4,4Wh\nClassic: standby (Sleep OFF)\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " OFF\nCounters: D 0/0\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch ON",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Status",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 306996,
-   "type": "message",
-   "date": "2026-08-15T14:35:47",
-   "date_unixtime": "1786790147",
-   "edited": "2026-08-15T14:36:31",
-   "edited_unixtime": "1786790191",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📋 ",
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    "\nVersion: 1.2.0-c3 build 185\nIP: ",
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 14:36\nBoot: Soft Restart\nUptime: 0 d 0 h 2 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 13,39 V / 0,71 A / 9,57 W\nBattery: 12,91 V / +0,56 A / +7,29 W\nLoad: 7,14 V / 0,24 A / 1,72 W\nBattery SOC: ~97%\nBattery flow: Charging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,34Ah/+4,4Wh\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 0/0\nDeep: 10 min / Awake interval: 10 min\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic\nOTA: disabled"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📋 "
-    },
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    {
-     "type": "plain",
-     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
+     "text": "\n🔗 "
     },
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
     },
     {
      "type": "plain",
-     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 14:36\nBoot: Soft Restart\nUptime: 0 d 0 h 2 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 13,39 V / 0,71 A / 9,57 W\nBattery: 12,91 V / +0,56 A / +7,29 W\nLoad: 7,14 V / 0,24 A / 1,72 W\nBattery SOC: ~97%\nBattery flow: Charging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,34Ah/+4,4Wh\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 0/0\nDeep: 10 min / Awake interval: 10 min\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic\nOTA: disabled"
+     "text": ""
     }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch OFF",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Settings",
-      "dataBase64": "bWVudV9zZXR0aW5ncw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Power",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Enable OTA",
-      "dataBase64": "b3RhX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Sleep 1 М",
-      "dataBase64": "c2xlZXBfaW5fMV9taW4",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Restart",
-      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
-      "data": ""
-     }
-    ]
    ]
   },
   {
-   "id": 306997,
+   "id": 1720,
    "type": "message",
-   "date": "2026-08-15T14:36:31",
-   "date_unixtime": "1786790191",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:46:26",
+   "date_unixtime": "1786794386",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
-    "🟧 Classic\n",
+    "🔗 ",
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "C3 Controller"
     },
-    " in 1 min · 10 min"
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "7"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "13.488 V"
+    },
+    " / 652 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "13.024 V"
+    },
+    " / -542 mA · ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 177 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "🟧 Classic\n"
+     "text": "🔗 "
     },
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "C3 Controller"
     },
     {
      "type": "plain",
-     "text": " in 1 min · 10 min"
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "7"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "13.488 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 652 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "13.024 V"
+    },
+    {
+     "type": "plain",
+     "text": " / -542 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 177 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
    ]
   },
   {
-   "id": 306998,
+   "id": 1721,
    "type": "message",
-   "date": "2026-08-15T14:37:13",
-   "date_unixtime": "1786790233",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:46:46",
+   "date_unixtime": "1786794406",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
    "text": [
-    "🟧 Classic\n",
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1722,
+   "type": "message",
+   "date": "2026-08-15T15:46:55",
+   "date_unixtime": "1786794415",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
     {
      "type": "bold",
-     "text": "Next wake:"
+     "text": "C3 Controller"
     },
-    " 14:47"
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "8"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "13.520 V"
+    },
+    " / 617 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "13.064 V"
+    },
+    " / -516 mA · ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 165 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "🟧 Classic\n"
+     "text": "🔗 "
     },
     {
      "type": "bold",
-     "text": "Next wake:"
+     "text": "C3 Controller"
     },
     {
      "type": "plain",
-     "text": " 14:47"
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "8"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "13.520 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 617 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "13.064 V"
+    },
+    {
+     "type": "plain",
+     "text": " / -516 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 165 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
    ]
   },
   {
-   "id": 307003,
+   "id": 1723,
    "type": "message",
-   "date": "2026-08-15T14:47:28",
-   "date_unixtime": "1786790848",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T15:56:26",
+   "date_unixtime": "1786794986",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1724,
+   "type": "message",
+   "date": "2026-08-15T15:57:55",
+   "date_unixtime": "1786795075",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "27"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "20 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.256 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.560 V"
+    },
+    " / 100 mA · ",
+    {
+     "type": "bold",
+     "text": "80%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.152 V"
+    },
+    " / 161 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "27"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "20 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.256 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.560 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 100 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "80%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.152 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 161 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1725,
+   "type": "message",
+   "date": "2026-08-15T16:00:25",
+   "date_unixtime": "1786795225",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1726,
+   "type": "message",
+   "date": "2026-08-15T16:03:26",
+   "date_unixtime": "1786795406",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1727,
+   "type": "message",
+   "date": "2026-08-15T16:11:18",
+   "date_unixtime": "1786795878",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1728,
+   "type": "message",
+   "date": "2026-08-15T16:12:26",
+   "date_unixtime": "1786795946",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
     "🟢 ",
     {
      "type": "bold",
-     "text": "Online — 🟧 Classic"
+     "text": "Device Online"
     },
-    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    "\nDevice: ",
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    "\nVersion: ",
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    " build ",
+    {
+     "type": "code",
+     "text": "125"
+    },
+    "\nIP: ",
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-49 dBm) KN-CENTER\nTime: ",
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    "\nUptime: 0 d 0 h 0 m\n\n🔗 ",
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
-    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 13 m\nChip temp: 47.5 C\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+    "\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    ""
    ],
    "text_entities": [
     {
@@ -955,628 +1348,322 @@
     },
     {
      "type": "bold",
-     "text": "Online — 🟧 Classic"
+     "text": "Device Online"
     },
     {
      "type": "plain",
-     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+     "text": "\nDevice: "
+    },
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: "
+    },
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    {
+     "type": "plain",
+     "text": " build "
+    },
+    {
+     "type": "code",
+     "text": "125"
+    },
+    {
+     "type": "plain",
+     "text": "\nIP: "
+    },
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-49 dBm) KN-CENTER\nTime: "
+    },
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    {
+     "type": "plain",
+     "text": "\nUptime: 0 d 0 h 0 m\n\n🔗 "
     },
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
     {
      "type": "plain",
-     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 13 m\nChip temp: 47.5 C\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "url",
-      "text": "🔗 Statistics",
-      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "📍 Location",
-      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 307004,
-   "type": "message",
-   "date": "2026-08-15T14:47:29",
-   "date_unixtime": "1786790849",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "🟧 Classic\n",
-    {
-     "type": "bold",
-     "text": "Woke up:"
-    },
-    " from Deep Sleep"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "🟧 Classic\n"
-    },
-    {
-     "type": "bold",
-     "text": "Woke up:"
-    },
-    {
-     "type": "plain",
-     "text": " from Deep Sleep"
-    }
-   ]
-  },
-  {
-   "id": 307005,
-   "type": "message",
-   "date": "2026-08-15T14:48:02",
-   "date_unixtime": "1786790882",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📊 ",
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    "\nState: HW OK (0x40)\n\nSolar: 13,51 V / 0,58 A / 7,89 W\nBattery: 13,07 V / +0,48 A / +6,32 W\nLoad: 7,15 V / 0,16 A / 1,13 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,43Ah/+5,6Wh\nClassic: 07:00 ON | 14:00 OFF\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📊 "
-    },
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    {
-     "type": "plain",
-     "text": "\nState: HW OK (0x40)\n\nSolar: 13,51 V / 0,58 A / 7,89 W\nBattery: 13,07 V / +0,48 A / +6,32 W\nLoad: 7,15 V / 0,16 A / 1,13 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,43Ah/+5,6Wh\nClassic: 07:00 ON | 14:00 OFF\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch OFF",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Status",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 307006,
-   "type": "message",
-   "date": "2026-08-15T14:56:49",
-   "date_unixtime": "1786791409",
-   "from": "Imran Nadiroglu",
-   "from_id": "user354183947",
-   "text": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ],
-   "text_entities": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ]
-  },
-  {
-   "id": 307007,
-   "type": "message",
-   "date": "2026-08-15T14:56:56",
-   "date_unixtime": "1786791416",
-   "edited": "2026-08-15T14:57:21",
-   "edited_unixtime": "1786791441",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📋 ",
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    "\nVersion: 1.2.0-c3 build 185\nIP: ",
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 14:57\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 23 m\nChip temp: 63.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 1,47 V / 0,00 A / 0,00 W\nBattery: 12,58 V / -0,11 A / -1,34 W\nLoad: 7,15 V / 0,16 A / 1,16 W\nBattery SOC: ~81%\nBattery flow: Discharging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,50Ah/+6,5Wh\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic\nOTA: disabled"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📋 "
-    },
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    {
-     "type": "plain",
-     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
+     "text": "\n🔗 "
     },
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
     },
     {
      "type": "plain",
-     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nTime: Synced Time 14:57\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 23 m\nChip temp: 63.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 1,47 V / 0,00 A / 0,00 W\nBattery: 12,58 V / -0,11 A / -1,34 W\nLoad: 7,15 V / 0,16 A / 1,16 W\nBattery SOC: ~81%\nBattery flow: Discharging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,50Ah/+6,5Wh\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic\nOTA: disabled"
+     "text": ""
     }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch ON",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Settings",
-      "dataBase64": "bWVudV9zZXR0aW5ncw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Power",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Enable OTA",
-      "dataBase64": "b3RhX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Sleep 1 М",
-      "dataBase64": "c2xlZXBfaW5fMV9taW4",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Restart",
-      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
-      "data": ""
-     }
-    ]
    ]
   },
   {
-   "id": 307008,
+   "id": 1729,
    "type": "message",
-   "date": "2026-08-15T14:57:20",
-   "date_unixtime": "1786791440",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T16:12:33",
+   "date_unixtime": "1786795953",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
-    "🟧 Classic\n",
+    "🔗 ",
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "C3 Controller"
     },
-    " in 1 min · 10 min"
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-49 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "2"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "25 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.024 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.368 V"
+    },
+    " / 102 mA · ",
+    {
+     "type": "bold",
+     "text": "65%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.152 V"
+    },
+    " / 168 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "🟧 Classic\n"
+     "text": "🔗 "
     },
     {
      "type": "bold",
-     "text": "Sleep:"
+     "text": "C3 Controller"
     },
     {
      "type": "plain",
-     "text": " in 1 min · 10 min"
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-49 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "2"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "25 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.024 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.368 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 102 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "65%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.152 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 168 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
    ]
   },
   {
-   "id": 307009,
+   "id": 1730,
    "type": "message",
-   "date": "2026-08-15T14:57:36",
-   "date_unixtime": "1786791456",
-   "from": "Imran Nadiroglu",
-   "from_id": "user354183947",
-   "text": [
-    {
-     "type": "bot_command",
-     "text": "/power"
-    }
-   ],
-   "text_entities": [
-    {
-     "type": "bot_command",
-     "text": "/power"
-    }
-   ]
-  },
-  {
-   "id": 307010,
-   "type": "message",
-   "date": "2026-08-15T14:57:37",
-   "date_unixtime": "1786791457",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "🟧 Classic\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " cancelled\nReason: activity"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "🟧 Classic\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " cancelled\nReason: activity"
-    }
-   ]
-  },
-  {
-   "id": 307011,
-   "type": "message",
-   "date": "2026-08-15T14:57:38",
-   "date_unixtime": "1786791458",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📊 ",
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    "\nState: HW OK (0x40)\n\nSolar: 1,25 V / 0,00 A / 0,00 W\nBattery: 12,53 V / -0,13 A / -1,67 W\nLoad: 7,15 V / 0,18 A / 1,27 W\nBattery SOC: ~77%\nBattery flow: Discharging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,50Ah/+6,5Wh\nClassic: 07:00 ON | 14:00 OFF\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📊 "
-    },
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    {
-     "type": "plain",
-     "text": "\nState: HW OK (0x40)\n\nSolar: 1,25 V / 0,00 A / 0,00 W\nBattery: 12,53 V / -0,13 A / -1,67 W\nLoad: 7,15 V / 0,18 A / 1,27 W\nBattery SOC: ~77%\nBattery flow: Discharging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,50Ah/+6,5Wh\nClassic: 07:00 ON | 14:00 OFF\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch ON",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Status",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 307012,
-   "type": "message",
-   "date": "2026-08-15T15:00:11",
-   "date_unixtime": "1786791611",
-   "from": "Imran Nadiroglu",
-   "from_id": "user354183947",
-   "text": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ],
-   "text_entities": [
-    {
-     "type": "bot_command",
-     "text": "/status"
-    }
-   ]
-  },
-  {
-   "id": 307013,
-   "type": "message",
-   "date": "2026-08-15T15:00:13",
-   "date_unixtime": "1786791613",
-   "edited": "2026-08-15T15:00:17",
-   "edited_unixtime": "1786791617",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📋 ",
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    "\nVersion: 1.2.0-c3 build 185\nIP: ",
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    "\nWi-Fi: 100% (-50 dBm) NKAANNE_plus (P1)\nTime: Synced Time 15:00\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 26 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 1,05 V / 0,00 A / 0,00 W\nBattery: 12,43 V / -0,11 A / -1,33 W\nLoad: 7,15 V / 0,16 A / 1,17 W\nBattery SOC: ~70%\nBattery flow: Discharging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,50Ah/+6,5Wh\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic\nOTA: disabled"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📋 "
-    },
-    {
-     "type": "bold",
-     "text": "Status"
-    },
-    {
-     "type": "plain",
-     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
-    },
-    {
-     "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
-    },
-    {
-     "type": "plain",
-     "text": "\nWi-Fi: 100% (-50 dBm) NKAANNE_plus (P1)\nTime: Synced Time 15:00\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 26 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 1,05 V / 0,00 A / 0,00 W\nBattery: 12,43 V / -0,11 A / -1,33 W\nLoad: 7,15 V / 0,16 A / 1,17 W\nBattery SOC: ~70%\nBattery flow: Discharging\nEnergy: used -0,01Ah/-0,1Wh | charged +0,50Ah/+6,5Wh\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 1/1\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic\nOTA: disabled"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch ON",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Settings",
-      "dataBase64": "bWVudV9zZXR0aW5ncw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Power",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Enable OTA",
-      "dataBase64": "b3RhX3RvZ2dsZQ",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Sleep 1 М",
-      "dataBase64": "c2xlZXBfaW5fMV9taW4",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Restart",
-      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 307014,
-   "type": "message",
-   "date": "2026-08-15T15:00:17",
-   "date_unixtime": "1786791617",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "🟧 Classic\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " in 1 min · 10 min"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "🟧 Classic\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " in 1 min · 10 min"
-    }
-   ]
-  },
-  {
-   "id": 307015,
-   "type": "message",
-   "date": "2026-08-15T15:00:59",
-   "date_unixtime": "1786791659",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "🟧 Classic\n",
-    {
-     "type": "bold",
-     "text": "Next wake:"
-    },
-    " 15:11"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "🟧 Classic\n"
-    },
-    {
-     "type": "bold",
-     "text": "Next wake:"
-    },
-    {
-     "type": "plain",
-     "text": " 15:11"
-    }
-   ]
-  },
-  {
-   "id": 307016,
-   "type": "message",
-   "date": "2026-08-15T15:11:18",
-   "date_unixtime": "1786792278",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T16:14:23",
+   "date_unixtime": "1786796063",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
     "🟢 ",
     {
      "type": "bold",
-     "text": "Online — 🟧 Classic"
+     "text": "Device Online"
     },
-    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    "\nDevice: ",
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    "\nVersion: ",
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    " build ",
+    {
+     "type": "code",
+     "text": "125"
+    },
+    "\nIP: ",
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-49 dBm) KN-CENTER\nTime: ",
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    "\nUptime: 0 d 0 h 0 m\n\n🔗 ",
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
-    "\nWi-Fi: 100% (-47 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 37 m\nChip temp: 47.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+    "\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    ""
    ],
    "text_entities": [
     {
@@ -1585,261 +1672,2102 @@
     },
     {
      "type": "bold",
-     "text": "Online — 🟧 Classic"
+     "text": "Device Online"
     },
     {
      "type": "plain",
-     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+     "text": "\nDevice: "
+    },
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: "
+    },
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    {
+     "type": "plain",
+     "text": " build "
+    },
+    {
+     "type": "code",
+     "text": "125"
+    },
+    {
+     "type": "plain",
+     "text": "\nIP: "
+    },
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-49 dBm) KN-CENTER\nTime: "
+    },
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    {
+     "type": "plain",
+     "text": "\nUptime: 0 d 0 h 0 m\n\n🔗 "
     },
     {
      "type": "text_link",
-     "text": "192.168.11.112",
-     "href": "http://192.168.11.112/"
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
     },
     {
      "type": "plain",
-     "text": "\nWi-Fi: 100% (-47 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 37 m\nChip temp: 47.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+     "text": "\n🔗 "
+    },
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "url",
-      "text": "🔗 Statistics",
-      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "📍 Location",
-      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
-      "data": ""
-     }
-    ]
    ]
   },
   {
-   "id": 307017,
+   "id": 1731,
    "type": "message",
-   "date": "2026-08-15T15:11:18",
-   "date_unixtime": "1786792278",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T16:14:30",
+   "date_unixtime": "1786796070",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
    "text": [
-    "🟧 Classic\n",
+    "🔗 ",
     {
      "type": "bold",
-     "text": "Woke up:"
+     "text": "C3 Controller"
     },
-    " from Deep Sleep"
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-49 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "5"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.024 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.336 V"
+    },
+    " / 154 mA · ",
+    {
+     "type": "bold",
+     "text": "63%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.136 V"
+    },
+    " / 249 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "🟧 Classic\n"
+     "text": "🔗 "
     },
     {
      "type": "bold",
-     "text": "Woke up:"
+     "text": "C3 Controller"
     },
     {
      "type": "plain",
-     "text": " from Deep Sleep"
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-49 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "5"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.024 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.336 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 154 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "63%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.136 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 249 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
     }
    ]
   },
   {
-   "id": 307018,
+   "id": 1732,
    "type": "message",
-   "date": "2026-08-15T15:12:17",
-   "date_unixtime": "1786792337",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
-   "text": [
-    "📊 ",
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    "\nState: HW OK (0x40)\n\nSolar: 1,02 V / 0,00 A / 0,00 W\nBattery: 12,37 V / -0,11 A / -1,31 W\nLoad: 7,15 V / 0,17 A / 1,24 W\nBattery SOC: ~65%\nBattery flow: Discharging\nEnergy: used -0,03Ah/-0,4Wh | charged +0,50Ah/+6,5Wh\nClassic: 07:00 ON | 14:00 OFF\n\n",
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 2/2\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
-   ],
-   "text_entities": [
-    {
-     "type": "plain",
-     "text": "📊 "
-    },
-    {
-     "type": "bold",
-     "text": "INA3221 Status — 🟧 Classic"
-    },
-    {
-     "type": "plain",
-     "text": "\nState: HW OK (0x40)\n\nSolar: 1,02 V / 0,00 A / 0,00 W\nBattery: 12,37 V / -0,11 A / -1,31 W\nLoad: 7,15 V / 0,17 A / 1,24 W\nBattery SOC: ~65%\nBattery flow: Discharging\nEnergy: used -0,03Ah/-0,4Wh | charged +0,50Ah/+6,5Wh\nClassic: 07:00 ON | 14:00 OFF\n\n"
-    },
-    {
-     "type": "bold",
-     "text": "Sleep:"
-    },
-    {
-     "type": "plain",
-     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 2/2\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
-    }
-   ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "Switch ON",
-      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Update",
-      "dataBase64": "bWVudV9pbmE",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Status",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     }
-    ]
-   ]
-  },
-  {
-   "id": 307019,
-   "type": "message",
-   "date": "2026-08-15T15:12:22",
-   "date_unixtime": "1786792342",
+   "date": "2026-08-15T16:20:01",
+   "date_unixtime": "1786796401",
    "from": "Imran Nadiroglu",
    "from_id": "user354183947",
    "text": [
     {
      "type": "bot_command",
-     "text": "/status"
+     "text": "/status@esp32sp_bot"
     }
    ],
    "text_entities": [
     {
      "type": "bot_command",
-     "text": "/status"
+     "text": "/status@esp32sp_bot"
     }
    ]
   },
   {
-   "id": 307020,
+   "id": 1733,
    "type": "message",
-   "date": "2026-08-15T15:12:23",
-   "date_unixtime": "1786792343",
-   "edited": "2026-08-15T15:14:10",
-   "edited_unixtime": "1786792450",
-   "from": "myhapb_bot",
-   "from_id": "user7627885844",
+   "date": "2026-08-15T16:20:23",
+   "date_unixtime": "1786796423",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
    "text": [
-    "⚙️ ",
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ]
+  },
+  {
+   "id": 1734,
+   "type": "message",
+   "date": "2026-08-15T16:40:24",
+   "date_unixtime": "1786797624",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ]
+  },
+  {
+   "id": 1735,
+   "type": "message",
+   "date": "2026-08-15T16:57:10",
+   "date_unixtime": "1786798630",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ]
+  },
+  {
+   "id": 1736,
+   "type": "message",
+   "date": "2026-08-15T16:57:34",
+   "date_unixtime": "1786798654",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/status@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1737,
+   "type": "message",
+   "date": "2026-08-15T16:57:35",
+   "date_unixtime": "1786798655",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ]
+  },
+  {
+   "id": 1738,
+   "type": "message",
+   "date": "2026-08-15T17:03:53",
+   "date_unixtime": "1786799033",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🟢 ",
     {
      "type": "bold",
-     "text": "Settings"
+     "text": "Device Online"
     },
-    "\nSleep mode: Deep\nDeep: 10 min\nAwake interval: 10 min\nSolar Control: 🟧 Classic\nSolar window: 07:00-14:00\nGPS: OFF\nEnergy: automatic"
+    "\nDevice: ",
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    "\nVersion: ",
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    " build ",
+    {
+     "type": "code",
+     "text": "125"
+    },
+    "\nIP: ",
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-45 dBm) KN-CENTER\nTime: ",
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    "\nUptime: 0 d 0 h 0 m\n\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
+    },
+    "\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    ""
    ],
    "text_entities": [
     {
      "type": "plain",
-     "text": "⚙️ "
+     "text": "🟢 "
     },
     {
      "type": "bold",
-     "text": "Settings"
+     "text": "Device Online"
     },
     {
      "type": "plain",
-     "text": "\nSleep mode: Deep\nDeep: 10 min\nAwake interval: 10 min\nSolar Control: 🟧 Classic\nSolar window: 07:00-14:00\nGPS: OFF\nEnergy: automatic"
+     "text": "\nDevice: "
+    },
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: "
+    },
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    {
+     "type": "plain",
+     "text": " build "
+    },
+    {
+     "type": "code",
+     "text": "125"
+    },
+    {
+     "type": "plain",
+     "text": "\nIP: "
+    },
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-45 dBm) KN-CENTER\nTime: "
+    },
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    {
+     "type": "plain",
+     "text": "\nUptime: 0 d 0 h 0 m\n\n🔗 "
+    },
+    {
+     "type": "text_link",
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
+    },
+    {
+     "type": "plain",
+     "text": "\n🔗 "
+    },
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1739,
+   "type": "message",
+   "date": "2026-08-15T17:04:00",
+   "date_unixtime": "1786799040",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-45 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "19"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "0.992 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.272 V"
+    },
+    " / 119 mA · ",
+    {
+     "type": "bold",
+     "text": "57%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 182 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-45 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "19"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "26 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "0.992 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.272 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 119 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "57%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 182 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1740,
+   "type": "message",
+   "date": "2026-08-15T17:23:47",
+   "date_unixtime": "1786800227",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
     }
    ],
-   "inline_bot_buttons": [
-    [
-     {
-      "type": "callback",
-      "text": "OFF",
-      "dataBase64": "c2xlZXBfbW9kZV9vZmY",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "ON",
-      "dataBase64": "c2xlZXBfbW9kZV9kZWVw",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Deep Sleep",
-      "dataBase64": "bWVudV9kZWVwX3NsZWVw",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "Awake interval",
-      "dataBase64": "bWVudV9hd2FrZV9pbnRlcnZhbA",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Solar window",
-      "dataBase64": "c2V0dGluZ3Nfd2luZG93",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "GPS",
-      "dataBase64": "bWVudV9ncHM",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "🟦 Smart Auto",
-      "dataBase64": "c29sYXJfbW9kZV9hdXRv",
-      "data": ""
-     },
-     {
-      "type": "callback",
-      "text": "🟧 Classic",
-      "dataBase64": "c29sYXJfbW9kZV9jbGFzc2lj",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Reset All",
-      "dataBase64": "cmVzZXRfYWxs",
-      "data": ""
-     }
-    ],
-    [
-     {
-      "type": "callback",
-      "text": "Back",
-      "dataBase64": "bWVudV9zdGF0dXM",
-      "data": ""
-     }
-    ]
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c2sts"
+    }
+   ]
+  },
+  {
+   "id": 1741,
+   "type": "message",
+   "date": "2026-08-15T17:24:32",
+   "date_unixtime": "1786800272",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🟢 ",
+    {
+     "type": "bold",
+     "text": "Device Online"
+    },
+    "\nDevice: ",
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    "\nVersion: ",
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    " build ",
+    {
+     "type": "code",
+     "text": "125"
+    },
+    "\nIP: ",
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-46 dBm) KN-CENTER\nTime: ",
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    "\nUptime: 0 d 0 h 0 m\n\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
+    },
+    "\n🔗 ",
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟢 "
+    },
+    {
+     "type": "bold",
+     "text": "Device Online"
+    },
+    {
+     "type": "plain",
+     "text": "\nDevice: "
+    },
+    {
+     "type": "code",
+     "text": "bs-esp32-01"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: "
+    },
+    {
+     "type": "code",
+     "text": "0.1.71-EXP"
+    },
+    {
+     "type": "plain",
+     "text": " build "
+    },
+    {
+     "type": "code",
+     "text": "125"
+    },
+    {
+     "type": "plain",
+     "text": "\nIP: "
+    },
+    {
+     "type": "code",
+     "text": "192.168.11.124"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-46 dBm) KN-CENTER\nTime: "
+    },
+    {
+     "type": "bold",
+     "text": "Synced"
+    },
+    {
+     "type": "plain",
+     "text": "\nUptime: 0 d 0 h 0 m\n\n🔗 "
+    },
+    {
+     "type": "text_link",
+     "text": "Online Statistics",
+     "href": "https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943"
+    },
+    {
+     "type": "plain",
+     "text": "\n🔗 "
+    },
+    {
+     "type": "text_link",
+     "text": "Local Log",
+     "href": "http://192.168.11.124/"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1742,
+   "type": "message",
+   "date": "2026-08-15T17:24:38",
+   "date_unixtime": "1786800278",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-46 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "57"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "24 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "0.992 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.264 V"
+    },
+    " / 112 mA · ",
+    {
+     "type": "bold",
+     "text": "56%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 178 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-46 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "57"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "24 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "0.992 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.264 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 112 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "56%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 178 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1747,
+   "type": "message",
+   "date": "2026-08-15T21:22:45",
+   "date_unixtime": "1786814565",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts"
+    }
+   ]
+  },
+  {
+   "id": 1748,
+   "type": "message",
+   "date": "2026-08-15T21:23:23",
+   "date_unixtime": "1786814603",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "SLP"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-46 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "17"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "581 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "13.656 V"
+    },
+    " / 405 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "13.256 V"
+    },
+    " / -307 mA · ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 166 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "SLP"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-46 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "17"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "581 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "13.656 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 405 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "13.256 V"
+    },
+    {
+     "type": "plain",
+     "text": " / -307 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 166 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1749,
+   "type": "message",
+   "date": "2026-08-15T21:23:53",
+   "date_unixtime": "1786814633",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1750,
+   "type": "message",
+   "date": "2026-08-15T21:24:22",
+   "date_unixtime": "1786814662",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-48 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "1"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "4 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "13.664 V"
+    },
+    " / 396 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "13.264 V"
+    },
+    " / -292 mA · ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 164 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-48 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "1"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "4 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "13.664 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 396 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "13.264 V"
+    },
+    {
+     "type": "plain",
+     "text": " / -292 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 164 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1751,
+   "type": "message",
+   "date": "2026-08-15T21:24:44",
+   "date_unixtime": "1786814684",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1752,
+   "type": "message",
+   "date": "2026-08-15T21:25:22",
+   "date_unixtime": "1786814722",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-48 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "3"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "3 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "13.664 V"
+    },
+    " / 396 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "13.272 V"
+    },
+    " / -295 mA · ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 174 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-48 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "3"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "3 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "13.664 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 396 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "13.272 V"
+    },
+    {
+     "type": "plain",
+     "text": " / -295 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 174 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "ON"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1753,
+   "type": "message",
+   "date": "2026-08-15T21:26:21",
+   "date_unixtime": "1786814781",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1754,
+   "type": "message",
+   "date": "2026-08-15T21:27:23",
+   "date_unixtime": "1786814843",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-50 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "6"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "28 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.128 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.744 V"
+    },
+    " / 97 mA · ",
+    {
+     "type": "bold",
+     "text": "91%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.152 V"
+    },
+    " / 159 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-50 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "6"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "28 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.128 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.744 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 97 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "91%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.152 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 159 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
+   ]
+  },
+  {
+   "id": 1755,
+   "type": "message",
+   "date": "2026-08-15T21:28:04",
+   "date_unixtime": "1786814884",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1756,
+   "type": "message",
+   "date": "2026-08-15T21:28:08",
+   "date_unixtime": "1786814888",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/c3sts@esp32sp_bot"
+    }
+   ]
+  },
+  {
+   "id": 1757,
+   "type": "message",
+   "date": "2026-08-15T21:28:23",
+   "date_unixtime": "1786814903",
+   "from": "Bakinin Sesi",
+   "from_id": "user7259065633",
+   "text": [
+    "🔗 ",
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    "\nLink: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    " · build ",
+    {
+     "type": "code",
+     "text": "185"
+    },
+    "\nWi-Fi: ",
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    " (-49 dBm) KN-CENTER\nTelemetry: q=",
+    {
+     "type": "code",
+     "text": "7"
+    },
+    " · age ",
+    {
+     "type": "bold",
+     "text": "28 s"
+    },
+    "\nINA3221: ",
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    "\n\nSolar: ",
+    {
+     "type": "bold",
+     "text": "1.056 V"
+    },
+    " / 0 mA\nBattery: ",
+    {
+     "type": "bold",
+     "text": "12.664 V"
+    },
+    " / 98 mA · ",
+    {
+     "type": "bold",
+     "text": "87%"
+    },
+    "\nLoad: ",
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    " / 161 mA\n\nCharge: ",
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    "\nMode: ",
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    ""
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🔗 "
+    },
+    {
+     "type": "bold",
+     "text": "C3 Controller"
+    },
+    {
+     "type": "plain",
+     "text": "\nLink: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": " · build "
+    },
+    {
+     "type": "code",
+     "text": "185"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: "
+    },
+    {
+     "type": "bold",
+     "text": "100%"
+    },
+    {
+     "type": "plain",
+     "text": " (-49 dBm) KN-CENTER\nTelemetry: q="
+    },
+    {
+     "type": "code",
+     "text": "7"
+    },
+    {
+     "type": "plain",
+     "text": " · age "
+    },
+    {
+     "type": "bold",
+     "text": "28 s"
+    },
+    {
+     "type": "plain",
+     "text": "\nINA3221: "
+    },
+    {
+     "type": "bold",
+     "text": "OK"
+    },
+    {
+     "type": "plain",
+     "text": "\n\nSolar: "
+    },
+    {
+     "type": "bold",
+     "text": "1.056 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 0 mA\nBattery: "
+    },
+    {
+     "type": "bold",
+     "text": "12.664 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 98 mA · "
+    },
+    {
+     "type": "bold",
+     "text": "87%"
+    },
+    {
+     "type": "plain",
+     "text": "\nLoad: "
+    },
+    {
+     "type": "bold",
+     "text": "7.144 V"
+    },
+    {
+     "type": "plain",
+     "text": " / 161 mA\n\nCharge: "
+    },
+    {
+     "type": "bold",
+     "text": "OFF"
+    },
+    {
+     "type": "plain",
+     "text": "\nMode: "
+    },
+    {
+     "type": "bold",
+     "text": "Classic"
+    },
+    {
+     "type": "plain",
+     "text": ""
+    }
    ]
   }
  ]
