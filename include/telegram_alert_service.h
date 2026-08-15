@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include <Preferences.h>
 
 #include "controller_link_service.h"
 
@@ -14,6 +15,9 @@ class TelegramAlertService {
   void updateControllerStatus(bool wifiConnected,
                               const ControllerLinkService &controllerLink,
                               uint32_t nowMs);
+  void updateCommands(bool wifiConnected, bool timeSynced,
+                      const ControllerLinkService &controllerLink,
+                      uint32_t nowMs);
 
   bool isConfigured() const;
 
@@ -22,6 +26,9 @@ class TelegramAlertService {
   static constexpr unsigned long kRetryIntervalMs = 30000UL;
   static constexpr unsigned long kRestoreThresholdMs = 90000UL;
   static constexpr unsigned long kRestoreWarmupMs = 10000UL;
+  static constexpr unsigned long kCommandPollIntervalMs = 60000UL;
+  static constexpr uint16_t kCommandHttpTimeoutMs = 4000;
+  static constexpr uint32_t kMaxCommandAgeSeconds = 120;
 
   bool sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
                          bool timeSynced, const char *versionText, uint32_t buildNumber,
@@ -31,6 +38,11 @@ class TelegramAlertService {
                          const String &uptimeText, unsigned long downtimeMs);
   bool sendControllerStatus_(const ControllerLinkService &controllerLink,
                              uint32_t nowMs);
+  bool pollCommands_(const ControllerLinkService &controllerLink,
+                     uint32_t nowMs);
+  void processCommandUpdates_(const String &response,
+                              const ControllerLinkService &controllerLink,
+                              uint32_t nowMs);
   String buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                    uint8_t wifiSignalPercent, bool timeSynced,
                                    const char *versionText, uint32_t buildNumber,
@@ -50,9 +62,13 @@ class TelegramAlertService {
   bool wifiWasConnected_ = false;
   bool restorePending_ = false;
   bool controllerStatusSentThisBoot_ = false;
+  bool commandPreferencesReady_ = false;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;
   unsigned long restoreDowntimeMs_ = 0;
   unsigned long lastAttemptAtMs_ = 0;
   unsigned long lastControllerAttemptAtMs_ = 0;
+  unsigned long lastCommandPollAtMs_ = 0;
+  uint32_t lastCommandUpdateId_ = 0;
+  Preferences commandPreferences_;
 };

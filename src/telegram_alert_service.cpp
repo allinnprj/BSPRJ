@@ -2,6 +2,7 @@
 
 #include <HTTPClient.h>
 #include <WiFiClientSecure.h>
+#include <time.h>
 
 #include "secrets.h"
 
@@ -46,6 +47,128 @@ const __FlashStringHelper *controllerModeText(uint8_t mode) {
   }
 }
 
+int findJsonValueStart(const String &source, const char *quotedKey,
+                       int start, int end) {
+  const int keyAt = source.indexOf(quotedKey, start);
+  if (keyAt < 0 || keyAt >= end) {
+    return -1;
+  }
+  int cursor = keyAt + static_cast<int>(strlen(quotedKey));
+  while (cursor < end && (source[cursor] == ' ' || source[cursor] == '\t' ||
+                          source[cursor] == '\r' || source[cursor] == '\n')) {
+    ++cursor;
+  }
+  if (cursor >= end || source[cursor] != ':') {
+    return -1;
+  }
+  ++cursor;
+  while (cursor < end && (source[cursor] == ' ' || source[cursor] == '\t' ||
+                          source[cursor] == '\r' || source[cursor] == '\n')) {
+    ++cursor;
+  }
+  return cursor < end ? cursor : -1;
+}
+
+bool parseJsonUnsignedField(const String &source, const char *quotedKey,
+                            int start, int end, uint32_t &value) {
+  int cursor = findJsonValueStart(source, quotedKey, start, end);
+  if (cursor < 0 || source[cursor] < '0' || source[cursor] > '9') {
+    return false;
+  }
+  uint32_t parsed = 0;
+  do {
+    const uint8_t digit = static_cast<uint8_t>(source[cursor] - '0');
+    if (parsed > (UINT32_MAX - digit) / 10U) {
+      return false;
+    }
+    parsed = parsed * 10U + digit;
+    ++cursor;
+  } while (cursor < end && source[cursor] >= '0' && source[cursor] <= '9');
+  value = parsed;
+  return true;
+}
+
+bool parseJsonIntegerTokenField(const String &source, const char *quotedKey,
+                                int start, int end, String &token) {
+  int cursor = findJsonValueStart(source, quotedKey, start, end);
+  if (cursor < 0) {
+    return false;
+  }
+  const int tokenStart = cursor;
+  if (source[cursor] == '-') {
+    ++cursor;
+  }
+  const int digitStart = cursor;
+  while (cursor < end && source[cursor] >= '0' && source[cursor] <= '9') {
+    ++cursor;
+  }
+  if (cursor == digitStart) {
+    return false;
+  }
+  token = source.substring(tokenStart, cursor);
+  return true;
+}
+
+bool parseJsonStringField(const String &source, const char *quotedKey,
+                          int start, int end, String &value) {
+  int cursor = findJsonValueStart(source, quotedKey, start, end);
+  if (cursor < 0 || source[cursor] != '"') {
+    return false;
+  }
+  ++cursor;
+  value = "";
+  while (cursor < end) {
+    const char current = source[cursor++];
+    if (current == '"') {
+      return true;
+    }
+    if (current != '\\') {
+      value += current;
+      continue;
+    }
+    if (cursor >= end) {
+      return false;
+    }
+    const char escaped = source[cursor++];
+    switch (escaped) {
+      case '"':
+      case '\\':
+      case '/':
+        value += escaped;
+        break;
+      case 'b':
+        value += '\b';
+        break;
+      case 'f':
+        value += '\f';
+        break;
+      case 'n':
+        value += '\n';
+        break;
+      case 'r':
+        value += '\r';
+        break;
+      case 't':
+        value += '\t';
+        break;
+      default:
+        return false;
+    }
+  }
+  return false;
+}
+
+bool isStatusCommand(String command) {
+  command.trim();
+  if (command == F("/c3_status")) {
+    return true;
+  }
+  if (!command.startsWith(F("/c3_status@"))) {
+    return false;
+  }
+  return command.indexOf(' ') < 0 && command.length() > strlen("/c3_status@");
+}
+
 }  // namespace
 
 void TelegramAlertService::begin() {
@@ -59,9 +182,20 @@ void TelegramAlertService::begin() {
   restoreDowntimeMs_ = 0;
   lastAttemptAtMs_ = 0;
   lastControllerAttemptAtMs_ = 0;
+  lastCommandPollAtMs_ = millis();
+  lastCommandUpdateId_ = 0;
+  commandPreferencesReady_ = false;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
+    commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
+    if (commandPreferencesReady_) {
+      lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
+      Serial.print(F("[TG] commands ready -> /c3_status poll=60s last_update="));
+      Serial.println(lastCommandUpdateId_);
+    } else {
+      Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
+    }
   } else {
     Serial.println(F("[TG] OFF -> TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID is empty"));
   }
@@ -161,6 +295,18 @@ void TelegramAlertService::updateControllerStatus(
     controllerStatusSentThisBoot_ = true;
     Serial.println(F("[TG] sent -> C3 Controller"));
   }
+}
+
+void TelegramAlertService::updateCommands(
+    bool wifiConnected, bool timeSynced,
+    const ControllerLinkService &controllerLink, uint32_t nowMs) {
+  if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
+      !timeSynced || !onlineSentThisBoot_ ||
+      nowMs - lastCommandPollAtMs_ < kCommandPollIntervalMs) {
+    return;
+  }
+  lastCommandPollAtMs_ = nowMs;
+  pollCommands_(controllerLink, nowMs);
 }
 
 bool TelegramAlertService::isConfigured() const {
@@ -296,6 +442,123 @@ bool TelegramAlertService::sendControllerStatus_(
   return false;
 }
 
+bool TelegramAlertService::pollCommands_(
+    const ControllerLinkService &controllerLink, uint32_t nowMs) {
+  WiFiClientSecure client;
+  client.setInsecure();
+  client.setHandshakeTimeout(4);
+
+  String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/getUpdates?offset=");
+  if (lastCommandUpdateId_ == 0) {
+    url += F("-10");
+  } else {
+    url += String(lastCommandUpdateId_ + 1U);
+  }
+  url += F("&limit=10&timeout=0&allowed_updates=%5B%22message%22%5D");
+
+  HTTPClient http;
+  http.setTimeout(kCommandHttpTimeoutMs);
+  if (!http.begin(client, url)) {
+    Serial.println(F("[TG] commands GET begin failed"));
+    return false;
+  }
+
+  const int httpCode = http.GET();
+  if (httpCode != 200) {
+    Serial.print(F("[TG] commands GET -> "));
+    Serial.println(httpCode);
+    http.end();
+    return false;
+  }
+
+  const String response = http.getString();
+  http.end();
+  processCommandUpdates_(response, controllerLink, nowMs);
+  return true;
+}
+
+void TelegramAlertService::processCommandUpdates_(
+    const String &response, const ControllerLinkService &controllerLink,
+    uint32_t nowMs) {
+  uint32_t newestUpdateId = lastCommandUpdateId_;
+  int searchAt = 0;
+  while (true) {
+    const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
+    if (updateAt < 0) {
+      break;
+    }
+    const int nextUpdateAt = response.indexOf(F("\"update_id\""), updateAt + 1);
+    const int updateEnd = nextUpdateAt >= 0 ? nextUpdateAt : response.length();
+    searchAt = updateEnd;
+
+    uint32_t updateId = 0;
+    if (!parseJsonUnsignedField(response, "\"update_id\"", updateAt,
+                                updateEnd, updateId)) {
+      continue;
+    }
+    if (updateId > newestUpdateId) {
+      newestUpdateId = updateId;
+    }
+    if (updateId <= lastCommandUpdateId_) {
+      continue;
+    }
+
+    const int messageAt = response.indexOf(F("\"message\""), updateAt);
+    const int chatAt = messageAt >= 0
+                           ? response.indexOf(F("\"chat\""), messageAt)
+                           : -1;
+    if (messageAt < 0 || messageAt >= updateEnd || chatAt < 0 ||
+        chatAt >= updateEnd) {
+      continue;
+    }
+
+    String chatId;
+    String command;
+    uint32_t messageDate = 0;
+    if (!parseJsonIntegerTokenField(response, "\"id\"", chatAt, updateEnd,
+                                    chatId) ||
+        !parseJsonUnsignedField(response, "\"date\"", messageAt, updateEnd,
+                                messageDate) ||
+        !parseJsonStringField(response, "\"text\"", messageAt, updateEnd,
+                              command)) {
+      continue;
+    }
+
+    String configuredChatId = String(TELEGRAM_CHAT_ID);
+    configuredChatId.trim();
+    if (chatId != configuredChatId) {
+      Serial.println(F("[TG] command ignored -> unauthorized chat"));
+      continue;
+    }
+
+    const time_t currentEpoch = time(nullptr);
+    const int64_t commandAgeSeconds =
+        static_cast<int64_t>(currentEpoch) - static_cast<int64_t>(messageDate);
+    if (currentEpoch < 1700000000 || commandAgeSeconds < -30 ||
+        commandAgeSeconds > static_cast<int64_t>(kMaxCommandAgeSeconds)) {
+      Serial.println(F("[TG] command ignored -> stale update"));
+      continue;
+    }
+
+    if (isStatusCommand(command)) {
+      const bool sent = sendControllerStatus_(controllerLink, nowMs);
+      Serial.print(F("[TG] command /c3_status -> "));
+      Serial.println(sent ? F("OK") : F("FAIL"));
+    }
+  }
+
+  if (newestUpdateId == lastCommandUpdateId_) {
+    return;
+  }
+  if (commandPreferences_.putULong("last_update", newestUpdateId) !=
+      sizeof(uint32_t)) {
+    commandPreferencesReady_ = false;
+    Serial.println(F("[TG] commands OFF -> failed to persist update_id"));
+    return;
+  }
+  lastCommandUpdateId_ = newestUpdateId;
+}
+
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                                        uint8_t wifiSignalPercent,
                                                        bool timeSynced,
@@ -379,6 +642,10 @@ String TelegramAlertService::buildControllerStatusMessage_(
   message += F("</b> · build <code>");
   message += String(controllerLink.remoteBuild());
   message += F("</code>\n");
+  if (!controllerLink.hasTelemetry()) {
+    message += F("Telemetry: <b>Waiting for C3</b>");
+    return message;
+  }
   message += F("Telemetry: q=<code>");
   message += String(telemetry.sequence);
   message += F("</code> · age <b>");

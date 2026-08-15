@@ -899,6 +899,9 @@ void loop() {
                               formatCompactUptime(powerUptimeMs()));
   telegramAlertService.updateControllerStatus(
       wifiService.isConnected(), controllerLinkService, nowMs);
+  telegramAlertService.updateCommands(
+      wifiService.isConnected(), timeService.isSynced(), controllerLinkService,
+      nowMs);
   if (!otaStarted && latestSnapshot.statsUpdated &&
       nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
     if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {

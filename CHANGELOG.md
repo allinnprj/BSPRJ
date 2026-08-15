@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## WROOM read-only Telegram `/c3_status` - 2026-08-15
+
+1. Added WROOM build `122` (`0.1.68-EXP`) as the first Telegram command-input stage. The existing bot now checks for `/c3_status` once every 60 seconds and returns the same read-only `C3 Controller` card from WROOM's latest UART state and telemetry.
+2. Only the configured `TELEGRAM_CHAT_ID` is authorized. Messages older than 120 seconds or more than 30 seconds in the future are ignored, and no chat identifier or command body is printed to the serial log.
+3. Telegram `update_id` is persisted in the dedicated `tg_commands` NVS namespace. Already consumed updates are not processed again after a WROOM restart; if persistence is unavailable or fails, command polling disables itself instead of running without replay protection.
+4. Initial synchronization requests only the last 10 Telegram updates. Polling uses non-long-polling `getUpdates`, a 4-second HTTP/handshake limit, and no new JSON/library dependency. A missing C3 telemetry snapshot returns `Waiting for C3` instead of fabricated zero measurements.
+5. This stage is read-only: no UART command frame, queue, C3 wake, Wi-Fi/OTA change, Deep-Sleep change, or C3 firmware change was added. WQTT, automatic Telegram status, Device Online/Wi-Fi Restored, Datacake, Google Sheets, local logging, INA3221, GPS, and charge control remain unchanged. C3 stays on build `185` and requires no upload.
+6. Pre-change backups: BSPRJ archive `BSPRJ_STAGE1_2026-08-15_04-51-31.tar` plus verified Git bundle, and compact INA3221-C3 archive `INA3221-C3_STAGE1_2026-08-15_04-57-02.tar` plus verified Git bundle. Both archive/bundle pairs have recorded SHA-256 hashes; `.pio` was excluded because it is reproducible and made the full C3 backup exceed the execution window.
+7. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,276 / 327,680` (`19.9%`), Flash `1,337,707 / 1,572,864` (`85.0%`), linked OTA-slot reserve `235,157` bytes, firmware `1,338,112` bytes, SHA-256 `9BEBF2C801263290B6C3B8FD21C66C1B7DC467F9E51BFAECE5829087398B7490`. Manual WROOM upload and physical `/c3_status` replay/authentication proof remain.
+
 ## WROOM Telegram C3 status card - 2026-08-15
 
 1. Added WROOM build `121` (`0.1.67-EXP`) as the next read-only gateway step. After the normal `Device Online` alert and the first accepted C3 telemetry frame, the same Telegram bot sends one separate `C3 Controller` status card per WROOM boot.
@@ -7,6 +17,7 @@
 3. Telegram failures retry no faster than the existing 30-second alert interval. Existing Device Online/Wi-Fi Restored alerts, WQTT telemetry, Datacake, Google Sheets, local logging, UART framing, C3 firmware, Deep Sleep, GPS, INA3221, and charge logic are unchanged. C3 stays on build `185` and requires no upload.
 4. Corrected the reserved UART mode `2` display to `legacy_manual` in WQTT and `MANUAL` in the serial diagnostic instead of incorrectly presenting it as Classic.
 5. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,260 / 327,680` (`19.9%`), Flash `1,333,943 / 1,572,864` (`84.8%`), linked OTA-slot reserve `238,921` bytes, firmware `1,334,352` bytes, SHA-256 `AC9DD7895F9B6D9DAFAA8194930F753D9D5E5731DA48D91F17776A6B2463096F`. Manual WROOM upload and physical Telegram-card proof remain.
+6. Physical validation: the user manually uploaded WROOM build `121`; Telegram showed the correct `0.1.67-EXP build 121` startup card and a complete `C3 Controller` card from the same bot. Serial evidence was `[TG] C3 POST -> 200` and `[TG] sent -> C3 Controller`. The rendered card showed Link `OK`, C3 build `185`, fresh telemetry `q=5` / age `19 s`, INA3221 `OK`, Solar `0.992 V / 0 mA`, Battery `12.248 V / 160 mA / 55%`, Load `7.144 V / 185 mA`, Charge `OFF`, and mode `Classic`. The read-only Telegram gateway gate passes.
 
 ## WROOM MQTT gateway for C3 telemetry - 2026-08-15
 

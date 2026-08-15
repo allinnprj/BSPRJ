@@ -141,3 +141,37 @@ Card contract:
 - No Telegram polling, command handling, C3 wake request, or control action.
 - C3 build 185, UART framing, Deep Sleep, WQTT, Datacake, Google Sheets, and local logging remain unchanged.
 - Physical acceptance requires the Telegram `C3 Controller` card plus `[TG] C3 POST -> 200` and `[TG] sent -> C3 Controller` on WROOM build 121.
+
+Physical acceptance passed on 2026-08-15:
+
+- WROOM Telegram startup card: `0.1.67-EXP build 121`.
+- Telegram API and device log: `[TG] C3 POST -> 200`, then `[TG] sent -> C3 Controller`.
+- Rendered card: Link `OK`, C3 build `185`, fresh `q=5` telemetry at age `19 s`, INA3221 `OK`, all Solar/Battery/Load fields visible, Charge `OFF`, and mode `Classic`.
+- No truncation or layout defect was visible in the user-provided screenshot.
+
+## WROOM Telegram Read-only Command Input
+
+WROOM build 122 adds only one incoming Telegram command:
+
+```text
+/c3_status
+```
+
+Command contract:
+
+- The command is handled entirely by WROOM and returns its latest local C3 link/telemetry snapshot.
+- Only the configured `TELEGRAM_CHAT_ID` is accepted.
+- Update age must be `-30..120` seconds relative to synchronized WROOM time.
+- Telegram `update_id` is persisted in NVS and never intentionally processed twice.
+- Poll interval is 60 seconds; non-long-polling HTTP and TLS are limited to 4 seconds.
+- Initial synchronization looks at only the last 10 updates, preventing an unlimited historical backlog.
+- If NVS persistence is unavailable, command polling stays disabled.
+- If C3 telemetry has not arrived, the reply says `Waiting for C3`.
+- No UART command, C3 wake, Wi-Fi/OTA control, Deep-Sleep change, or C3 firmware change exists in this stage.
+
+Physical acceptance requires:
+
+- WROOM startup card `0.1.68-EXP build 122`.
+- Startup log `[TG] commands ready -> /c3_status poll=60s last_update=<id>`.
+- A fresh authorized `/c3_status` returns the `C3 Controller` card and logs `[TG] command /c3_status -> OK`.
+- After a WROOM restart, the already consumed Telegram update must not produce another `[TG] command /c3_status -> OK` or a second command reply. The normal one-per-boot automatic `C3 Controller` card is expected and is not a replay.
