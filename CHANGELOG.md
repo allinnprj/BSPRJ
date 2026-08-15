@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## UART liveness hardening from build 125 field evidence - 2026-08-15
+
+1. Added WROOM build `126` (`0.1.72-EXP`) after the build `125` logs showed `32` short awake-state `UART OFFLINE` transitions during approximately `4 h 52 min`, while all `318` accepted C3 telemetry frames were still acknowledged and published to MQTT. Every link transition recovered automatically; median visible outage was `2.103 s` and maximum was `15.442 s`.
+2. Corrected WROOM liveness semantics: every strictly parsed `TEL` frame now resets the missed-heartbeat counter because valid telemetry itself proves that C3 and the UART transport are alive. Duplicate telemetry also counts as valid activity before it is re-ACKed.
+3. Unexpected `OFF` now requires both at least three consecutive 10-second `PONG` timeouts and 90 seconds without any valid C3 traffic. A valid C3 frame immediately restores an already-offline link. Explicit `SLEEP` continues to pause heartbeat traffic and remains unchanged.
+4. This is a WROOM-only link-state correction. Frame formats, telemetry values, ACK/deduplication, C3 build `185`, Deep Sleep timing, Telegram, MQTT, Google Sheets, audio, and stored data are unchanged. C3 requires no upload.
+5. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,300 / 327,680` (`19.9%`), Flash `1,339,507 / 1,572,864` (`85.2%`), linked OTA-slot reserve `233,357` bytes, firmware `1,339,904` bytes, SHA-256 `D777F47B3528285FE2700C22CE8F94B7F5A98439938ACC29F3778047A8D66070`. Manual WROOM upload and an awake/sleep field log remain.
+
 ## WROOM Wi-Fi network context in Telegram cards - 2026-08-15
 
 1. Added WROOM build `125` (`0.1.71-EXP`) so both `Device Online` and `C3 Controller` Telegram cards show the actual WROOM connection as signal percent, RSSI, and SSID, for example `Wi-Fi: 92% (-54 dBm) NKAANNE_plus`.

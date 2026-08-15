@@ -25,7 +25,7 @@ C3 response:
 PONG <sequence> C3 <build>
 ```
 
-WROOM accepts only the currently pending sequence. Three consecutive 10-second response timeouts produce unexpected state `OFF`.
+WROOM accepts only the currently pending `PONG` sequence. A strictly parsed `PONG`, `TEL`, or `SLEEP` frame counts as valid C3 activity. Unexpected state `OFF` requires both at least three consecutive 10-second `PONG` response timeouts and 90 seconds without any valid C3 frame. This prevents a busy but actively transmitting C3 from being reported offline. A valid frame restores an already-offline link immediately.
 
 ## Planned Deep Sleep
 

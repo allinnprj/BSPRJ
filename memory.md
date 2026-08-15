@@ -11,7 +11,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.71-EXP` build `125` locally passes and adds the active WROOM SSID beside signal percent/RSSI in `Device Online`, `Wi-Fi Restored`, and `C3 Controller`. Build `124` was fully erased/uploaded and physically proved `/c3sts` plus two separate `command coalesced -> /c3sts x2` cases, including while C3 was in expected sleep. The WROOM antenna cable was reattached and RSSI improved from about `-87 dBm` to `-43..-46 dBm`. Build `125` now awaits manual WROOM upload and visual proof of both requested Telegram cards. C3 remains on build `185` and requires no upload.
+- Current firmware marker: `0.1.72-EXP` build `126` locally passes and hardens WROOM UART liveness: valid `TEL`/`PONG`/`SLEEP` traffic resets missed-heartbeat state, while unexpected `OFF` requires three PONG timeouts plus 90 seconds without any valid C3 frame. Build `125` physically confirmed the active WROOM SSID in both `Device Online` and `C3 Controller`, 584 regular statistics lines, 318/318 C3 UART-to-MQTT deliveries, ten complete 600-second sleep cycles, and `/c3sts` coalescing. Its 32 short self-recovering awake-state OFFLINE transitions motivated build `126`, which now awaits manual WROOM upload and an awake/sleep field log. C3 remains on build `185` and requires no upload.
 
 ## Important Decisions
 
