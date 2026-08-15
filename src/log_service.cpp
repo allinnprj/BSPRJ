@@ -615,6 +615,9 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     Serial.print(F("[LOG] web download ready -> http://"));
     Serial.print(lastIpAddress_);
     Serial.println(F("/log.csv"));
+    Serial.print(F("[DLOG] web download ready -> http://"));
+    Serial.print(lastIpAddress_);
+    Serial.println(F("/diagnostics.log"));
   }
 
   if (!wifiConnected && lastWifiConnected_) {

@@ -6,7 +6,7 @@
 2. Recorded events include boot/reset, Wi-Fi network and signal context, MQTT and UART state transitions, every accepted C3 telemetry frame, duplicate-frame counters, C3 sleep/wake context, INA3221/solar/battery/load values, SHT31 loss/recovery, Google Sheets queue/retry/delivery/drop state, OTA start/result, and scheduled restart. A complete `HEALTH` snapshot is added every five minutes with sound, environment, heap, cloud, UART, and telemetry counters.
 3. The active diagnostic file rotates at `128 KB`; one previous file is retained as `/diagnostics-prev.log`, limiting the pair to approximately `256 KB`. Both files are downloadable from the existing WROOM log page. `Clear log` still clears only the analytical active CSV, while `Clear ALL logs` also clears both diagnostic files and recreates a fresh header.
 4. C3 protocol, C3 firmware build `185`, Deep Sleep decisions, sound calculations, Telegram commands, MQTT payloads, Google Sheets schema, and existing analytical CSV semantics are unchanged. C3 requires no upload.
-5. Validation: `pio run -e esp32dev` -> SUCCESS. Final size metrics and physical WROOM OTA/download evidence are recorded after the release build below.
+5. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,388 / 327,680` (`20.0%`), Flash `1,348,931 / 1,572,864` (`85.8%`), linked OTA-slot reserve `223,933` bytes, firmware `1,349,328` bytes, SHA-256 `773545A1E6C96D03C87E232218C8516D9D7AF39917CA4DBFD9300A6A53D5C62E`. Manual WROOM OTA, web download, and awake/Deep-Sleep diagnostic evidence remain.
 
 ## UART liveness hardening from build 125 field evidence - 2026-08-15
 

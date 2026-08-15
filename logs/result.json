@@ -1,0 +1,1261 @@
+{
+ "name": "myhapb_bot",
+ "type": "bot_chat",
+ "id": 7627885844,
+ "messages": [
+  {
+   "id": 307122,
+   "type": "message",
+   "date": "2026-08-15T21:58:51",
+   "date_unixtime": "1786816731",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟢 ",
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 96% (-52 dBm) NKAANNE_plus (P1)\nBoot: Power ON\nUptime: 0 d 0 h 0 m\nChip temp: 55.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟢 "
+    },
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 96% (-52 dBm) NKAANNE_plus (P1)\nBoot: Power ON\nUptime: 0 d 0 h 0 m\nChip temp: 55.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "url",
+      "text": "🔗 Statistics",
+      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "📍 Location",
+      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307123,
+   "type": "message",
+   "date": "2026-08-15T21:59:44",
+   "date_unixtime": "1786816784",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📊 ",
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    "\nState: HW OK (0x40)\n\nSolar: 1,06 V / 0,00 A / 0,00 W\nBattery: 12,64 V / -0,10 A / -1,31 W\nLoad: 7,14 V / 0,16 A / 1,14 W\nBattery SOC: ~86%\nBattery flow: Discharging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,61Ah/+21,1Wh\nClassic: standby (Sleep OFF)\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " OFF\nCounters: D 14/14\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📊 "
+    },
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nState: HW OK (0x40)\n\nSolar: 1,06 V / 0,00 A / 0,00 W\nBattery: 12,64 V / -0,10 A / -1,31 W\nLoad: 7,14 V / 0,16 A / 1,14 W\nBattery SOC: ~86%\nBattery flow: Discharging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,61Ah/+21,1Wh\nClassic: standby (Sleep OFF)\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " OFF\nCounters: D 14/14\n\nCharge: OFF\nGPIO3: LOW\nControl: Solar Control standby — 🟧 Classic (Sleep OFF)"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Switch ON",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Status",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307124,
+   "type": "message",
+   "date": "2026-08-15T21:59:53",
+   "date_unixtime": "1786816793",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/status"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/status"
+    }
+   ]
+  },
+  {
+   "id": 307125,
+   "type": "message",
+   "date": "2026-08-15T21:59:54",
+   "date_unixtime": "1786816794",
+   "edited": "2026-08-15T22:00:40",
+   "edited_unixtime": "1786816840",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📋 ",
+    {
+     "type": "bold",
+     "text": "Status"
+    },
+    "\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 92% (-54 dBm) NKAANNE_plus (P1)\nTime: Synced Time 22:00\nBoot: Power ON\nUptime: 0 d 0 h 2 m\nChip temp: 63.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 13,54 V / 0,49 A / 6,64 W\nBattery: 13,11 V / +0,39 A / +5,06 W\nLoad: 7,14 V / 0,17 A / 1,19 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,61Ah/+21,1Wh\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 14/14\nDeep: 10 min / Awake interval: 10 min\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic\nOTA: disabled"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📋 "
+    },
+    {
+     "type": "bold",
+     "text": "Status"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 92% (-54 dBm) NKAANNE_plus (P1)\nTime: Synced Time 22:00\nBoot: Power ON\nUptime: 0 d 0 h 2 m\nChip temp: 63.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 13,54 V / 0,49 A / 6,64 W\nBattery: 13,11 V / +0,39 A / +5,06 W\nLoad: 7,14 V / 0,17 A / 1,19 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,61Ah/+21,1Wh\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 14/14\nDeep: 10 min / Awake interval: 10 min\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic\nOTA: disabled"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Switch OFF",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Settings",
+      "dataBase64": "bWVudV9zZXR0aW5ncw",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Power",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Enable OTA",
+      "dataBase64": "b3RhX3RvZ2dsZQ",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Sleep 1 М",
+      "dataBase64": "c2xlZXBfaW5fMV9taW4",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Restart",
+      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307129,
+   "type": "message",
+   "date": "2026-08-15T22:00:39",
+   "date_unixtime": "1786816839",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " in 1 min · 10 min"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " in 1 min · 10 min"
+    }
+   ]
+  },
+  {
+   "id": 307130,
+   "type": "message",
+   "date": "2026-08-15T22:01:23",
+   "date_unixtime": "1786816883",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Next wake:"
+    },
+    " 22:11"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Next wake:"
+    },
+    {
+     "type": "plain",
+     "text": " 22:11"
+    }
+   ]
+  },
+  {
+   "id": 307131,
+   "type": "message",
+   "date": "2026-08-15T22:11:35",
+   "date_unixtime": "1786817495",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟢 ",
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 13 m\nChip temp: 46.5 C\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟢 "
+    },
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 100% (-49 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 13 m\nChip temp: 46.5 C\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "url",
+      "text": "🔗 Statistics",
+      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "📍 Location",
+      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307132,
+   "type": "message",
+   "date": "2026-08-15T22:11:36",
+   "date_unixtime": "1786817496",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    " from Deep Sleep"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    {
+     "type": "plain",
+     "text": " from Deep Sleep"
+    }
+   ]
+  },
+  {
+   "id": 307133,
+   "type": "message",
+   "date": "2026-08-15T22:12:33",
+   "date_unixtime": "1786817553",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📊 ",
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    "\nState: HW OK (0x40)\n\nSolar: 13,67 V / 0,37 A / 5,11 W\nBattery: 13,27 V / +0,27 A / +3,56 W\nLoad: 7,14 V / 0,17 A / 1,18 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,67Ah/+21,8Wh\nClassic: 07:00 ON | 14:00 OFF\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 15/15\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📊 "
+    },
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nState: HW OK (0x40)\n\nSolar: 13,67 V / 0,37 A / 5,11 W\nBattery: 13,27 V / +0,27 A / +3,56 W\nLoad: 7,14 V / 0,17 A / 1,18 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,67Ah/+21,8Wh\nClassic: 07:00 ON | 14:00 OFF\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 15/15\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Switch OFF",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Status",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307134,
+   "type": "message",
+   "date": "2026-08-15T22:21:24",
+   "date_unixtime": "1786818084",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " in 1 min · 10 min"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " in 1 min · 10 min"
+    }
+   ]
+  },
+  {
+   "id": 307135,
+   "type": "message",
+   "date": "2026-08-15T22:22:04",
+   "date_unixtime": "1786818124",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Next wake:"
+    },
+    " 22:32"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Next wake:"
+    },
+    {
+     "type": "plain",
+     "text": " 22:32"
+    }
+   ]
+  },
+  {
+   "id": 307136,
+   "type": "message",
+   "date": "2026-08-15T22:32:23",
+   "date_unixtime": "1786818743",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟢 ",
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 92% (-54 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 34 m\nChip temp: 45.5 C\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟢 "
+    },
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 92% (-54 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 34 m\nChip temp: 45.5 C\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "url",
+      "text": "🔗 Statistics",
+      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "📍 Location",
+      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307137,
+   "type": "message",
+   "date": "2026-08-15T22:32:23",
+   "date_unixtime": "1786818743",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    " from Deep Sleep"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    {
+     "type": "plain",
+     "text": " from Deep Sleep"
+    }
+   ]
+  },
+  {
+   "id": 307138,
+   "type": "message",
+   "date": "2026-08-15T22:33:24",
+   "date_unixtime": "1786818804",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📊 ",
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    "\nState: HW OK (0x40)\n\nSolar: 13,68 V / 0,36 A / 4,91 W\nBattery: 13,30 V / +0,25 A / +3,37 W\nLoad: 7,14 V / 0,19 A / 1,39 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,75Ah/+23,0Wh\nClassic: 07:00 ON | 14:00 OFF\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 16/16\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📊 "
+    },
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nState: HW OK (0x40)\n\nSolar: 13,68 V / 0,36 A / 4,91 W\nBattery: 13,30 V / +0,25 A / +3,37 W\nLoad: 7,14 V / 0,19 A / 1,39 W\nBattery SOC: ~100%\nBattery flow: Charging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,75Ah/+23,0Wh\nClassic: 07:00 ON | 14:00 OFF\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 16/16\n\nCharge: ON\nGPIO3: HIGH\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Switch OFF",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Status",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307139,
+   "type": "message",
+   "date": "2026-08-15T22:39:22",
+   "date_unixtime": "1786819162",
+   "from": "Imran Nadiroglu",
+   "from_id": "user354183947",
+   "text": [
+    {
+     "type": "bot_command",
+     "text": "/status"
+    }
+   ],
+   "text_entities": [
+    {
+     "type": "bot_command",
+     "text": "/status"
+    }
+   ]
+  },
+  {
+   "id": 307140,
+   "type": "message",
+   "date": "2026-08-15T22:39:35",
+   "date_unixtime": "1786819175",
+   "edited": "2026-08-15T22:48:09",
+   "edited_unixtime": "1786819689",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📋 ",
+    {
+     "type": "bold",
+     "text": "Status"
+    },
+    "\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 96% (-52 dBm) NKAANNE_plus (P1)\nTime: Synced Time 22:48\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 50 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 1,09 V / 0,00 A / 0,00 W\nBattery: 12,74 V / -0,10 A / -1,32 W\nLoad: 7,14 V / 0,16 A / 1,17 W\nBattery SOC: ~91%\nBattery flow: Discharging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,81Ah/+23,7Wh\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 16/16\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic\nOTA: disabled"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📋 "
+    },
+    {
+     "type": "bold",
+     "text": "Status"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 96% (-52 dBm) NKAANNE_plus (P1)\nTime: Synced Time 22:48\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 0 h 50 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 1,09 V / 0,00 A / 0,00 W\nBattery: 12,74 V / -0,10 A / -1,32 W\nLoad: 7,14 V / 0,16 A / 1,17 W\nBattery SOC: ~91%\nBattery flow: Discharging\nEnergy: used -0,43Ah/-5,3Wh | charged +1,81Ah/+23,7Wh\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 16/16\nDeep: 10 min / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic\nOTA: disabled"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Switch ON",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Settings",
+      "dataBase64": "bWVudV9zZXR0aW5ncw",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Power",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Enable OTA",
+      "dataBase64": "b3RhX3RvZ2dsZQ",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Sleep 1 М",
+      "dataBase64": "c2xlZXBfaW5fMV9taW4",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Restart",
+      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307141,
+   "type": "message",
+   "date": "2026-08-15T22:48:09",
+   "date_unixtime": "1786819689",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " in 1 min · 10 min"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " in 1 min · 10 min"
+    }
+   ]
+  },
+  {
+   "id": 307142,
+   "type": "message",
+   "date": "2026-08-15T22:48:57",
+   "date_unixtime": "1786819737",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Next wake:"
+    },
+    " 22:59"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Next wake:"
+    },
+    {
+     "type": "plain",
+     "text": " 22:59"
+    }
+   ]
+  },
+  {
+   "id": 307143,
+   "type": "message",
+   "date": "2026-08-15T22:59:03",
+   "date_unixtime": "1786820343",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟢 ",
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 92% (-54 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 1 h 1 m\nChip temp: 46.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟢 "
+    },
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 92% (-54 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 1 h 1 m\nChip temp: 46.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "url",
+      "text": "🔗 Statistics",
+      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "📍 Location",
+      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307144,
+   "type": "message",
+   "date": "2026-08-15T22:59:04",
+   "date_unixtime": "1786820344",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    " from Deep Sleep"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    {
+     "type": "plain",
+     "text": " from Deep Sleep"
+    }
+   ]
+  },
+  {
+   "id": 307145,
+   "type": "message",
+   "date": "2026-08-15T22:59:45",
+   "date_unixtime": "1786820385",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📊 ",
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    "\nState: HW OK (0x40)\n\nSolar: 1,01 V / 0,00 A / 0,00 W\nBattery: 12,58 V / -0,11 A / -1,33 W\nLoad: 7,14 V / 0,19 A / 1,34 W\nBattery SOC: ~81%\nBattery flow: Discharging\nEnergy: used -0,45Ah/-5,6Wh | charged +1,81Ah/+23,7Wh\nClassic: 07:00 ON | 14:00 OFF\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 17/17\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📊 "
+    },
+    {
+     "type": "bold",
+     "text": "INA3221 Status — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nState: HW OK (0x40)\n\nSolar: 1,01 V / 0,00 A / 0,00 W\nBattery: 12,58 V / -0,11 A / -1,33 W\nLoad: 7,14 V / 0,19 A / 1,34 W\nBattery SOC: ~81%\nBattery flow: Discharging\nEnergy: used -0,45Ah/-5,6Wh | charged +1,81Ah/+23,7Wh\nClassic: 07:00 ON | 14:00 OFF\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " Deep | Awake 10 min -> Sleep 10 min\nCounters: D 17/17\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Switch ON",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Status",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307151,
+   "type": "message",
+   "date": "2026-08-15T23:20:00",
+   "date_unixtime": "1786821600",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟢 ",
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 100% (-50 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 1 h 22 m\nChip temp: 45.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟢 "
+    },
+    {
+     "type": "bold",
+     "text": "Online — 🟧 Classic"
+    },
+    {
+     "type": "plain",
+     "text": "\nDevice: ESP32-C3 SuperMini\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 100% (-50 dBm) NKAANNE_plus (P1)\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 1 h 22 m\nChip temp: 45.5 C\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟧 Classic"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "url",
+      "text": "🔗 Statistics",
+      "data": "https://docs.google.com/spreadsheets/d/1h1RPqncmL9s05DAGEUVarjohsGn1xieN8C1TD-dQmVg/edit?gid=1764448294#gid=1764448294"
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "📍 Location",
+      "dataBase64": "bG9jYXRpb25fbWlzc2luZw",
+      "data": ""
+     }
+    ]
+   ]
+  },
+  {
+   "id": 307152,
+   "type": "message",
+   "date": "2026-08-15T23:20:01",
+   "date_unixtime": "1786821601",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "🟧 Classic\n",
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    " from Deep Sleep"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "🟧 Classic\n"
+    },
+    {
+     "type": "bold",
+     "text": "Woke up:"
+    },
+    {
+     "type": "plain",
+     "text": " from Deep Sleep"
+    }
+   ]
+  },
+  {
+   "id": 307153,
+   "type": "message",
+   "date": "2026-08-15T23:20:41",
+   "date_unixtime": "1786821641",
+   "edited": "2026-08-15T23:31:32",
+   "edited_unixtime": "1786822292",
+   "from": "myhapb_bot",
+   "from_id": "user7627885844",
+   "text": [
+    "📋 ",
+    {
+     "type": "bold",
+     "text": "Status"
+    },
+    "\nVersion: 1.2.0-c3 build 185\nIP: ",
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    "\nWi-Fi: 98% (-51 dBm) NKAANNE_plus (P1)\nTime: Synced Time 23:31\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 1 h 34 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 0,99 V / 0,00 A / 0,00 W\nBattery: 12,52 V / -0,10 A / -1,28 W\nLoad: 7,14 V / 0,17 A / 1,21 W\nBattery SOC: ~77%\nBattery flow: Discharging\nEnergy: used -0,51Ah/-6,3Wh | charged +1,81Ah/+23,7Wh\n\n",
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    " Deep | Awake 10 min -> Sleep 1 h\nCounters: D 18/18\nDeep: 1 h / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟦 Smart Auto\nOTA: disabled"
+   ],
+   "text_entities": [
+    {
+     "type": "plain",
+     "text": "📋 "
+    },
+    {
+     "type": "bold",
+     "text": "Status"
+    },
+    {
+     "type": "plain",
+     "text": "\nVersion: 1.2.0-c3 build 185\nIP: "
+    },
+    {
+     "type": "text_link",
+     "text": "192.168.11.112",
+     "href": "http://192.168.11.112/"
+    },
+    {
+     "type": "plain",
+     "text": "\nWi-Fi: 98% (-51 dBm) NKAANNE_plus (P1)\nTime: Synced Time 23:31\nBoot: Wakeup Deep Sleep\nLast wake: Deep Sleep\nUptime: 0 d 1 h 34 m\nChip temp: 64.5 C\nWMT: OK\n\nGPS: OFF\nLocation: not fixed\n\nINA3221: HW OK (0x40)\nSolar: 0,99 V / 0,00 A / 0,00 W\nBattery: 12,52 V / -0,10 A / -1,28 W\nLoad: 7,14 V / 0,17 A / 1,21 W\nBattery SOC: ~77%\nBattery flow: Discharging\nEnergy: used -0,51Ah/-6,3Wh | charged +1,81Ah/+23,7Wh\n\n"
+    },
+    {
+     "type": "bold",
+     "text": "Sleep:"
+    },
+    {
+     "type": "plain",
+     "text": " Deep | Awake 10 min -> Sleep 1 h\nCounters: D 18/18\nDeep: 1 h / Awake interval: 10 min\n\nCharge: OFF\nGPIO3: LOW\nControl: 🟦 Smart Auto\nOTA: disabled"
+    }
+   ],
+   "inline_bot_buttons": [
+    [
+     {
+      "type": "callback",
+      "text": "Check now",
+      "dataBase64": "Y2hhcmdlX3RvZ2dsZQ",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Settings",
+      "dataBase64": "bWVudV9zZXR0aW5ncw",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Update",
+      "dataBase64": "bWVudV9zdGF0dXM",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Power",
+      "dataBase64": "bWVudV9pbmE",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Enable OTA",
+      "dataBase64": "b3RhX3RvZ2dsZQ",
+      "data": ""
+     },
+     {
+      "type": "callback",
+      "text": "Sleep 1 М",
+      "dataBase64": "c2xlZXBfaW5fMV9taW4",
+      "data": ""
+     }
+    ],
+    [
+     {
+      "type": "callback",
+      "text": "Restart",
+      "dataBase64": "cmVzdGFydF9jb250cm9sbGVy",
+      "data": ""
+     }
+    ]
+   ]
+  }
+ ]
+}
