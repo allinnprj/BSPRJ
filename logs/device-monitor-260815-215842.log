@@ -1,0 +1,96 @@
+--- Terminal on COM33 | 115200 8-N-1
+--- Available filters and text transformations: colorize, debug, default, direct, esp32_exception_decoder, hexlify, log2file, nocontrol, printable, send_on_enter, time
+--- More details at https://bit.ly/pio-monitor-filters
+--- Quit: Ctrl+C | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H
+21:58:43.414 > E (531) esp_core_dump_flash: No corf"╒╡я┐╜я┐╜partition found!
+21:58:43.420 > E (531) esp_core_dump_flash: No core dump partition found!
+21:58:43.519 > 
+21:58:43.519 > ESP32 sound statistics clean restart
+21:58:43.522 > Version: 0.1.72-EXP build 126
+21:58:43.526 > Boot sequence: 1 reset=POWERON
+21:58:43.528 > Display contract: Now / H / M
+21:58:43.530 > Time and WiFi will activate when the network is available.
+21:58:43.536 > [BTN] pin=27
+21:58:43.538 > [I2C] pins SDA=21 SCL=22
+21:58:43.539 > [MIC] INMP441 BCLK=26 WS=25 DATA=32
+21:58:43.543 > [UART] link ready -> RX=16 TX=17 baud=115200
+21:58:43.627 > [WF] begin -> KN-CENTER
+21:58:43.638 > [GS] ready -> Google Sheets endpoint configured
+21:58:43.664 > [LOG] LittleFS ready -> /sound_log.csv
+21:58:43.712 > [MEAN] persistence ready
+21:58:43.715 > [MQTT] WQTT ready -> m5.wqtt.ru:11020
+21:58:43.719 > [MQTT] Datacake HTTP ready
+21:58:43.721 > [TG] ready -> Telegram online alert configured
+21:58:43.725 > [TG] commands ready -> /c3sts poll=60s last_update=626681764
+21:58:43.731 > [OTA] ready -> bs-noise-esp32
+21:58:43.734 > [MEAN] load -> count=24474 avg=173
+21:58:43.737 > [I2C] startup scan skipped
+21:58:43.745 > [SHT31] ready -> 0x44
+21:58:43.897 > [WF] status -> IDLE (0)
+21:58:43.988 > [UART] ONLINE -> C3 build 185 rtt=91 ms
+21:58:44.756 > [UART] TEL ACK -> q=1 ina=OK solar=1144mV/0mA battery=12760mV/105mA load=7144mV/168mA soc=92% charge=OFF mode=CLASSIC
+21:58:45.215 > [MQTT] WQTT connect -> m5.wqtt.ru
+21:58:45.557 > [MQTT] WQTT connected
+21:58:45.560 > [MQTT] Datacake HTTP active
+21:58:46.969 > [MQTT] Datacake HTTP CURRENT_PERIOD=text -> 201
+21:58:48.917 > [MQTT] Datacake HTTP batch fast -> 201
+21:58:50.649 > [MQTT] Datacake HTTP batch slow -> 201
+21:58:52.191 > [MQTT] Datacake HTTP batch text -> 201
+21:58:52.196 > [MQTT] C3 telemetry -> q=1 OK
+21:58:52.218 > [WF] status -> OK (3)
+21:58:52.220 > [WF] ip -> 192.168.11.124
+21:58:52.223 > [LOG] web download ready -> http://192.168.11.124/log.csv
+21:58:52.228 > [TIME] NTP sync requested
+21:58:52.230 > [TIME] waiting for valid NTP time
+21:58:57.250 > [TIME] synced -> 21:58:58
+21:58:58.847 > [MQTT] Datacake HTTP CURRENT_PERIOD=text -> 201
+21:58:59.010 > [DSP] idle timeout -> display OFF
+21:59:13.696 > [TG] POST -> 200
+21:59:13.699 > [TG] sent -> Device Online
+21:59:13.751 > [21:59:14] [STAT] now=89 hour=80 all=172 pct=0/0/1 raw=-51/36 p2p=87 range=43/398 stable=191 sig=OK part=EVE avg=85 quiet=14 loud=0 wifi=90%(-55dBm) env=28.2C/68.5% uart=OK/b185/91ms tel=q1/28s
+21:59:14.878 > [UART] TEL ACK -> q=2 ina=OK solar=1088mV/0mA battery=12680mV/98mA load=7144mV/160mA soc=89% charge=OFF mode=CLASSIC
+21:59:14.911 > [MQTT] C3 telemetry -> q=2 OK
+21:59:20.251 > [TG] C3 POST -> 200
+21:59:20.253 > [TG] sent -> C3 Controller
+21:59:45.647 > [21:59:46] [STAT] now=218 hour=87 all=172 pct=3/0/1 raw=-45/36 p2p=81 range=42/398 stable=315 sig=OK part=EVE avg=90 quiet=42 loud=0 wifi=90%(-55dBm) env=28.2C/68.3% uart=OK/b185/1878ms tel=q2/30s
+21:59:47.403 > [UART] TEL ACK -> q=3 ina=OK solar=1064mV/0mA battery=12632mV/98mA load=7144mV/163mA soc=85% charge=OFF mode=CLASSIC
+21:59:47.437 > [MQTT] C3 telemetry -> q=3 OK
+22:00:00.175 > [GS] queued window -> 21:50:00..21:59:59 samples=55 avgNow=0 queue=1
+22:00:07.851 > [GS] POST failed -> read Timeout
+22:00:15.627 > [22:00:16] [STAT] now=103 hour=98 all=172 pct=0/0/1 raw=-39/46 p2p=85 range=42/416 stable=315 sig=OK part=EVE avg=101 quiet=64 loud=0 wifi=90%(-55dBm) env=28.2C/68.3% uart=OK/b185/1407ms tel=q3/28s
+22:00:21.138 > [UART] TEL ACK -> q=4 ina=OK solar=1040mV/0mA battery=12600mV/108mA load=7144mV/161mA soc=83% charge=OFF mode=CLASSIC
+22:00:21.170 > [MQTT] C3 telemetry -> q=4 OK
+22:00:35.417 > [GS] POST -> 302
+22:00:35.418 > [GS] redirect accepted as delivered
+22:00:35.422 > [GS] uploaded window -> 21:50:00..21:59:59 samples=55 queue=0
+22:00:45.274 > [TG] command /c3sts -> queued
+22:00:45.703 > [22:00:46] [STAT] now=88 hour=97 all=172 pct=0/0/1 raw=-46/42 p2p=88 range=42/416 stable=315 sig=OK part=EVE avg=99 quiet=87 loud=0 wifi=90%(-55dBm) env=28.2C/68.4% uart=OK/b185/106ms tel=q4/24s
+22:00:52.020 > [TG] C3 POST -> 200
+22:00:52.023 > [TG] command /c3sts -> OK
+22:00:54.407 > [UART] TEL ACK -> q=5 ina=OK solar=13584mV/449mA battery=13168mV/-334mA load=7144mV/173mA soc=100% charge=ON mode=CLASSIC
+22:00:54.438 > [MQTT] C3 telemetry -> q=5 OK
+22:01:15.679 > [22:01:16] [STAT] now=105 hour=91 all=172 pct=0/0/1 raw=-62/49 p2p=111 range=42/416 stable=315 sig=OK part=EVE avg=92 quiet=114 loud=0 wifi=94%(-53dBm) env=28.2C/68.4% uart=OK/b185/106ms tel=q5/21s
+22:01:34.631 > [UART] TEL ACK -> q=6 ina=OK solar=13624mV/408mA battery=13216mV/-305mA load=7144mV/166mA soc=100% charge=ON mode=CLASSIC
+22:01:34.662 > [MQTT] C3 telemetry -> q=6 OK
+22:01:39.615 > [UART] SLEEP -> C3 build 185 for 600 s
+22:01:45.772 > [22:01:46] [STAT] now=163 hour=93 all=172 pct=0/0/1 raw=-99/100 p2p=199 range=42/416 stable=315 sig=OK part=EVE avg=94 quiet=142 loud=0 wifi=94%(-53dBm) env=28.2C/68.4% uart=SLP/b185/594s tel=q6/11s
+22:02:15.819 > [22:02:16] [STAT] now=108 hour=94 all=172 pct=0/0/1 raw=-36/36 p2p=72 range=42/416 stable=315 sig=OK part=EVE avg=95 quiet=171 loud=0 wifi=94%(-53dBm) env=28.2C/68.4% uart=SLP/b185/564s tel=q6/41s
+22:02:45.829 > [22:02:46] [STAT] now=234 hour=98 all=172 pct=4/0/1 raw=-96/117 p2p=213 range=42/520 stable=321 sig=OK part=EVE avg=99 quiet=199 loud=0 wifi=94%(-53dBm) env=28.2C/68.2% uart=SLP/b185/534s tel=q6/71s
+22:03:04.461 > [LOG] web download ready -> http://0.0.0.0/log.csv
+22:03:04.488 > [MQTT] WQTT connect -> m5.wqtt.ru
+22:03:04.493 > [261082][E][NetworkManager.cpp:136] hostByName(): DNS Failed for 'm5.wqtt.ru' with error '-54'
+22:03:04.502 > [261093][E][NetworkClient.cpp:252] connect(): connect on fd 49, errno: 118, "Host is unreachable"
+22:03:04.511 > [MQTT] WQTT connect failed -> state -2
+22:03:06.904 > [WF] status -> NOAP (1)
+22:03:06.908 > [WF] reconnect -> WiFi.reconnect()
+22:03:06.911 > [LOG] web access paused -> WiFi disconnected
+22:03:06.937 > [TG] Wi-Fi lost -> restore watch started
+22:03:07.490 > [WF] status -> IDLE (0)
+22:03:09.026 > [WF] status -> OK (3)
+22:03:09.028 > [WF] ip -> 192.168.11.124
+22:03:09.031 > [LOG] web download ready -> http://192.168.11.124/log.csv
+22:03:09.061 > [TG] skip -> Wi-Fi outage too short for restored alert
+22:03:14.516 > [MQTT] WQTT connect -> m5.wqtt.ru
+22:03:14.753 > [MQTT] WQTT connected
+22:03:15.860 > [22:03:16] [STAT] now=88 hour=108 all=172 pct=0/0/1 raw=-39/40 p2p=79 range=42/706 stable=605 sig=OK part=EVE avg=109 quiet=226 loud=0 wifi=98%(-51dBm) env=28.2C/68.2% uart=SLP/b185/504s tel=q6/101s
+22:03:45.871 > [22:03:46] [STAT] now=96 hour=110 all=172 pct=0/0/1 raw=-41/51 p2p=92 range=42/706 stable=605 sig=OK part=EVE avg=111 quiet=254 loud=0 wifi=98%(-51dBm) env=28.2C/68.3% uart=SLP/b185/474s tel=q6/131s
