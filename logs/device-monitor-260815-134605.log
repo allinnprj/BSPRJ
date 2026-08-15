@@ -589,3 +589,62 @@
 15:01:19.146 > [UART] SLEEP -> C3 build 185 for 600 s
 15:01:28.577 > [15:01:28] [STAT] now=99 hour=138 all=157 pct=0/0/0 raw=-55/44 p2p=99 range=39/4390 stable=3621 sig=OK part=DAY avg=148 quiet=28 loud=58 wifi=40%(-80dBm) env=28.8C/68.5% uart=SLP/b185/591s tel=q20/28s
 15:01:58.603 > [15:01:58] [STAT] now=553 hour=141 all=159 pct=22/0/0 raw=-332/362 p2p=694 range=39/4390 stable=3621 sig=OK part=DAY avg=150 quiet=45 loud=68 wifi=40%(-80dBm) env=28.8C/68.5% uart=SLP/b185/561s tel=q20/58s
+15:02:28.604 > [15:02:28] [STAT] now=642 hour=142 all=160 pct=27/0/0 raw=-460/428 p2p=888 range=39/4390 stable=3621 sig=OK part=DAY avg=151 quiet=61 loud=71 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/531s tel=q20/88s
+15:02:58.640 > [15:02:59] [STAT] now=580 hour=145 all=162 pct=23/0/0 raw=-180/197 p2p=377 range=39/4390 stable=3621 sig=OK part=DAY avg=154 quiet=73 loud=81 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/501s tel=q20/118s
+15:03:20.339 > [4634835][E][NetworkClientSecure.cpp:159] connect(): start_ssl_client: connect failed: -1
+15:03:20.350 > [TG] commands GET -> -1
+15:03:28.640 > [15:03:29] [STAT] now=109 hour=147 all=163 pct=0/0/0 raw=-65/68 p2p=133 range=39/4390 stable=3621 sig=OK part=DAY avg=155 quiet=91 loud=87 wifi=44%(-78dBm) env=28.8C/68.9% uart=SLP/b185/471s tel=q20/148s
+15:03:58.656 > [15:03:59] [STAT] now=414 hour=150 all=164 pct=14/0/0 raw=-196/161 p2p=357 range=39/4390 stable=3621 sig=OK part=DAY avg=157 quiet=103 loud=98 wifi=44%(-78dBm) env=28.8C/68.9% uart=SLP/b185/441s tel=q20/178s
+15:04:20.336 > [4694832][E][NetworkClientSecure.cpp:159] connect(): start_ssl_client: connect failed: -1
+15:04:20.347 > [TG] commands GET -> -1
+15:04:28.688 > [15:04:29] [STAT] now=123 hour=153 all=167 pct=0/0/0 raw=-31/26 p2p=57 range=39/4390 stable=3621 sig=OK part=DAY avg=160 quiet=107 loud=109 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/411s tel=q20/209s
+15:04:58.698 > [15:04:59] [STAT] now=332 hour=158 all=169 pct=10/0/1 raw=-155/149 p2p=304 range=39/4390 stable=3621 sig=OK part=DAY avg=163 quiet=113 loud=129 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/381s tel=q20/239s
+15:05:28.704 > [15:05:29] [STAT] now=483 hour=160 all=170 pct=18/0/1 raw=-40/56 p2p=96 range=39/4390 stable=3621 sig=OK part=DAY avg=165 quiet=126 loud=131 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/351s tel=q20/269s
+15:05:58.725 > [15:05:59] [STAT] now=236 hour=161 all=171 pct=4/0/1 raw=-109/128 p2p=237 range=39/4390 stable=3621 sig=OK part=DAY avg=165 quiet=153 loud=132 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/321s tel=q20/299s
+15:06:09.675 > [MEAN] save -> count=5188 avg=171
+15:06:28.735 > [15:06:29] [STAT] now=331 hour=162 all=171 pct=10/0/1 raw=-172/213 p2p=385 range=39/4390 stable=3621 sig=OK part=DAY avg=166 quiet=176 loud=134 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/291s tel=q20/329s
+15:06:58.746 > [15:06:59] [STAT] now=302 hour=163 all=172 pct=8/0/1 raw=-77/99 p2p=176 range=39/4390 stable=3621 sig=OK part=DAY avg=166 quiet=201 loud=135 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/261s tel=q20/359s
+15:07:28.777 > [15:07:29] [STAT] now=265 hour=165 all=173 pct=6/0/1 raw=-56/53 p2p=109 range=39/4390 stable=3621 sig=OK part=DAY avg=168 quiet=216 loud=139 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/231s tel=q20/389s
+15:07:58.814 > [15:07:59] [STAT] now=197 hour=169 all=175 pct=2/1/1 raw=-111/91 p2p=202 range=39/4390 stable=3621 sig=OK part=DAY avg=170 quiet=227 loud=149 wifi=44%(-78dBm) env=28.8C/68.7% uart=SLP/b185/201s tel=q20/419s
+15:08:28.835 > [15:08:29] [STAT] now=427 hour=172 all=177 pct=15/1/1 raw=-186/214 p2p=400 range=39/4390 stable=3621 sig=OK part=DAY avg=173 quiet=233 loud=161 wifi=46%(-77dBm) env=28.8C/68.8% uart=SLP/b185/171s tel=q20/449s
+15:08:58.872 > [15:08:59] [STAT] now=524 hour=176 all=179 pct=20/1/1 raw=-189/213 p2p=402 range=39/4390 stable=3621 sig=OK part=DAY avg=175 quiet=237 loud=169 wifi=46%(-77dBm) env=28.8C/68.8% uart=SLP/b185/141s tel=q20/479s
+15:09:21.029 > [4995527][E][NetworkClientSecure.cpp:159] connect(): start_ssl_client: connect failed: -1
+15:09:21.039 > [TG] commands GET -> -1
+15:09:28.884 > [15:09:29] [STAT] now=461 hour=178 all=180 pct=17/1/1 raw=-106/105 p2p=211 range=39/4390 stable=3621 sig=OK part=DAY avg=177 quiet=252 loud=175 wifi=46%(-77dBm) env=28.8C/68.8% uart=SLP/b185/111s tel=q20/509s
+15:09:58.888 > [15:09:59] [STAT] now=672 hour=182 all=182 pct=29/1/1 raw=-49/53 p2p=102 range=39/4390 stable=3621 sig=OK part=DAY avg=179 quiet=5 loud=191 wifi=46%(-77dBm) env=28.8C/68.8% uart=SLP/b185/81s tel=q20/539s
+15:09:59.728 > [GS] queued window -> 15:00:00..15:09:59 samples=552 avgNow=16 queue=1
+15:10:08.800 > [GS] POST failed -> read Timeout
+15:10:28.926 > [15:10:29] [STAT] now=171 hour=183 all=182 pct=1/1/1 raw=-80/72 p2p=152 range=39/4390 stable=3621 sig=OK part=DAY avg=180 quiet=22 loud=191 wifi=48%(-76dBm) env=28.8C/68.7% uart=SLP/b185/51s tel=q20/569s
+15:10:35.735 > [GS] POST -> 302
+15:10:35.736 > [GS] redirect accepted as delivered
+15:10:35.740 > [GS] uploaded window -> 15:00:00..15:09:59 samples=552 queue=0
+15:10:58.963 > [15:10:59] [STAT] now=613 hour=186 all=184 pct=25/2/1 raw=-244/249 p2p=493 range=39/4390 stable=3621 sig=OK part=DAY avg=182 quiet=29 loud=203 wifi=48%(-76dBm) env=28.8C/68.7% uart=SLP/b185/21s tel=q20/599s
+15:11:19.159 > [UART] WAKE WAIT -> expected C3 wake window
+15:11:19.927 > [UART] ONLINE -> C3 build 185 rtt=768 ms
+15:11:28.463 > [UART] TEL ACK -> q=1 ina=OK solar=1016mV/0mA battery=12352mV/147mA load=7136mV/246mA soc=64% charge=OFF mode=CLASSIC
+15:11:28.496 > [MQTT] C3 telemetry -> q=1 OK
+15:11:28.989 > [15:11:29] [STAT] now=695 hour=187 all=185 pct=30/2/1 raw=-93/124 p2p=217 range=39/4390 stable=3621 sig=OK part=DAY avg=183 quiet=44 loud=208 wifi=48%(-76dBm) env=28.8C/68.8% uart=OK/b185/538ms tel=q1/0s
+15:11:58.498 > [UART] TEL ACK -> q=2 ina=OK solar=1024mV/0mA battery=12360mV/133mA load=7136mV/224mA soc=65% charge=OFF mode=CLASSIC
+15:11:58.534 > [MQTT] C3 telemetry -> q=2 OK
+15:11:59.021 > [15:11:59] [STAT] now=82 hour=188 all=185 pct=0/2/1 raw=-41/50 p2p=91 range=39/4390 stable=3621 sig=OK part=DAY avg=183 quiet=67 loud=211 wifi=48%(-76dBm) env=28.8C/68.8% uart=OK/b185/55ms tel=q2/0s
+15:12:28.990 > [UART] TEL ACK -> q=3 ina=OK solar=1024mV/0mA battery=12344mV/145mA load=7136mV/238mA soc=63% charge=OFF mode=CLASSIC
+15:12:29.024 > [MQTT] C3 telemetry -> q=3 OK
+15:12:29.075 > [15:12:29] [STAT] now=82 hour=188 all=185 pct=0/2/1 raw=-40/36 p2p=76 range=39/4390 stable=3621 sig=OK part=DAY avg=183 quiet=95 loud=211 wifi=36%(-82dBm) env=28.8C/68.8% uart=OK/b185/677ms tel=q3/0s
+15:12:59.101 > [15:12:59] [STAT] now=105 hour=188 all=184 pct=0/2/1 raw=-52/62 p2p=114 range=39/4390 stable=3621 sig=OK part=DAY avg=182 quiet=124 loud=211 wifi=36%(-82dBm) env=28.8C/68.8% uart=OK/b185/677ms tel=q3/30s
+15:13:03.388 > [UART] OFFLINE -> 3 consecutive C3 PONG timeouts
+15:13:03.487 > [UART] ONLINE -> C3 build 185 rtt=97 ms
+15:13:03.490 > [UART] TEL ACK -> q=4 ina=OK solar=1016mV/0mA battery=12344mV/140mA load=7152mV/173mA soc=63% charge=OFF mode=CLASSIC
+15:13:03.531 > [MQTT] C3 telemetry -> q=4 OK
+15:13:29.122 > [15:13:29] [STAT] now=718 hour=188 all=184 pct=31/2/1 raw=-62/49 p2p=111 range=39/12362 stable=3854 sig=OK part=DAY avg=182 quiet=151 loud=212 wifi=36%(-82dBm) env=28.8C/68.8% uart=OK/b185/1398ms tel=q4/25s
+15:13:34.178 > [UART] TEL ACK -> q=5 ina=OK solar=1024mV/0mA battery=12360mV/100mA load=7152mV/159mA soc=65% charge=OFF mode=CLASSIC
+15:13:34.214 > [MQTT] C3 telemetry -> q=5 OK
+15:13:59.160 > [15:13:59] [STAT] now=77 hour=188 all=184 pct=0/2/1 raw=-53/35 p2p=88 range=39/12362 stable=3854 sig=OK part=DAY avg=181 quiet=181 loud=212 wifi=36%(-82dBm) env=28.8C/68.8% uart=OK/b185/672ms tel=q5/24s
+15:14:05.326 > [UART] TEL ACK -> q=6 ina=OK solar=1024mV/0mA battery=12360mV/100mA load=7152mV/160mA soc=65% charge=OFF mode=CLASSIC
+15:14:05.358 > [MQTT] C3 telemetry -> q=6 OK
+15:14:29.164 > [15:14:29] [STAT] now=196 hour=188 all=184 pct=2/2/1 raw=-84/73 p2p=157 range=39/12362 stable=3854 sig=OK part=DAY avg=181 quiet=209 loud=212 wifi=40%(-80dBm) env=28.8C/68.8% uart=OK/b185/773ms tel=q6/23s
+15:14:38.008 > [UART] TEL ACK -> q=7 ina=OK solar=1016mV/0mA battery=12360mV/100mA load=7152mV/160mA soc=65% charge=OFF mode=CLASSIC
+15:14:38.042 > [MQTT] C3 telemetry -> q=7 OK
+15:14:59.196 > [15:14:59] [STAT] now=115 hour=188 all=184 pct=0/2/1 raw=-36/46 p2p=82 range=39/12362 stable=3854 sig=OK part=DAY avg=181 quiet=236 loud=212 wifi=40%(-80dBm) env=28.8C/68.8% uart=OK/b185/101ms tel=q7/21s
+15:15:10.120 > [UART] TEL ACK -> q=8 ina=OK solar=1024mV/0mA battery=12360mV/100mA load=7152mV/160mA soc=65% charge=OFF mode=CLASSIC
+15:15:10.154 > [MQTT] C3 telemetry -> q=8 OK
+15:15:29.227 > [15:15:29] [STAT] now=123 hour=188 all=184 pct=0/2/1 raw=-81/54 p2p=135 range=39/12362 stable=3854 sig=OK part=DAY avg=181 quiet=7 loud=212 wifi=40%(-80dBm) env=28.8C/68.6% uart=OK/b185/3190ms tel=q8/19s
