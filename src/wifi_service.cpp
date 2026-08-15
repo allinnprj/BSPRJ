@@ -128,6 +128,13 @@ String WifiService::ipAddressString() const {
   return WiFi.localIP().toString();
 }
 
+String WifiService::ssidString() const {
+  if (!isConnected()) {
+    return String();
+  }
+  return WiFi.SSID();
+}
+
 int WifiService::rssiDbm() const {
   if (!isConnected()) {
     return -127;

@@ -11,7 +11,7 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 - Active hardware: `ESP32 DevKit`, `INMP441` microphone on `I2S`, `SSD1306 128x64` OLED, `SHT31` environment sensor.
 - Active microphone wiring: `BCLK=GPIO26`, `WS=GPIO25`, `DATA=GPIO32`, `L/R=GND`.
 - Real operating mode: battery power is the primary target; USB power is only a debug/service mode.
-- Current firmware marker: `0.1.70-EXP` build `124` replaces `/c3_status` with the shorter `/c3sts`; its local build passes and it awaits full WROOM flash erase plus manual USB upload. Build `123` device evidence removed the former approximately 71-second Telegram stall and kept 30-second statistics/ordered telemetry running; command coalescing and replay still require the clean build `124` test. C3 remains on build `185`.
+- Current firmware marker: `0.1.71-EXP` build `125` locally passes and adds the active WROOM SSID beside signal percent/RSSI in `Device Online`, `Wi-Fi Restored`, and `C3 Controller`. Build `124` was fully erased/uploaded and physically proved `/c3sts` plus two separate `command coalesced -> /c3sts x2` cases, including while C3 was in expected sleep. The WROOM antenna cable was reattached and RSSI improved from about `-87 dBm` to `-43..-46 dBm`. Build `125` now awaits manual WROOM upload and visual proof of both requested Telegram cards. C3 remains on build `185` and requires no upload.
 
 ## Important Decisions
 

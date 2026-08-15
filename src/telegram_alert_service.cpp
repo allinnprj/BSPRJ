@@ -206,7 +206,8 @@ void TelegramAlertService::begin() {
 }
 
 void TelegramAlertService::update(bool wifiConnected, const String &ipAddress, int wifiRssiDbm,
-                                  uint8_t wifiSignalPercent, bool timeSynced,
+                                  uint8_t wifiSignalPercent, const String &wifiSsid,
+                                  bool timeSynced,
                                   const char *versionText, uint32_t buildNumber,
                                   const String &uptimeText) {
   if (!configured_) {
@@ -246,8 +247,9 @@ void TelegramAlertService::update(bool wifiConnected, const String &ipAddress, i
     if (nowMs - wifiConnectedSinceMs_ >= kRestoreWarmupMs &&
         (lastAttemptAtMs_ == 0 || nowMs - lastAttemptAtMs_ >= kRetryIntervalMs)) {
       lastAttemptAtMs_ = nowMs;
-      if (sendWifiRestored_(ipAddress, wifiRssiDbm, wifiSignalPercent, timeSynced, versionText,
-                            buildNumber, uptimeText, restoreDowntimeMs_)) {
+      if (sendWifiRestored_(ipAddress, wifiRssiDbm, wifiSignalPercent, wifiSsid,
+                            timeSynced, versionText, buildNumber, uptimeText,
+                            restoreDowntimeMs_)) {
         restorePending_ = false;
         wifiLostAtMs_ = 0;
         restoreDowntimeMs_ = 0;
@@ -275,15 +277,16 @@ void TelegramAlertService::update(bool wifiConnected, const String &ipAddress, i
   }
   lastAttemptAtMs_ = nowMs;
 
-  if (sendDeviceOnline_(ipAddress, wifiRssiDbm, wifiSignalPercent, timeSynced, versionText,
-                        buildNumber, uptimeText)) {
+  if (sendDeviceOnline_(ipAddress, wifiRssiDbm, wifiSignalPercent, wifiSsid,
+                        timeSynced, versionText, buildNumber, uptimeText)) {
     onlineSentThisBoot_ = true;
     Serial.println(F("[TG] sent -> Device Online"));
   }
 }
 
 void TelegramAlertService::updateControllerStatus(
-    bool wifiConnected, const ControllerLinkService &controllerLink) {
+    bool wifiConnected, int wifiRssiDbm, uint8_t wifiSignalPercent,
+    const String &wifiSsid, const ControllerLinkService &controllerLink) {
   const uint32_t currentMs = millis();
   if (!configured_ || !wifiConnected || !onlineSentThisBoot_ ||
       controllerStatusSentThisBoot_ || !controllerLink.hasTelemetry() ||
@@ -297,14 +300,16 @@ void TelegramAlertService::updateControllerStatus(
   }
 
   lastControllerAttemptAtMs_ = currentMs;
-  if (sendControllerStatus_(controllerLink, currentMs)) {
+  if (sendControllerStatus_(controllerLink, currentMs, wifiRssiDbm,
+                            wifiSignalPercent, wifiSsid)) {
     controllerStatusSentThisBoot_ = true;
     Serial.println(F("[TG] sent -> C3 Controller"));
   }
 }
 
 void TelegramAlertService::updateCommands(
-    bool wifiConnected, bool timeSynced,
+    bool wifiConnected, bool timeSynced, int wifiRssiDbm,
+    uint8_t wifiSignalPercent, const String &wifiSsid,
     const ControllerLinkService &controllerLink) {
   const uint32_t currentMs = millis();
   if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
@@ -326,7 +331,8 @@ void TelegramAlertService::updateCommands(
       return;
     }
     lastStatusReplyAttemptAtMs_ = currentMs;
-    const bool sent = sendControllerStatus_(controllerLink, currentMs);
+    const bool sent = sendControllerStatus_(controllerLink, currentMs, wifiRssiDbm,
+                                            wifiSignalPercent, wifiSsid);
     Serial.print(F("[TG] command /c3sts -> "));
     Serial.println(sent ? F("OK") : F("FAIL"));
     if (sent) {
@@ -349,7 +355,8 @@ bool TelegramAlertService::isConfigured() const {
 }
 
 bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm,
-                                             uint8_t wifiSignalPercent, bool timeSynced,
+                                             uint8_t wifiSignalPercent,
+                                             const String &wifiSsid, bool timeSynced,
                                              const char *versionText, uint32_t buildNumber,
                                              const String &uptimeText) {
   WiFiClientSecure client;
@@ -370,8 +377,8 @@ bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRs
   payload += urlEncode_(String(TELEGRAM_CHAT_ID));
   payload += F("&parse_mode=HTML&disable_web_page_preview=true&text=");
   payload += urlEncode_(buildDeviceOnlineMessage_(ipAddress, wifiRssiDbm, wifiSignalPercent,
-                                                  timeSynced, versionText, buildNumber,
-                                                  uptimeText));
+                                                  wifiSsid, timeSynced, versionText,
+                                                  buildNumber, uptimeText));
 
   http.addHeader(F("Content-Type"), F("application/x-www-form-urlencoded"));
   int httpCode = http.POST(payload);
@@ -398,7 +405,8 @@ bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRs
 }
 
 bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRssiDbm,
-                                             uint8_t wifiSignalPercent, bool timeSynced,
+                                             uint8_t wifiSignalPercent,
+                                             const String &wifiSsid, bool timeSynced,
                                              const char *versionText, uint32_t buildNumber,
                                              const String &uptimeText,
                                              unsigned long downtimeMs) {
@@ -420,8 +428,8 @@ bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRs
   payload += urlEncode_(String(TELEGRAM_CHAT_ID));
   payload += F("&parse_mode=HTML&disable_web_page_preview=true&text=");
   payload += urlEncode_(buildWifiRestoredMessage_(ipAddress, wifiRssiDbm, wifiSignalPercent,
-                                                  timeSynced, versionText, buildNumber,
-                                                  uptimeText, downtimeMs));
+                                                  wifiSsid, timeSynced, versionText,
+                                                  buildNumber, uptimeText, downtimeMs));
 
   http.addHeader(F("Content-Type"), F("application/x-www-form-urlencoded"));
   int httpCode = http.POST(payload);
@@ -448,7 +456,8 @@ bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRs
 }
 
 bool TelegramAlertService::sendControllerStatus_(
-    const ControllerLinkService &controllerLink, uint32_t nowMs) {
+    const ControllerLinkService &controllerLink, uint32_t nowMs,
+    int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid) {
   WiFiClientSecure client;
   client.setInsecure();
   client.setHandshakeTimeout(4);
@@ -466,7 +475,8 @@ bool TelegramAlertService::sendControllerStatus_(
   String payload = F("chat_id=");
   payload += urlEncode_(String(TELEGRAM_CHAT_ID));
   payload += F("&parse_mode=HTML&disable_web_page_preview=true&text=");
-  payload += urlEncode_(buildControllerStatusMessage_(controllerLink, nowMs));
+  payload += urlEncode_(buildControllerStatusMessage_(
+      controllerLink, nowMs, wifiRssiDbm, wifiSignalPercent, wifiSsid));
 
   http.addHeader(F("Content-Type"), F("application/x-www-form-urlencoded"));
   const int httpCode = http.POST(payload);
@@ -624,6 +634,7 @@ void TelegramAlertService::processCommandUpdates_(
 
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                                        uint8_t wifiSignalPercent,
+                                                       const String &wifiSsid,
                                                        bool timeSynced,
                                                        const char *versionText,
                                                        uint32_t buildNumber,
@@ -646,7 +657,9 @@ String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, 
   message += String(wifiSignalPercent);
   message += F("%</b> (");
   message += String(wifiRssiDbm);
-  message += F(" dBm)\n");
+  message += F(" dBm) ");
+  message += htmlEscape_(wifiSsid.isEmpty() ? String("unknown") : wifiSsid);
+  message += '\n';
   message += F("Time: <b>");
   message += timeSynced ? F("Synced") : F("Waiting");
   message += F("</b>\n");
@@ -658,6 +671,7 @@ String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, 
 
 String TelegramAlertService::buildWifiRestoredMessage_(const String &ipAddress, int wifiRssiDbm,
                                                        uint8_t wifiSignalPercent,
+                                                       const String &wifiSsid,
                                                        bool timeSynced,
                                                        const char *versionText,
                                                        uint32_t buildNumber,
@@ -681,7 +695,9 @@ String TelegramAlertService::buildWifiRestoredMessage_(const String &ipAddress, 
   message += String(wifiSignalPercent);
   message += F("%</b> (");
   message += String(wifiRssiDbm);
-  message += F(" dBm)\n");
+  message += F(" dBm) ");
+  message += htmlEscape_(wifiSsid.isEmpty() ? String("unknown") : wifiSsid);
+  message += '\n';
   message += F("Downtime: <b>");
   message += formatDowntimeText_(downtimeMs);
   message += F("</b>\n");
@@ -695,7 +711,8 @@ String TelegramAlertService::buildWifiRestoredMessage_(const String &ipAddress, 
 }
 
 String TelegramAlertService::buildControllerStatusMessage_(
-    const ControllerLinkService &controllerLink, uint32_t nowMs) const {
+    const ControllerLinkService &controllerLink, uint32_t nowMs,
+    int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid) const {
   const ControllerTelemetrySnapshot &telemetry = controllerLink.telemetry();
   String message;
   message.reserve(512);
@@ -705,6 +722,13 @@ String TelegramAlertService::buildControllerStatusMessage_(
   message += F("</b> · build <code>");
   message += String(controllerLink.remoteBuild());
   message += F("</code>\n");
+  message += F("Wi-Fi: <b>");
+  message += String(wifiSignalPercent);
+  message += F("%</b> (");
+  message += String(wifiRssiDbm);
+  message += F(" dBm) ");
+  message += htmlEscape_(wifiSsid.isEmpty() ? String("unknown") : wifiSsid);
+  message += '\n';
   if (!controllerLink.hasTelemetry()) {
     message += F("Telemetry: <b>Waiting for C3</b>");
     return message;

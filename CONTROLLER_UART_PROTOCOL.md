@@ -203,3 +203,16 @@ Build 123 physical acceptance requires:
 Build 124 changes only the user-facing read-only Telegram spelling from `/c3_status` to `/c3sts`. Before its first USB upload, erase the complete WROOM flash. The erase intentionally clears the previous application, LittleFS `/sound_log.csv`, and NVS namespaces such as the persisted Telegram update identifier. C3 build 185 and the physical UART link remain untouched.
 
 After the erase, manual USB upload, and clean boot, validate `/c3sts` coalescing and no-replay behavior again because NVS starts empty.
+
+## WROOM Wi-Fi Context in Telegram Cards
+
+WROOM build 125 adds the active WROOM Wi-Fi context to the `Device Online`, `Wi-Fi Restored`, and `C3 Controller` Telegram cards:
+
+```text
+Wi-Fi: 92% (-54 dBm) NKAANNE_plus
+```
+
+- Signal percent, RSSI, and SSID all describe the WROOM connection used as the C3 internet gateway.
+- The SSID is read from the current `WiFi.SSID()` connection and escaped for Telegram HTML.
+- This does not report or enable C3 Wi-Fi and does not change the UART protocol or C3 build 185.
+- Physical acceptance requires the line to appear in both the startup `Device Online` card and a `/c3sts` `C3 Controller` reply after manual WROOM build 125 upload.

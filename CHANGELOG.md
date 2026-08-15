@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## WROOM Wi-Fi network context in Telegram cards - 2026-08-15
+
+1. Added WROOM build `125` (`0.1.71-EXP`) so both `Device Online` and `C3 Controller` Telegram cards show the actual WROOM connection as signal percent, RSSI, and SSID, for example `Wi-Fi: 92% (-54 dBm) NKAANNE_plus`.
+2. The SSID comes from the active `WiFi.SSID()` connection and is HTML-escaped before Telegram rendering. The same network context is also shown in `Wi-Fi Restored` for a consistent diagnostic format.
+3. This is a WROOM-only presentation change. UART frames, `/c3sts` scheduling and coalescing, C3 telemetry, C3 Deep Sleep, cloud forwarding, audio processing, and stored data are unchanged. C3 remains on build `185` and requires no upload.
+4. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,284 / 327,680` (`19.9%`), Flash `1,339,287 / 1,572,864` (`85.1%`), linked OTA-slot reserve `233,577` bytes, firmware `1,339,696` bytes, SHA-256 `4ADED17F5637FFE09CE5BD7E875A99D597526EAAC3309C370C7F703B70ED4DD5`. Manual WROOM upload and physical verification of both Telegram cards remain.
+
 ## Short Telegram C3 status command and clean-flash preparation - 2026-08-15
 
 1. Added WROOM build `124` (`0.1.70-EXP`) as a small command-interface cleanup after the build `123` device log confirmed regular 30-second statistics and sequential C3 telemetry without the previous approximately 71-second Telegram stall.

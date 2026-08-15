@@ -893,14 +893,18 @@ void loop() {
   updateGoogleSheetsWindow(latestSnapshot, timeService);
   uploadPendingGoogleSheetsWindow();
   updateMqttState(latestSnapshot);
+  const String wifiSsid = wifiService.ssidString();
   telegramAlertService.update(wifiService.isConnected(), wifiService.ipAddressString(),
                               wifiService.rssiDbm(), wifiService.signalPercent(),
+                              wifiSsid,
                               timeService.isSynced(), PROJECT_VERSION, PROJECT_BUILD,
                               formatCompactUptime(powerUptimeMs()));
   telegramAlertService.updateControllerStatus(
-      wifiService.isConnected(), controllerLinkService);
+      wifiService.isConnected(), wifiService.rssiDbm(), wifiService.signalPercent(),
+      wifiSsid, controllerLinkService);
   telegramAlertService.updateCommands(
-      wifiService.isConnected(), timeService.isSynced(), controllerLinkService);
+      wifiService.isConnected(), timeService.isSynced(), wifiService.rssiDbm(),
+      wifiService.signalPercent(), wifiSsid, controllerLinkService);
   if (!otaStarted && latestSnapshot.statsUpdated &&
       nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
     if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {

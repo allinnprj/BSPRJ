@@ -12,6 +12,7 @@ class WifiService {
   const __FlashStringHelper *statusText() const;
   const char *statusTextCStr() const;
   String ipAddressString() const;
+  String ssidString() const;
   int rssiDbm() const;
   uint8_t signalPercent() const;
   int statusCode() const;

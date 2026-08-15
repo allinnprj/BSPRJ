@@ -9,12 +9,14 @@ class TelegramAlertService {
  public:
   void begin();
   void update(bool wifiConnected, const String &ipAddress, int wifiRssiDbm,
-              uint8_t wifiSignalPercent,
+              uint8_t wifiSignalPercent, const String &wifiSsid,
               bool timeSynced, const char *versionText, uint32_t buildNumber,
               const String &uptimeText);
-  void updateControllerStatus(bool wifiConnected,
+  void updateControllerStatus(bool wifiConnected, int wifiRssiDbm,
+                              uint8_t wifiSignalPercent, const String &wifiSsid,
                               const ControllerLinkService &controllerLink);
-  void updateCommands(bool wifiConnected, bool timeSynced,
+  void updateCommands(bool wifiConnected, bool timeSynced, int wifiRssiDbm,
+                      uint8_t wifiSignalPercent, const String &wifiSsid,
                       const ControllerLinkService &controllerLink);
 
   bool isConfigured() const;
@@ -30,27 +32,33 @@ class TelegramAlertService {
   static constexpr uint16_t kTelegramHttpTimeoutMs = 4000;
   static constexpr uint32_t kMaxCommandAgeSeconds = 120;
 
-  bool sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
+  bool sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm,
+                         uint8_t wifiSignalPercent, const String &wifiSsid,
                          bool timeSynced, const char *versionText, uint32_t buildNumber,
                          const String &uptimeText);
-  bool sendWifiRestored_(const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
+  bool sendWifiRestored_(const String &ipAddress, int wifiRssiDbm,
+                         uint8_t wifiSignalPercent, const String &wifiSsid,
                          bool timeSynced, const char *versionText, uint32_t buildNumber,
                          const String &uptimeText, unsigned long downtimeMs);
   bool sendControllerStatus_(const ControllerLinkService &controllerLink,
-                             uint32_t nowMs);
+                             uint32_t nowMs, int wifiRssiDbm,
+                             uint8_t wifiSignalPercent, const String &wifiSsid);
   bool pollCommands_(const ControllerLinkService &controllerLink);
   void processCommandUpdates_(const String &response,
                               const ControllerLinkService &controllerLink);
   String buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
-                                   uint8_t wifiSignalPercent, bool timeSynced,
+                                   uint8_t wifiSignalPercent, const String &wifiSsid,
+                                   bool timeSynced,
                                    const char *versionText, uint32_t buildNumber,
                                    const String &uptimeText) const;
   String buildWifiRestoredMessage_(const String &ipAddress, int wifiRssiDbm,
-                                   uint8_t wifiSignalPercent, bool timeSynced,
+                                   uint8_t wifiSignalPercent, const String &wifiSsid,
+                                   bool timeSynced,
                                    const char *versionText, uint32_t buildNumber,
                                    const String &uptimeText, unsigned long downtimeMs) const;
   String buildControllerStatusMessage_(
-      const ControllerLinkService &controllerLink, uint32_t nowMs) const;
+      const ControllerLinkService &controllerLink, uint32_t nowMs,
+      int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid) const;
   static String htmlEscape_(const String &value);
   static String urlEncode_(const String &value);
   static String formatDowntimeText_(unsigned long downtimeMs);
