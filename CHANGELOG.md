@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Telegram scheduling hardening after build 122 device log - 2026-08-15
+
+1. Added WROOM build `123` (`0.1.69-EXP`) after combined serial/Telegram evidence proved that build `122` command authorization, freshness filtering, bot-suffix handling, NVS update tracking, and recovery worked, but consecutive synchronous Telegram messages could block the main loop for about 71 seconds. The affected startup showed UART RTT `68933 ms`, three duplicate `q=2` retries, and later transient Telegram/MQTT/UART recovery events.
+2. Applied a 4-second TLS handshake, client, HTTP connect, and HTTP response limit to every Telegram Device Online, Wi-Fi Restored, C3 status, and `getUpdates` request. A slow Telegram path now fails boundedly instead of holding the main loop for tens of seconds.
+3. Added a minimum 5-second gap after every successful Telegram send. The automatic C3 card can no longer start in the same loop immediately after Device Online, and elapsed-time checks use a fresh `millis()` value after any blocking network call.
+4. Multiple fresh `/c3_status` updates received in one poll are consumed and persisted together but coalesced into one reply. The reply is queued for a later loop at least 5 seconds after `getUpdates`, retries no faster than every 30 seconds after failure, and expires after 120 seconds instead of remaining pending indefinitely.
+5. Replay protection remains fail-closed: Telegram `update_id` is persisted before the reply is queued. Authorization, 60-second polling, freshness limits, WQTT, automatic Telegram status, Datacake, Sheets, audio, UART, C3 build `185`, Deep Sleep, INA3221, GPS, and charge behavior are otherwise unchanged. C3 requires no upload.
+6. Validation: `pio run -e esp32dev` -> SUCCESS, RAM `65,284 / 327,680` (`19.9%`), Flash `1,338,207 / 1,572,864` (`85.1%`), linked OTA-slot reserve `234,657` bytes, firmware `1,338,608` bytes, SHA-256 `6C17BC47E4758B13F4FF07DED9DA9D849471E632A6D728C21C60CC36742791A5`. Manual WROOM upload and a clean startup/command/replay timing test remain.
+
 ## WROOM read-only Telegram `/c3_status` - 2026-08-15
 
 1. Added WROOM build `122` (`0.1.68-EXP`) as the first Telegram command-input stage. The existing bot now checks for `/c3_status` once every 60 seconds and returns the same read-only `C3 Controller` card from WROOM's latest UART state and telemetry.

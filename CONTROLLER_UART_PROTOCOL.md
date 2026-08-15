@@ -175,3 +175,24 @@ Physical acceptance requires:
 - Startup log `[TG] commands ready -> /c3_status poll=60s last_update=<id>`.
 - A fresh authorized `/c3_status` returns the `C3 Controller` card and logs `[TG] command /c3_status -> OK`.
 - After a WROOM restart, the already consumed Telegram update must not produce another `[TG] command /c3_status -> OK` or a second command reply. The normal one-per-boot automatic `C3 Controller` card is expected and is not a replay.
+
+## WROOM Telegram Scheduling Hardening
+
+Build 122 physical evidence confirmed command correctness but exposed an unacceptable synchronous-network stall during clustered startup/status messages. WROOM build 123 therefore adds these scheduling rules:
+
+- Every Telegram TLS handshake, TCP/HTTP connect, and HTTP response is bounded to 4 seconds.
+- Successful Telegram messages are separated by at least 5 seconds.
+- Timing is recalculated with current `millis()` after every network operation.
+- Device Online and the automatic C3 card cannot be sent in the same loop.
+- Multiple `/c3_status` updates in one poll are persisted and coalesced into one reply.
+- The command reply is queued for a later loop at least 5 seconds after `getUpdates`.
+- A failed queued reply retries no faster than every 30 seconds and expires after 120 seconds.
+- No UART command or C3 firmware change is introduced.
+
+Build 123 physical acceptance requires:
+
+- Device Online and the automatic C3 card both arrive, separated by at least 5 seconds.
+- Regular `[STAT]` output continues without the approximately 71-second startup gap seen on build 122.
+- Startup Telegram activity does not produce UART RTT above the 10-second heartbeat timeout or repeated telemetry caused by a delayed ACK.
+- Two fresh `/c3_status` messages before one poll produce `command coalesced`, one queued reply, and one returned card.
+- A consumed command does not execute again after WROOM restart.

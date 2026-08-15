@@ -183,8 +183,12 @@ void TelegramAlertService::begin() {
   lastAttemptAtMs_ = 0;
   lastControllerAttemptAtMs_ = 0;
   lastCommandPollAtMs_ = millis();
+  lastSuccessfulSendAtMs_ = 0;
+  statusReplyQueuedAtMs_ = 0;
+  lastStatusReplyAttemptAtMs_ = 0;
   lastCommandUpdateId_ = 0;
   commandPreferencesReady_ = false;
+  statusReplyPending_ = false;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
@@ -279,19 +283,21 @@ void TelegramAlertService::update(bool wifiConnected, const String &ipAddress, i
 }
 
 void TelegramAlertService::updateControllerStatus(
-    bool wifiConnected, const ControllerLinkService &controllerLink,
-    uint32_t nowMs) {
+    bool wifiConnected, const ControllerLinkService &controllerLink) {
+  const uint32_t currentMs = millis();
   if (!configured_ || !wifiConnected || !onlineSentThisBoot_ ||
-      controllerStatusSentThisBoot_ || !controllerLink.hasTelemetry()) {
+      controllerStatusSentThisBoot_ || !controllerLink.hasTelemetry() ||
+      (lastSuccessfulSendAtMs_ != 0 &&
+       currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs)) {
     return;
   }
   if (lastControllerAttemptAtMs_ != 0 &&
-      nowMs - lastControllerAttemptAtMs_ < kRetryIntervalMs) {
+      currentMs - lastControllerAttemptAtMs_ < kRetryIntervalMs) {
     return;
   }
 
-  lastControllerAttemptAtMs_ = nowMs;
-  if (sendControllerStatus_(controllerLink, nowMs)) {
+  lastControllerAttemptAtMs_ = currentMs;
+  if (sendControllerStatus_(controllerLink, currentMs)) {
     controllerStatusSentThisBoot_ = true;
     Serial.println(F("[TG] sent -> C3 Controller"));
   }
@@ -299,14 +305,43 @@ void TelegramAlertService::updateControllerStatus(
 
 void TelegramAlertService::updateCommands(
     bool wifiConnected, bool timeSynced,
-    const ControllerLinkService &controllerLink, uint32_t nowMs) {
+    const ControllerLinkService &controllerLink) {
+  const uint32_t currentMs = millis();
   if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
-      !timeSynced || !onlineSentThisBoot_ ||
-      nowMs - lastCommandPollAtMs_ < kCommandPollIntervalMs) {
+      !timeSynced || !onlineSentThisBoot_) {
     return;
   }
-  lastCommandPollAtMs_ = nowMs;
-  pollCommands_(controllerLink, nowMs);
+
+  if (statusReplyPending_) {
+    if (currentMs - statusReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
+      statusReplyPending_ = false;
+      Serial.println(F("[TG] command /c3_status -> expired before reply"));
+      return;
+    }
+    if (currentMs - statusReplyQueuedAtMs_ < kSendSpacingMs ||
+        (lastSuccessfulSendAtMs_ != 0 &&
+         currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
+        (lastStatusReplyAttemptAtMs_ != 0 &&
+         currentMs - lastStatusReplyAttemptAtMs_ < kRetryIntervalMs)) {
+      return;
+    }
+    lastStatusReplyAttemptAtMs_ = currentMs;
+    const bool sent = sendControllerStatus_(controllerLink, currentMs);
+    Serial.print(F("[TG] command /c3_status -> "));
+    Serial.println(sent ? F("OK") : F("FAIL"));
+    if (sent) {
+      statusReplyPending_ = false;
+    }
+    return;
+  }
+
+  if (currentMs - lastCommandPollAtMs_ < kCommandPollIntervalMs ||
+      (lastSuccessfulSendAtMs_ != 0 &&
+       currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs)) {
+    return;
+  }
+  lastCommandPollAtMs_ = currentMs;
+  pollCommands_(controllerLink);
 }
 
 bool TelegramAlertService::isConfigured() const {
@@ -319,8 +354,12 @@ bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRs
                                              const String &uptimeText) {
   WiFiClientSecure client;
   client.setInsecure();
+  client.setHandshakeTimeout(4);
+  client.setTimeout(kTelegramHttpTimeoutMs);
 
   HTTPClient http;
+  http.setConnectTimeout(kTelegramHttpTimeoutMs);
+  http.setTimeout(kTelegramHttpTimeoutMs);
   String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/sendMessage");
   if (!http.begin(client, url)) {
     Serial.println(F("[TG] HTTP begin failed"));
@@ -340,6 +379,7 @@ bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRs
     Serial.print(F("[TG] POST -> "));
     Serial.println(httpCode);
     if (httpCode >= 200 && httpCode < 300) {
+      lastSuccessfulSendAtMs_ = millis();
       http.end();
       return true;
     }
@@ -364,8 +404,12 @@ bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRs
                                              unsigned long downtimeMs) {
   WiFiClientSecure client;
   client.setInsecure();
+  client.setHandshakeTimeout(4);
+  client.setTimeout(kTelegramHttpTimeoutMs);
 
   HTTPClient http;
+  http.setConnectTimeout(kTelegramHttpTimeoutMs);
+  http.setTimeout(kTelegramHttpTimeoutMs);
   String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/sendMessage");
   if (!http.begin(client, url)) {
     Serial.println(F("[TG] HTTP begin failed"));
@@ -385,6 +429,7 @@ bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRs
     Serial.print(F("[TG] POST -> "));
     Serial.println(httpCode);
     if (httpCode >= 200 && httpCode < 300) {
+      lastSuccessfulSendAtMs_ = millis();
       http.end();
       return true;
     }
@@ -406,8 +451,12 @@ bool TelegramAlertService::sendControllerStatus_(
     const ControllerLinkService &controllerLink, uint32_t nowMs) {
   WiFiClientSecure client;
   client.setInsecure();
+  client.setHandshakeTimeout(4);
+  client.setTimeout(kTelegramHttpTimeoutMs);
 
   HTTPClient http;
+  http.setConnectTimeout(kTelegramHttpTimeoutMs);
+  http.setTimeout(kTelegramHttpTimeoutMs);
   String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/sendMessage");
   if (!http.begin(client, url)) {
     Serial.println(F("[TG] C3 HTTP begin failed"));
@@ -425,6 +474,7 @@ bool TelegramAlertService::sendControllerStatus_(
     Serial.print(F("[TG] C3 POST -> "));
     Serial.println(httpCode);
     if (httpCode >= 200 && httpCode < 300) {
+      lastSuccessfulSendAtMs_ = millis();
       http.end();
       return true;
     }
@@ -443,10 +493,11 @@ bool TelegramAlertService::sendControllerStatus_(
 }
 
 bool TelegramAlertService::pollCommands_(
-    const ControllerLinkService &controllerLink, uint32_t nowMs) {
+    const ControllerLinkService &controllerLink) {
   WiFiClientSecure client;
   client.setInsecure();
   client.setHandshakeTimeout(4);
+  client.setTimeout(kTelegramHttpTimeoutMs);
 
   String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/getUpdates?offset=");
   if (lastCommandUpdateId_ == 0) {
@@ -457,7 +508,8 @@ bool TelegramAlertService::pollCommands_(
   url += F("&limit=10&timeout=0&allowed_updates=%5B%22message%22%5D");
 
   HTTPClient http;
-  http.setTimeout(kCommandHttpTimeoutMs);
+  http.setConnectTimeout(kTelegramHttpTimeoutMs);
+  http.setTimeout(kTelegramHttpTimeoutMs);
   if (!http.begin(client, url)) {
     Serial.println(F("[TG] commands GET begin failed"));
     return false;
@@ -473,14 +525,14 @@ bool TelegramAlertService::pollCommands_(
 
   const String response = http.getString();
   http.end();
-  processCommandUpdates_(response, controllerLink, nowMs);
+  processCommandUpdates_(response, controllerLink);
   return true;
 }
 
 void TelegramAlertService::processCommandUpdates_(
-    const String &response, const ControllerLinkService &controllerLink,
-    uint32_t nowMs) {
+    const String &response, const ControllerLinkService &controllerLink) {
   uint32_t newestUpdateId = lastCommandUpdateId_;
+  uint8_t statusRequestCount = 0;
   int searchAt = 0;
   while (true) {
     const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
@@ -541,22 +593,33 @@ void TelegramAlertService::processCommandUpdates_(
     }
 
     if (isStatusCommand(command)) {
-      const bool sent = sendControllerStatus_(controllerLink, nowMs);
-      Serial.print(F("[TG] command /c3_status -> "));
-      Serial.println(sent ? F("OK") : F("FAIL"));
+      if (statusRequestCount < UINT8_MAX) {
+        ++statusRequestCount;
+      }
     }
   }
 
-  if (newestUpdateId == lastCommandUpdateId_) {
+  if (newestUpdateId != lastCommandUpdateId_) {
+    if (commandPreferences_.putULong("last_update", newestUpdateId) !=
+        sizeof(uint32_t)) {
+      commandPreferencesReady_ = false;
+      Serial.println(F("[TG] commands OFF -> failed to persist update_id"));
+      return;
+    }
+    lastCommandUpdateId_ = newestUpdateId;
+  }
+
+  if (statusRequestCount == 0) {
     return;
   }
-  if (commandPreferences_.putULong("last_update", newestUpdateId) !=
-      sizeof(uint32_t)) {
-    commandPreferencesReady_ = false;
-    Serial.println(F("[TG] commands OFF -> failed to persist update_id"));
-    return;
+  if (statusRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /c3_status x"));
+    Serial.println(statusRequestCount);
   }
-  lastCommandUpdateId_ = newestUpdateId;
+  statusReplyPending_ = true;
+  statusReplyQueuedAtMs_ = millis();
+  lastStatusReplyAttemptAtMs_ = 0;
+  Serial.println(F("[TG] command /c3_status -> queued"));
 }
 
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
