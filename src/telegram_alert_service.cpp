@@ -30,6 +30,22 @@ void appendLinks(String &message, const String &ipAddress) {
   }
 }
 
+String formatVoltage(int32_t millivolts) {
+  return String(millivolts / 1000.0F, 3) + F(" V");
+}
+
+const __FlashStringHelper *controllerModeText(uint8_t mode) {
+  switch (mode) {
+    case 1:
+      return F("Smart Auto");
+    case 2:
+      return F("Legacy Manual");
+    case 0:
+    default:
+      return F("Classic");
+  }
+}
+
 }  // namespace
 
 void TelegramAlertService::begin() {
@@ -37,10 +53,12 @@ void TelegramAlertService::begin() {
   onlineSentThisBoot_ = false;
   wifiWasConnected_ = false;
   restorePending_ = false;
+  controllerStatusSentThisBoot_ = false;
   wifiConnectedSinceMs_ = 0;
   wifiLostAtMs_ = 0;
   restoreDowntimeMs_ = 0;
   lastAttemptAtMs_ = 0;
+  lastControllerAttemptAtMs_ = 0;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
@@ -123,6 +141,25 @@ void TelegramAlertService::update(bool wifiConnected, const String &ipAddress, i
                         buildNumber, uptimeText)) {
     onlineSentThisBoot_ = true;
     Serial.println(F("[TG] sent -> Device Online"));
+  }
+}
+
+void TelegramAlertService::updateControllerStatus(
+    bool wifiConnected, const ControllerLinkService &controllerLink,
+    uint32_t nowMs) {
+  if (!configured_ || !wifiConnected || !onlineSentThisBoot_ ||
+      controllerStatusSentThisBoot_ || !controllerLink.hasTelemetry()) {
+    return;
+  }
+  if (lastControllerAttemptAtMs_ != 0 &&
+      nowMs - lastControllerAttemptAtMs_ < kRetryIntervalMs) {
+    return;
+  }
+
+  lastControllerAttemptAtMs_ = nowMs;
+  if (sendControllerStatus_(controllerLink, nowMs)) {
+    controllerStatusSentThisBoot_ = true;
+    Serial.println(F("[TG] sent -> C3 Controller"));
   }
 }
 
@@ -219,6 +256,46 @@ bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRs
   return false;
 }
 
+bool TelegramAlertService::sendControllerStatus_(
+    const ControllerLinkService &controllerLink, uint32_t nowMs) {
+  WiFiClientSecure client;
+  client.setInsecure();
+
+  HTTPClient http;
+  String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/sendMessage");
+  if (!http.begin(client, url)) {
+    Serial.println(F("[TG] C3 HTTP begin failed"));
+    return false;
+  }
+
+  String payload = F("chat_id=");
+  payload += urlEncode_(String(TELEGRAM_CHAT_ID));
+  payload += F("&parse_mode=HTML&disable_web_page_preview=true&text=");
+  payload += urlEncode_(buildControllerStatusMessage_(controllerLink, nowMs));
+
+  http.addHeader(F("Content-Type"), F("application/x-www-form-urlencoded"));
+  const int httpCode = http.POST(payload);
+  if (httpCode > 0) {
+    Serial.print(F("[TG] C3 POST -> "));
+    Serial.println(httpCode);
+    if (httpCode >= 200 && httpCode < 300) {
+      http.end();
+      return true;
+    }
+    const String response = http.getString();
+    if (response.length() > 0) {
+      Serial.print(F("[TG] C3 body -> "));
+      Serial.println(response);
+    }
+  } else {
+    Serial.print(F("[TG] C3 POST failed -> "));
+    Serial.println(http.errorToString(httpCode));
+  }
+
+  http.end();
+  return false;
+}
+
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                                        uint8_t wifiSignalPercent,
                                                        bool timeSynced,
@@ -288,6 +365,50 @@ String TelegramAlertService::buildWifiRestoredMessage_(const String &ipAddress, 
   message += F("Uptime: ");
   message += htmlEscape_(uptimeText);
   appendLinks(message, ipAddress);
+  return message;
+}
+
+String TelegramAlertService::buildControllerStatusMessage_(
+    const ControllerLinkService &controllerLink, uint32_t nowMs) const {
+  const ControllerTelemetrySnapshot &telemetry = controllerLink.telemetry();
+  String message;
+  message.reserve(512);
+  message += F("🔗 <b>C3 Controller</b>\n");
+  message += F("Link: <b>");
+  message += htmlEscape_(String(controllerLink.stateText()));
+  message += F("</b> · build <code>");
+  message += String(controllerLink.remoteBuild());
+  message += F("</code>\n");
+  message += F("Telemetry: q=<code>");
+  message += String(telemetry.sequence);
+  message += F("</code> · age <b>");
+  message += String(controllerLink.telemetryAgeSeconds(nowMs));
+  message += F(" s</b>\n");
+  message += F("INA3221: <b>");
+  message += telemetry.valid ? F("OK") : F("ERROR");
+  message += F("</b>\n\n");
+  message += F("Solar: <b>");
+  message += formatVoltage(telemetry.solarMillivolts);
+  message += F("</b> / ");
+  message += String(telemetry.solarMilliamps);
+  message += F(" mA\n");
+  message += F("Battery: <b>");
+  message += formatVoltage(telemetry.batteryMillivolts);
+  message += F("</b> / ");
+  message += String(telemetry.batteryMilliamps);
+  message += F(" mA · <b>");
+  message += String(telemetry.batterySocPercent);
+  message += F("%</b>\n");
+  message += F("Load: <b>");
+  message += formatVoltage(telemetry.loadMillivolts);
+  message += F("</b> / ");
+  message += String(telemetry.loadMilliamps);
+  message += F(" mA\n\n");
+  message += F("Charge: <b>");
+  message += telemetry.chargeOutputOn ? F("ON") : F("OFF");
+  message += F("</b>\nMode: <b>");
+  message += controllerModeText(telemetry.solarControlMode);
+  message += F("</b>");
   return message;
 }
 

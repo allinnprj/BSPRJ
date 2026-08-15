@@ -85,7 +85,7 @@
 52. [x] Validate charge, discharge, voltage, current, and sleep behavior on the separate controller.
 53. [x] Select the accepted local communication protocol between the main BSPRJ ESP32 and the ESP32-C3 SuperMini: short protected `115200 8N1` UART with strict ASCII frames, documented in `CONTROLLER_UART_PROTOCOL.md`.
 54. [x] Implement controller status, real INA3221 power telemetry, heartbeat, planned-sleep state, ACK/retry/deduplication, and safe timeout/drop behavior; nominal `TEL -> ACK` is physically validated on builds `119/185`.
-55. [ ] Keep the BSPRJ ESP32 as the primary noise, logging, and network controller; use it as the network gateway for the ESP32-C3 if integration testing confirms that path.
+55. [x] Keep the BSPRJ ESP32 as the primary noise, logging, and network controller; WROOM build `120` physically passed repeated C3-to-WQTT gateway delivery with accepted sequences `q=2` and `q=9`.
 56. [ ] Implement automatic `LOW_BAT` behavior from measured power data.
 57. [ ] Validate the main controller operating from the battery/converter path managed and monitored by the ESP32-C3 solar controller.
 58. [ ] Connect and integrate the separately completed and tested GPS module into the main BSPRJ controller.

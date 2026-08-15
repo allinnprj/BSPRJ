@@ -2,12 +2,18 @@
 
 #include <Arduino.h>
 
+#include "controller_link_service.h"
+
 class TelegramAlertService {
  public:
   void begin();
- void update(bool wifiConnected, const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
+  void update(bool wifiConnected, const String &ipAddress, int wifiRssiDbm,
+              uint8_t wifiSignalPercent,
               bool timeSynced, const char *versionText, uint32_t buildNumber,
               const String &uptimeText);
+  void updateControllerStatus(bool wifiConnected,
+                              const ControllerLinkService &controllerLink,
+                              uint32_t nowMs);
 
   bool isConfigured() const;
 
@@ -23,6 +29,8 @@ class TelegramAlertService {
   bool sendWifiRestored_(const String &ipAddress, int wifiRssiDbm, uint8_t wifiSignalPercent,
                          bool timeSynced, const char *versionText, uint32_t buildNumber,
                          const String &uptimeText, unsigned long downtimeMs);
+  bool sendControllerStatus_(const ControllerLinkService &controllerLink,
+                             uint32_t nowMs);
   String buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                    uint8_t wifiSignalPercent, bool timeSynced,
                                    const char *versionText, uint32_t buildNumber,
@@ -31,6 +39,8 @@ class TelegramAlertService {
                                    uint8_t wifiSignalPercent, bool timeSynced,
                                    const char *versionText, uint32_t buildNumber,
                                    const String &uptimeText, unsigned long downtimeMs) const;
+  String buildControllerStatusMessage_(
+      const ControllerLinkService &controllerLink, uint32_t nowMs) const;
   static String htmlEscape_(const String &value);
   static String urlEncode_(const String &value);
   static String formatDowntimeText_(unsigned long downtimeMs);
@@ -39,8 +49,10 @@ class TelegramAlertService {
   bool onlineSentThisBoot_ = false;
   bool wifiWasConnected_ = false;
   bool restorePending_ = false;
+  bool controllerStatusSentThisBoot_ = false;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;
   unsigned long restoreDowntimeMs_ = 0;
   unsigned long lastAttemptAtMs_ = 0;
+  unsigned long lastControllerAttemptAtMs_ = 0;
 };

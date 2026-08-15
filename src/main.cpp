@@ -897,6 +897,8 @@ void loop() {
                               wifiService.rssiDbm(), wifiService.signalPercent(),
                               timeService.isSynced(), PROJECT_VERSION, PROJECT_BUILD,
                               formatCompactUptime(powerUptimeMs()));
+  telegramAlertService.updateControllerStatus(
+      wifiService.isConnected(), controllerLinkService, nowMs);
   if (!otaStarted && latestSnapshot.statsUpdated &&
       nowMs - lastMeanPersistAt >= MEAN_PERSIST_INTERVAL_MS) {
     if (meanPersistenceService.save(audioSampler.totalLevelSum(), audioSampler.totalLevelCount())) {

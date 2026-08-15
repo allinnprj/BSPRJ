@@ -85,7 +85,8 @@ Reliability rules:
 - Planned sleep `OK -> SLP -> WAIT -> OK`: passed physically on WROOM build 118 and C3 build 184.
 - Telemetry `TEL -> ACK`, increasing sequence, and real INA3221 values: passed physically on WROOM build 119 and C3 build 185 (`q=5` through `q=11`, INA `OK`, consistent power/state fields).
 - Forced ACK-loss retry/deduplication injection: deferred; source/build validation and nominal ACK transport are accepted for the next stage.
-- Cloud forwarding, commands, command ACK, authorization, and safe command failure: later stages.
+- WQTT cloud forwarding through WROOM: passed physically on WROOM build 120 and C3 build 185 (`q=2` and `q=9` published successfully).
+- Remaining cloud services, commands, command ACK, authorization, and safe command failure: later stages.
 
 ## WROOM MQTT Gateway Stage
 
@@ -119,3 +120,24 @@ Gateway rules:
 - Existing sound MQTT topics and Datacake fields are unchanged.
 - Datacake, Telegram, and Google Sheets forwarding are not part of build 120.
 - Physical acceptance requires `[MQTT] C3 telemetry -> q=<sequence> OK` for an already accepted `TEL ACK` sequence.
+
+Physical acceptance passed on 2026-08-15:
+
+- WROOM startup card: `0.1.66-EXP build 120`.
+- C3 link: `ONLINE -> C3 build 185`.
+- Successful retained WQTT publications: increasing sequences `q=2` and `q=9`.
+- Duplicate evidence: repeated UART `q=6` frames were logged as `TEL DUP` and re-ACKed instead of being stored as new telemetry.
+
+## WROOM Telegram Read-only Status Stage
+
+WROOM build 121 adds one separate `C3 Controller` Telegram card after the normal WROOM online alert and the first accepted C3 telemetry frame of that WROOM boot.
+
+Card contract:
+
+- Same WROOM Telegram bot and configured chat; no second bot.
+- One card per WROOM boot after telemetry becomes available.
+- Read-only fields: UART state, C3 build, sequence, age, INA health, Solar/Battery/Load measurements, SOC, Charge, and mode.
+- A failed card send is retried no faster than every 30 seconds.
+- No Telegram polling, command handling, C3 wake request, or control action.
+- C3 build 185, UART framing, Deep Sleep, WQTT, Datacake, Google Sheets, and local logging remain unchanged.
+- Physical acceptance requires the Telegram `C3 Controller` card plus `[TG] C3 POST -> 200` and `[TG] sent -> C3 Controller` on WROOM build 121.

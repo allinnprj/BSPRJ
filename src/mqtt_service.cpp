@@ -184,7 +184,10 @@ bool MqttService::publishControllerTelemetry(
   payload += F("},\"charge\":\"");
   payload += telemetry.chargeOutputOn ? F("on") : F("off");
   payload += F("\",\"mode\":\"");
-  payload += telemetry.solarControlMode == 1 ? F("smart_auto") : F("classic");
+  payload += telemetry.solarControlMode == 1
+                 ? F("smart_auto")
+                 : (telemetry.solarControlMode == 2 ? F("legacy_manual")
+                                                     : F("classic"));
   payload += F("\"}");
 
   const bool published =

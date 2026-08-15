@@ -39,7 +39,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current whole-project readiness estimate: `51%`.
+- Current whole-project readiness estimate: `52%`.
 
 ## Russian Report Block
 
@@ -51,13 +51,13 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 - Относительная статистика шума и классификация: 60%
 - Реальная dB-калибровка: 0%
 - INA3221 и солнечная зарядка: 100%
-- Связь между контроллерами: 40%
+- Связь между контроллерами: 50%
 - GPS и контекст места/времени: 65%
 - GSM/мобильная связь: 0%
 - Общее питание и автономная работа: 25%
 - Основная прошивка, логи, OTA и диагностика: 75%
 - Постоянная сборка и финальная полевая проверка: 10%
-- Общая готовность проекта: 51%
+- Общая готовность проекта: 52%
 ```
 
 | Subsystem | Readiness | Confirmed state | Main remaining work |
@@ -66,11 +66,11 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 | Relative sound statistics and classification | `60%` | Clean logs support preliminary `SILENT / NORMAL / LOUD / PEAK` boundaries and build `110` implements the accepted `P2P` thresholds in firmware and Google Sheets summary logic. A later local Apps Script pass aligned Telegram, dashboard charts, conclusions, and daily verdict readings to show `AVG P2P` beside those levels instead of implying old `NOW %` verdicts. A guarded Sheets reset command and technical-column hide/show controls now support a clean final run. Build validation passed, but deployed cloud output is not field-validated yet. | Deploy the updated Apps Script, run `Reset for clean run`, hide technical columns for normal observation, start a clean physical power-cycle, then validate that Telegram, charts, AppSheet, MQTT/Datacake, local logs, and Sheets summaries classify real windows consistently. |
 | Real dB calibration | `0%` | A reference sound-level meter is available, but no calibration dataset or conversion model has been accepted. | Define the calibration protocol, collect paired readings, choose the appropriate acoustic metric and weighting limitations, implement and validate the model. |
 | INA3221 and solar battery charging | `100%` | The separate `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller has completed its full standalone test. | No standalone INA3221/solar work remains. Its later link to BSPRJ and shared-power validation are tracked as separate integration subsystems. |
-| Communication between controllers | `40%` | The accepted UART link passed wiring, heartbeat, `OK -> SLP -> WAIT -> OK`, and real power telemetry. WROOM build `119` physically accepted and ACKed increasing C3 build `185` frames from `q=5` to `q=11` with INA `OK`, consistent Solar/Battery/Load values, SOC, Charge, and Classic mode. WROOM build `120` now builds retained WQTT forwarding with cloud deduplication and guarded retry, but it is not yet uploaded or physically proven. | Manually upload WROOM build `120` and prove increasing C3 sequences publish successfully to WQTT. Then forward through the remaining accepted network services and separately design and validate authorized commands, command ACK/deduplication, and safe failure behavior. The one-board backfeed check remains deferred. |
+| Communication between controllers | `50%` | The accepted UART link passed wiring, heartbeat, `OK -> SLP -> WAIT -> OK`, real power telemetry, duplicate re-ACK behavior, and WQTT gateway delivery. WROOM build `120` physically published increasing accepted C3 build `185` sequences `q=2` and `q=9`. Build `121` locally adds one read-only C3 Telegram status card per WROOM boot, but it is not yet uploaded or physically proven. | Manually upload WROOM build `121` and prove the Telegram card. Then forward through any remaining required network services and separately design and validate authorized commands, command ACK/deduplication, and safe failure behavior. Validate long-run reconnect behavior and the deferred one-board backfeed check. |
 | GPS and location/time context | `65%` | The GPS module has been completed and tested separately. It is not yet connected to or integrated into the main BSPRJ controller. | Connect it to the main controller, integrate a compact parser/service, add the accepted time/coordinate fields, and validate day-part behavior without NTP. |
 | GSM/mobile connectivity | `0%` | Required future subsystem only. | Select/finalize the module and power path, implement connectivity and recovery, then validate network behavior and power demand. |
 | Shared power and autonomous operation | `25%` | Battery operation and shared-power field behavior have been observed, and power-related gaps can be distinguished in logs. | Stabilize battery/charging contacts and transitions, prove operation with both controllers, manage GSM current peaks, and complete long autonomous testing. |
 | Core firmware, logging, OTA, and health diagnostics | `75%` | Build `109`, local CSV, Google Sheets diagnostics, Telegram online reporting, SHT31 health fields, and OTA are working on the real device. | Finalize level semantics, investigate remaining power-adjacent `WDT`, harden recovery paths, and adapt telemetry for GPS/GSM/integration. |
 | Permanent assembly and end-to-end field validation | `10%` | Current breadboard system has accumulated useful field evidence inside the enclosure. | Replace temporary contacts where required, complete integrated assembly, weather/power validation, and final multi-day acceptance test. |
 
-The overall estimate is now `51%`: standalone INA3221/solar work is complete, the physical C3-WROOM UART link, expected sleep/recovery, and real power telemetry are proven, and the GPS module is separately proven. WROOM cloud forwarding, safe controller commands, GPS system integration, dB calibration, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies. The estimate is weighted rather than a simple average.
+The overall estimate is now `52%`: standalone INA3221/solar work is complete; the physical C3-WROOM UART link, expected sleep/recovery, real power telemetry, duplicate handling, and WQTT gateway delivery are proven; and the GPS module is separately proven. Remaining cloud-service integration, safe controller commands, GPS system integration, dB calibration, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies. The estimate is weighted rather than a simple average.

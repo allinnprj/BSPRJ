@@ -272,7 +272,10 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
     Serial.print(F("% charge="));
     Serial.print(telemetry_.chargeOutputOn ? F("ON") : F("OFF"));
     Serial.print(F(" mode="));
-    Serial.println(telemetry_.solarControlMode == 1 ? F("AUTO") : F("CLASSIC"));
+    Serial.println(telemetry_.solarControlMode == 1
+                       ? F("AUTO")
+                       : (telemetry_.solarControlMode == 2 ? F("MANUAL")
+                                                           : F("CLASSIC")));
     return;
   }
 
