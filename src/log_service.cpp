@@ -18,7 +18,12 @@ constexpr char kLogHeader[] =
     "session_p2p_min,session_p2p_max,session_p2p_stable_max,raw_min,raw_max,signal,"
     "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,"
     "free_heap,min_free_heap,wifi_dbm,acoustic_rev";
-constexpr char kDiagnosticLogHeader[] = "date\ttime\tuptime_s\tbuild\tevent\tdetails";
+constexpr char kDiagnosticLogHeader[] =
+    "date\ttime\tuptime_s\tpower_uptime_min\tbuild\tboot_seq\treset\tevent\ttime_state\t"
+    "wifi\tssid\twifi_pct\trssi_dbm\tip\twqtt\tdc_ok\tdc_fail\tuart\tc3_build\t"
+    "c3_session\tc3_q\tc3_age_s\tc3_ok\tc3_dup\tc3_gap\tina\tsolar_mv\tsolar_ma\t"
+    "battery_mv\tbattery_ma\tsoc\tload_mv\tload_ma\tcharge\tmode\tnow\thour\ttotal\t"
+    "p2p\tsignal\ttemp_c\thum_pct\theap\tmin_heap\tgs_queue\tgs_ok\tgs_fail\tgs_drop\tinfo";
 WebServer logServer(80);
 bool logClearedByWeb = false;
 String currentDateText;
@@ -264,11 +269,12 @@ void ensureDiagnosticLog() {
   }
 }
 
-String sanitizeDiagnosticField(String value) {
-  value.replace('\t', ' ');
-  value.replace('\r', ' ');
-  value.replace('\n', ' ');
-  return value;
+void printDiagnosticTextField(File &file, const String &value) {
+  for (size_t index = 0; index < value.length(); ++index) {
+    const char character = value.charAt(index);
+    file.print(character == '\t' || character == '\r' || character == '\n' ? ' '
+                                                                            : character);
+  }
 }
 
 bool rotateDiagnosticLogIfNeeded(size_t incomingBytes) {
@@ -800,33 +806,133 @@ bool LogService::webServerStarted() const {
 }
 
 void LogService::appendDiagnosticEvent(const String &eventText, const String &details) {
-  if (!ready_ || eventText.isEmpty()) {
+  DiagnosticRecord record;
+  record.event = eventText;
+  record.info = details;
+  appendDiagnosticRecord(record);
+}
+
+void LogService::appendDiagnosticRecord(const DiagnosticRecord &record) {
+  if (!ready_ || record.event.isEmpty()) {
     return;
   }
 
-  const String safeEvent = sanitizeDiagnosticField(eventText);
-  const String safeDetails = sanitizeDiagnosticField(details);
   const size_t estimatedBytes = currentDateText.length() + currentTimeText.length() +
-                                safeEvent.length() + safeDetails.length() + 40U;
+                                record.event.length() + record.info.length() +
+                                record.wifiSsid.length() + record.wifiIp.length() + 260U;
   if (!rotateDiagnosticLogIfNeeded(estimatedBytes)) {
     return;
   }
-
   File file = LittleFS.open(kDiagnosticLogPath, FILE_APPEND);
   if (!file) {
     Serial.println(F("[DLOG] append failed"));
     return;
   }
-  file.print(currentDateText);
-  file.print('\t');
-  file.print(currentTimeText);
-  file.print('\t');
-  file.print(millis() / 1000U);
-  file.print('\t');
-  file.print(PROJECT_BUILD);
-  file.print('\t');
-  file.print(safeEvent);
-  file.print('\t');
-  file.println(safeDetails);
+
+  auto blankField = [&file]() { file.print('\t'); };
+  auto textField = [&file](const String &value) {
+    file.print('\t');
+    printDiagnosticTextField(file, value);
+  };
+  auto unsignedField = [&file](uint32_t value) {
+    file.print('\t');
+    file.print(value);
+  };
+  auto signedField = [&file](int32_t value) {
+    file.print('\t');
+    file.print(value);
+  };
+
+  printDiagnosticTextField(file, currentDateText);
+  textField(currentTimeText);
+  unsignedField(millis() / 1000U);
+  record.hasPowerContext ? unsignedField(record.powerUptimeMinutes) : blankField();
+  unsignedField(PROJECT_BUILD);
+  record.hasPowerContext ? unsignedField(record.bootSequence) : blankField();
+  record.hasPowerContext ? textField(record.resetReason) : blankField();
+  textField(record.event);
+  textField(record.timeState);
+  if (record.hasWifi) {
+    textField(record.wifiState);
+    textField(record.wifiSsid);
+    signedField(record.wifiSignalPercent);
+    signedField(record.wifiRssiDbm);
+    textField(record.wifiIp);
+  } else {
+    for (uint8_t index = 0; index < 5; ++index) blankField();
+  }
+  textField(record.wqttState);
+  if (record.hasDatacakeCounters) {
+    unsignedField(record.datacakeOkCount);
+    unsignedField(record.datacakeFailureCount);
+  } else {
+    blankField();
+    blankField();
+  }
+  textField(record.uartState);
+  if (record.hasC3) {
+    unsignedField(record.c3Build);
+    unsignedField(record.c3Session);
+    unsignedField(record.c3Sequence);
+    unsignedField(record.c3AgeSeconds);
+  } else {
+    for (uint8_t index = 0; index < 4; ++index) blankField();
+  }
+  if (record.hasC3Counters) {
+    unsignedField(record.c3AcceptedCount);
+    unsignedField(record.c3DuplicateCount);
+    unsignedField(record.c3GapCount);
+  } else {
+    for (uint8_t index = 0; index < 3; ++index) blankField();
+  }
+  if (record.hasC3) {
+    textField(record.inaState);
+    signedField(record.solarMillivolts);
+    signedField(record.solarMilliamps);
+    signedField(record.batteryMillivolts);
+    signedField(record.batteryMilliamps);
+    unsignedField(record.batterySocPercent);
+    signedField(record.loadMillivolts);
+    signedField(record.loadMilliamps);
+    textField(record.chargeState);
+    textField(record.controlMode);
+  } else {
+    for (uint8_t index = 0; index < 10; ++index) blankField();
+  }
+  if (record.hasSound) {
+    unsignedField(record.soundNow);
+    unsignedField(record.soundHour);
+    unsignedField(record.soundTotal);
+    unsignedField(record.soundPeakToPeak);
+    textField(record.soundSignal);
+  } else {
+    for (uint8_t index = 0; index < 5; ++index) blankField();
+  }
+  if (record.hasEnvironment) {
+    file.print('\t');
+    file.print(record.temperatureC, 1);
+    file.print('\t');
+    file.print(record.humidityPct, 1);
+  } else {
+    blankField();
+    blankField();
+  }
+  if (record.hasHeap) {
+    unsignedField(record.freeHeap);
+    unsignedField(record.minFreeHeap);
+  } else {
+    blankField();
+    blankField();
+  }
+  if (record.hasGoogleSheetsCounters) {
+    unsignedField(record.googleSheetsQueue);
+    unsignedField(record.googleSheetsOkCount);
+    unsignedField(record.googleSheetsFailureCount);
+    unsignedField(record.googleSheetsDropCount);
+  } else {
+    for (uint8_t index = 0; index < 4; ++index) blankField();
+  }
+  textField(record.info);
+  file.println();
   file.close();
 }

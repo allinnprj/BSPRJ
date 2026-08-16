@@ -15,6 +15,8 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 ## Important Decisions
 
+- After every intermediate implementation stage, report a concise checklist showing the main project goal, the current stage, completed work, and remaining work. Before accepting extra work, compare it with the main goal and defer non-essential branches so the project does not drift away from completion.
+- The accepted remote-journal v2 contract is documented in `DIAGNOSTIC_LOG_SPEC.md`: keep two `128 KiB` TSV files, target at least `96 hours` retention, align compact `HEALTH` with ten-minute sound windows, preserve state/error events immediately, stop logging every normal C3 `TEL`, separate actual WQTT state from Datacake HTTP, and keep downloads streaming. Build `128` remains WROOM-only; C3 stays on build `185`.
 - `MAX9814` is finished and must not be brought back into the active path.
 - Do not present readings as real `dB`; all sound values are relative until a real calibration step exists.
 - Overall readiness percentage now refers to the complete target system, including dB calibration, solar-controller communication, shared-power integration, GPS, GSM, permanent hardware integration, and end-to-end field validation. Do not use microphone-only maturity as the whole-project percentage.

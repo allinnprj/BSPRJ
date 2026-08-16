@@ -36,6 +36,7 @@
 - Use `DATA_DICTIONARY.md` and `DATA_DICTIONARY_RU.md` as the human-readable references for Google Sheets, Telegram, AppSheet, log, and analytics term meanings.
 - Use `progress.md` as the rulebook for subsystem readiness and the weighted overall project readiness percentage.
 - Keep the project incremental: one hardware check or one behavior change per step.
+- After every intermediate implementation stage, show a concise checklist with: the main project goal, the current stage, what was completed, and what remains. Use it to prevent optional work from drifting too far from the main goal; defer non-essential branches instead of expanding the active stage.
 - Prefer the smallest safe edit for the current task.
 - Validate firmware changes with `pio run` for `env:esp32dev`.
 - Do not present relative microphone levels as real `dB` until a calibration step is explicitly added.
