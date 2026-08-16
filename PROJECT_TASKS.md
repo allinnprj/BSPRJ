@@ -90,7 +90,7 @@
 57. [ ] Validate the main controller operating from the battery/converter path managed and monitored by the ESP32-C3 solar controller.
 58. [ ] Connect and integrate the separately completed and tested GPS module into the main BSPRJ controller.
 59. [ ] Validate time and day-part statistics without NTP.
-60. [ ] Optimize the current ESP32 firmware and review RAM, Flash, and OTA-slot capacity before GSM integration; migrate the main controller to an ESP32-S3 module only if measured resource limits require it.
+60. [x] Optimize the current ESP32 firmware and review RAM, Flash, and OTA-slot capacity before GSM integration; build `128` passes at `65,436` bytes RAM and `1,349,483` bytes linked Flash with `223,381` bytes OTA-slot reserve, so an ESP32-S3 migration is not currently required.
 61. [ ] Design the power path for GSM current peaks.
 62. [ ] Implement GSM connectivity and recovery.
 63. [ ] Validate data delivery without home Wi-Fi.

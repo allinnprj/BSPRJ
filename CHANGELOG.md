@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Analysis-ready remote diagnostics and lean web service - 2026-08-16
+
+1. Added WROOM build `128` (`0.1.74-EXP`) as the finalized local implementation of the balcony diagnostic-journal contract. `/diagnostics.log` now uses the fixed 50-column TSV v2 schema, and compact `HEALTH` records are aligned with completed ten-minute sound windows instead of running as an independent five-minute stream.
+2. Replaced per-frame C3 telemetry logging with event and counter evidence: `C3_WAKE`, critical `C3_CHANGE`, `C3_DUP`, `C3_GAP`, and `UART_WAIT/OK/SLP/OFF`. Ordinary accepted telemetry remains available in periodic `HEALTH`, while cumulative accepted, duplicate, gap, and offline counts preserve transport-quality evidence without excessive LittleFS growth.
+3. Corrected network semantics. WQTT now reflects the actual MQTT socket, Datacake has separate cumulative HTTP success/failure counters, and each real Wi-Fi interruption is coalesced into `WIFI_LOST` followed by `WIFI_OK duration_s=...` while retaining the last valid SSID, IP, and RSSI context.
+4. Simplified the WROOM log web service to a minimal generated index with build/uptime/storage information, individual diagnostic sizes, streaming downloads, archive listing, and guarded clear actions. Successful actions redirect to the index, and HTTP routes are registered only once rather than accumulating after IP changes.
+5. The diagnostic pair remains bounded to approximately `256 KiB`; analytical CSV semantics, sound processing, Telegram, Google Sheets payloads, MQTT payloads, C3 build `185`, UART frames, ACK/retry/deduplication, and C3 Deep Sleep behavior are unchanged. C3 requires no upload.
+6. Validation: `git diff --check` and `pio run -e esp32dev` -> SUCCESS, RAM `65,436 / 327,680` (`20.0%`), Flash `1,349,483 / 1,572,864` (`85.8%`), linked OTA-slot reserve `223,381` bytes, firmware `1,349,888` bytes, SHA-256 `EAEFE46A0A172B2FE7AC1FF422660B63E8222612D2A47531B0F8543BA5FCD552`. This is only `552` linked Flash bytes above the build `127` baseline and remains inside every resource gate. Manual WROOM OTA and the physical diagnostic acceptance gates remain.
+
 ## Rotating Wi-Fi diagnostic log for balcony operation - 2026-08-15
 
 1. Added WROOM build `127` (`0.1.73-EXP`) with a dedicated tab-separated `/diagnostics.log`, independent from the 10-minute analytical `/sound_log.csv`. It records exact state transitions and compact analysis-ready evidence without requiring a continuously attached USB serial monitor.
