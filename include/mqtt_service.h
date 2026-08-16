@@ -35,6 +35,9 @@ class MqttService {
 
   bool isConfigured() const;
   bool isConnected() const;
+  bool isWqttConnected() const;
+  uint32_t datacakeSuccessCount() const;
+  uint32_t datacakeFailureCount() const;
 
  private:
   void connectWqttIfNeeded(bool wifiConnected);
@@ -67,6 +70,8 @@ class MqttService {
   bool wqttConfigured_ = false;
   bool datacakeConfigured_ = false;
   bool datacakeHttpActive_ = false;
+  uint32_t datacakeSuccessCount_ = 0;
+  uint32_t datacakeFailureCount_ = 0;
   bool wqttAnnouncedOffline_ = false;
   bool datacakeAnnouncedOffline_ = false;
   unsigned long lastWqttConnectAttemptAt_ = 0;

@@ -46,6 +46,8 @@ void MqttService::begin() {
                         strlen(DATACAKE_PRODUCT_SLUG) > 0 &&
                         strlen(DATACAKE_DEVICE_ID) > 0;
   datacakeHttpActive_ = false;
+  datacakeSuccessCount_ = 0;
+  datacakeFailureCount_ = 0;
   wqttAnnouncedOffline_ = false;
   datacakeAnnouncedOffline_ = false;
   lastWqttConnectAttemptAt_ = 0;
@@ -207,8 +209,19 @@ bool MqttService::isConfigured() const {
 }
 
 bool MqttService::isConnected() const {
-  return (wqttConfigured_ && wqttClient.connected()) ||
-         datacakeConfigured_;
+  return isWqttConnected();
+}
+
+bool MqttService::isWqttConnected() const {
+  return wqttConfigured_ && wqttClient.connected();
+}
+
+uint32_t MqttService::datacakeSuccessCount() const {
+  return datacakeSuccessCount_;
+}
+
+uint32_t MqttService::datacakeFailureCount() const {
+  return datacakeFailureCount_;
 }
 
 void MqttService::connectWqttIfNeeded(bool wifiConnected) {
@@ -393,6 +406,7 @@ bool MqttService::publishDatacakePayload(const String &body, const String &logLa
 
   HTTPClient http;
   if (!http.begin(client, publishTopicPrefix_)) {
+    datacakeFailureCount_++;
     Serial.println(F("[MQTT] Datacake HTTP begin failed"));
     return false;
   }
@@ -402,6 +416,11 @@ bool MqttService::publishDatacakePayload(const String &body, const String &logLa
 
   int httpCode = http.POST(body);
   bool success = httpCode >= 200 && httpCode < 300;
+  if (success) {
+    datacakeSuccessCount_++;
+  } else {
+    datacakeFailureCount_++;
+  }
   Serial.print(F("[MQTT] Datacake HTTP "));
   Serial.print(logLabel);
   Serial.print(F(" -> "));

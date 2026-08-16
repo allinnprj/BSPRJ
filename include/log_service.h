@@ -32,6 +32,7 @@ struct DiagnosticRecord {
   uint32_t c3AcceptedCount = 0;
   uint32_t c3DuplicateCount = 0;
   uint32_t c3GapCount = 0;
+  uint32_t c3OfflineCount = 0;
   String inaState;
   int32_t solarMillivolts = 0;
   int32_t solarMilliamps = 0;

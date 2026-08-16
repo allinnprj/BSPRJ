@@ -167,6 +167,10 @@ uint32_t ControllerLinkService::telemetryDuplicateCount() const {
   return telemetryDuplicateCount_;
 }
 
+uint32_t ControllerLinkService::telemetrySequenceGapCount() const {
+  return telemetrySequenceGapCount_;
+}
+
 uint32_t ControllerLinkService::offlineTransitionCount() const {
   return offlineTransitionCount_;
 }
@@ -269,6 +273,16 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
       Serial.print(incoming.sequence);
       Serial.println(F(" re-acked"));
       return;
+    }
+
+    if (hasTelemetry_ && telemetry_.session == incoming.session &&
+        incoming.sequence > telemetry_.sequence &&
+        incoming.sequence - telemetry_.sequence > 1U) {
+      telemetrySequenceGapCount_ += incoming.sequence - telemetry_.sequence - 1U;
+      Serial.print(F("[UART] TEL GAP -> q="));
+      Serial.print(telemetry_.sequence);
+      Serial.print(F(".."));
+      Serial.println(incoming.sequence);
     }
 
     incoming.valid = valid != 0;

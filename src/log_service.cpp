@@ -21,7 +21,7 @@ constexpr char kLogHeader[] =
 constexpr char kDiagnosticLogHeader[] =
     "date\ttime\tuptime_s\tpower_uptime_min\tbuild\tboot_seq\treset\tevent\ttime_state\t"
     "wifi\tssid\twifi_pct\trssi_dbm\tip\twqtt\tdc_ok\tdc_fail\tuart\tc3_build\t"
-    "c3_session\tc3_q\tc3_age_s\tc3_ok\tc3_dup\tc3_gap\tina\tsolar_mv\tsolar_ma\t"
+    "c3_session\tc3_q\tc3_age_s\tc3_ok\tc3_dup\tc3_gap\tuart_off\tina\tsolar_mv\tsolar_ma\t"
     "battery_mv\tbattery_ma\tsoc\tload_mv\tload_ma\tcharge\tmode\tnow\thour\ttotal\t"
     "p2p\tsignal\ttemp_c\thum_pct\theap\tmin_heap\tgs_queue\tgs_ok\tgs_fail\tgs_drop\tinfo";
 WebServer logServer(80);
@@ -31,21 +31,22 @@ String currentTimeText;
 
 String pageStart(const String &title) {
   String body;
-  body.reserve(600);
-  body += F("<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">");
-  body += F("<title>");
+  body.reserve(768);
+  body += F("<!doctype html><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>");
   body += title;
-  body += F("</title><style>");
-  body += F("body{margin:0;padding:22px;font-family:Arial,sans-serif;background:#111827;color:#e5e7eb;line-height:1.45}");
-  body += F("main{max-width:760px;margin:0 auto;background:#172033;border:1px solid #2f3b52;border-radius:18px;padding:22px;box-shadow:0 18px 50px #0007}");
-  body += F("h3,h4{margin:0 0 14px;color:#f8fafc}p{color:#cbd5e1}.btn,a{color:#93c5fd}.btn{display:inline-block;margin:6px 8px 6px 0;padding:10px 14px;border-radius:12px;background:#1d4ed8;text-decoration:none;color:white;font-weight:700}");
-  body += F(".danger{background:#b91c1c}.ghost{background:#334155}.list{padding-left:18px}.muted{color:#94a3b8}.ok{color:#86efac}");
-  body += F("</style></head><body><main>");
+  body += F("</title><h3>");
+  body += title;
+  body += F("</h3>");
   return body;
 }
 
 void pageEnd(String &body) {
-  body += F("</main></body></html>");
+  body += F("<p><a href=\"/\">Back</a></p>");
+}
+
+void redirectToRoot() {
+  logServer.sendHeader(F("Location"), F("/"));
+  logServer.send(303, "text/plain", "done\n");
 }
 
 String compactDateTimeForFile() {
@@ -118,27 +119,6 @@ String fileNameFromPath(const String &path) {
   return slashIndex >= 0 ? path.substring(slashIndex + 1) : path;
 }
 
-String displayNameForLogPath(const String &path) {
-  String fileName = fileNameFromPath(path);
-  if (isCompactArchivePath(path)) {
-    String day = fileName.substring(0, 2);
-    String month = fileName.substring(2, 4);
-    String year = fileName.substring(4, 8);
-    String hour = fileName.substring(9, 11);
-    String minute = fileName.substring(11, 13);
-    String suffix;
-    int dotIndex = fileName.lastIndexOf('.');
-    if (dotIndex > 13) {
-      suffix = fileName.substring(13, dotIndex);
-    }
-    return day + F(".") + month + F(".") + year + F(" ") + hour + F(":") + minute + suffix;
-  }
-  if (fileName == F("sound_log_legacy.csv")) {
-    return F("Legacy log: sound_log_legacy.csv");
-  }
-  return String(F("Legacy archive: ")) + fileName;
-}
-
 String formatBytes(size_t byteCount) {
   if (byteCount >= 1024) {
     const size_t wholeKb = byteCount / 1024;
@@ -203,21 +183,21 @@ void appendStorageSummary(String &body) {
   const size_t freeBytes = stats.totalBytes > stats.usedBytes
                                ? stats.totalBytes - stats.usedBytes
                                : 0;
-  body += F("<h4>Storage</h4><p class=\"muted\">LittleFS: ");
+  body += F("<p>LittleFS: ");
   body += formatBytes(stats.usedBytes);
-  body += F(" used / ");
+  body += F(" used, ");
   body += formatBytes(stats.totalBytes);
-  body += F(" total / ");
+  body += F(" total, ");
   body += formatBytes(freeBytes);
-  body += F(" free<br>Active log: ");
+  body += F(" free<br>Sound log: ");
   body += formatBytes(stats.activeLogBytes);
-  body += F("<br>Archived logs: ");
+  body += F("; archives: ");
   body += String(stats.archivedLogCount);
-  body += F(" files, ");
+  body += F(" / ");
   body += formatBytes(stats.archivedLogBytes);
-  body += F("<br>Diagnostic logs: ");
+  body += F("<br>Diagnostics: ");
   body += String(stats.diagnosticLogCount);
-  body += F(" files, ");
+  body += F(" / ");
   body += formatBytes(stats.diagnosticLogBytes);
   body += F("</p>");
 }
@@ -321,18 +301,28 @@ void ensureHeader() {
 
 void handleRoot() {
   String body = pageStart(F("BS Noise Log"));
-  body += F("<h3>BS Noise Log</h3>");
-  body += F("<p class=\"muted\">Active log: <b>/log.csv</b></p>");
+  body += F("<p>WROOM ");
+  body += F(PROJECT_VERSION);
+  body += F(" build ");
+  body += PROJECT_BUILD;
+  body += F("; uptime ");
+  body += millis() / 60000UL;
+  body += F(" min</p>");
   appendStorageSummary(body);
-  body += F("<p><a class=\"btn\" href=\"/log.csv\" download>Download active log</a>");
-  body += F("<a class=\"btn\" href=\"/diagnostics.log\" download>Download diagnostics</a>");
+  body += F("<p><a href=\"/log.csv\" download>sound_log.csv</a><br>");
+  body += F("<a href=\"/diagnostics.log\" download>diagnostics.log</a> (");
+  body += formatBytes(fileSizeForPath(kDiagnosticLogPath));
+  body += ')';
   if (LittleFS.exists(kPreviousDiagnosticLogPath)) {
-    body += F("<a class=\"btn ghost\" href=\"/diagnostics-prev.log\" download>Download previous diagnostics</a>");
+    body += F("<br><a href=\"/diagnostics-prev.log\" download>diagnostics-prev.log</a> (");
+    body += formatBytes(fileSizeForPath(kPreviousDiagnosticLogPath));
+    body += ')';
   }
-  body += F("<a class=\"btn ghost\" href=\"/archive-log\">Archive current log</a>");
-  body += F("<a class=\"btn danger\" href=\"/clear-log\">Clear log</a>");
-  body += F("<a class=\"btn danger\" href=\"/clear-all-logs\">Clear ALL logs</a></p>");
-  body += F("<h4>Archived logs</h4><ul>");
+  body += F("</p><p>For complete analysis download all files shown above.</p>");
+  body += F("<p><a href=\"/archive-log\">Archive sound log</a> | ");
+  body += F("<a href=\"/clear-log\">Clear sound log</a> | ");
+  body += F("<a href=\"/clear-all-logs\">Clear ALL logs</a></p>");
+  body += F("<p>Archives:</p><ul>");
   File root = LittleFS.open("/");
   File file = root.openNextFile();
   bool foundArchive = false;
@@ -344,31 +334,28 @@ void handleRoot() {
     if (isDownloadableLogPath(path)) {
       foundArchive = true;
       String url = String(F("/download-archive?file=")) + path;
-      body += F("<li class=\"list\"><a href=\"");
+      body += F("<li><a href=\"");
       body += url;
       body += F("\" download>");
-      body += displayNameForLogPath(path);
+      body += fileNameFromPath(path);
       body += F("</a>");
-      body += F(" <span class=\"muted\">");
+      body += F(" (");
       body += formatBytes(file.size());
-      body += F("</span></li>");
+      body += F(")</li>");
     }
     file = root.openNextFile();
   }
   if (!foundArchive) {
-    body += F("<li class=\"muted\">No archived logs yet.</li>");
+    body += F("<li>None</li>");
   }
   body += F("</ul>");
-  pageEnd(body);
   logServer.send(200, "text/html", body);
 }
 
 void handleArchiveLogConfirm() {
   String body = pageStart(F("Archive BS Noise Log"));
-  body += F("<h3>Archive current log?</h3>");
-  body += F("<p>This renames the current log.csv to a dated archive file and starts a new active log.</p>");
-  body += F("<p><a class=\"btn\" href=\"/archive-log-confirm\">Confirm archive</a>");
-  body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
+  body += F("<p>Archive current sound log and start a new one?</p>");
+  body += F("<p><a href=\"/archive-log-confirm\">Confirm archive</a></p>");
   pageEnd(body);
   logServer.send(200, "text/html", body);
 }
@@ -384,7 +371,7 @@ void handleArchiveLogAction() {
     return;
   }
 
-  String archivePath = uniqueArchivePath();
+  const String archivePath = uniqueArchivePath();
   if (!LittleFS.rename(kLogPath, archivePath)) {
     logServer.send(500, "text/plain", "failed to archive log\n");
     return;
@@ -397,29 +384,13 @@ void handleArchiveLogAction() {
 
   Serial.print(F("[LOG] current log archived -> "));
   Serial.println(archivePath);
-  String body = pageStart(F("BS Noise Log Archived"));
-  body += F("<h3 class=\"ok\">Current log archived.</h3>");
-  body += F("<p>Archive: ");
-  body += displayNameForLogPath(archivePath);
-  body += F("<br><span class=\"muted\">File: ");
-  body += fileNameFromPath(archivePath);
-  body += F("</span>");
-  body += F("</p>");
-  body += F("<p><a class=\"btn\" href=\"/download-archive?file=");
-  body += archivePath;
-  body += F("\" download>Download archived log</a></p>");
-  body += F("<p><a class=\"btn ghost\" href=\"/log.csv\" download>Download new active log</a>");
-  body += F("<a class=\"btn ghost\" href=\"/\">Back</a></p>");
-  pageEnd(body);
-  logServer.send(200, "text/html", body);
+  redirectToRoot();
 }
 
 void handleClearLogConfirm() {
   String body = pageStart(F("Clear BS Noise Log"));
-  body += F("<h3>Clear current log?</h3>");
-  body += F("<p>This clears only the current compact log.csv. Legacy log is not touched.</p>");
-  body += F("<p><a class=\"btn danger\" href=\"/clear-log-confirm\">Confirm clear</a>");
-  body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
+  body += F("<p>Clear only the current sound log?</p>");
+  body += F("<p><a href=\"/clear-log-confirm\">Confirm clear</a></p>");
   pageEnd(body);
   logServer.send(200, "text/html", body);
 }
@@ -435,28 +406,20 @@ void handleClearLogAction() {
   logClearedByWeb = true;
 
   Serial.println(F("[LOG] current log cleared from web UI"));
-  String body = pageStart(F("BS Noise Log Cleared"));
-  body += F("<h3 class=\"ok\">Current log cleared.</h3>");
-  body += F("<p><a class=\"btn ghost\" href=\"/log.csv\" download>Download new log.csv</a>");
-  body += F("<a class=\"btn ghost\" href=\"/\">Back</a></p>");
-  pageEnd(body);
-  logServer.send(200, "text/html", body);
+  redirectToRoot();
 }
 
 void handleClearAllLogsConfirm() {
   const LogStorageStats stats = collectLogStorageStats();
   String body = pageStart(F("Clear ALL BS Noise Logs"));
-  body += F("<h3>Clear ALL logs?</h3>");
-  body += F("<p>This deletes the active log, all archived logs, the legacy log, and diagnostic logs from LittleFS. ");
+  body += F("<p>Delete the active log, archives, legacy log, and diagnostics? ");
   body += F("Google Sheets data is not touched.</p>");
-  body += F("<p class=\"muted\">Will remove approximately ");
+  body += F("<p>About ");
   body += formatBytes(stats.activeLogBytes + stats.archivedLogBytes + stats.diagnosticLogBytes);
-  body += F(" from ");
+  body += F(" in ");
   body += String(stats.archivedLogCount + stats.diagnosticLogCount +
                  (stats.activeLogBytes > 0 ? 1 : 0));
-  body += F(" local log files.</p>");
-  body += F("<p><a class=\"btn danger\" href=\"/clear-all-logs-confirm\">Confirm clear ALL</a>");
-  body += F("<a class=\"btn ghost\" href=\"/\">Cancel</a></p>");
+  body += F(" files.</p><p><a href=\"/clear-all-logs-confirm\">Confirm clear ALL</a></p>");
   pageEnd(body);
   logServer.send(200, "text/html", body);
 }
@@ -512,17 +475,9 @@ void handleClearAllLogsAction() {
 
   Serial.print(F("[LOG] all local logs cleared from web UI -> files "));
   Serial.println(deletedCount);
-  String body = pageStart(F("All BS Noise Logs Cleared"));
-  body += F("<h3 class=\"ok\">All local logs cleared.</h3>");
-  body += F("<p>Deleted files: ");
-  body += String(deletedCount);
-  body += F("<br>Deleted size: ");
-  body += formatBytes(deletedBytes);
-  body += F("</p>");
-  body += F("<p><a class=\"btn ghost\" href=\"/log.csv\" download>Download new log.csv</a>");
-  body += F("<a class=\"btn ghost\" href=\"/\">Back</a></p>");
-  pageEnd(body);
-  logServer.send(200, "text/html", body);
+  Serial.print(F("[LOG] all local logs cleared from web UI -> bytes "));
+  Serial.println(deletedBytes);
+  redirectToRoot();
 }
 
 void handleLogDownload() {
@@ -601,7 +556,7 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     return;
   }
 
-  if (wifiConnected && (!serverStarted_ || ipAddress != lastIpAddress_)) {
+  if (wifiConnected && !serverStarted_) {
     logServer.on("/", handleRoot);
     logServer.on("/log.csv", HTTP_GET, handleLogDownload);
     logServer.on("/diagnostics.log", HTTP_GET,
@@ -617,6 +572,9 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     logServer.on("/clear-all-logs-confirm", HTTP_GET, handleClearAllLogsAction);
     logServer.begin();
     serverStarted_ = true;
+  }
+
+  if (wifiConnected && ipAddress != lastIpAddress_) {
     lastIpAddress_ = ipAddress;
     Serial.print(F("[LOG] web download ready -> http://"));
     Serial.print(lastIpAddress_);
@@ -882,8 +840,9 @@ void LogService::appendDiagnosticRecord(const DiagnosticRecord &record) {
     unsignedField(record.c3AcceptedCount);
     unsignedField(record.c3DuplicateCount);
     unsignedField(record.c3GapCount);
+    unsignedField(record.c3OfflineCount);
   } else {
-    for (uint8_t index = 0; index < 3; ++index) blankField();
+    for (uint8_t index = 0; index < 4; ++index) blankField();
   }
   if (record.hasC3) {
     textField(record.inaState);

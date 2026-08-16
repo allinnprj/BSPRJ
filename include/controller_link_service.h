@@ -34,6 +34,7 @@ class ControllerLinkService {
   uint32_t telemetryAgeSeconds(uint32_t nowMs) const;
   uint32_t telemetryAcceptedCount() const;
   uint32_t telemetryDuplicateCount() const;
+  uint32_t telemetrySequenceGapCount() const;
   uint32_t offlineTransitionCount() const;
 
  private:
@@ -79,5 +80,6 @@ class ControllerLinkService {
   bool hasTelemetry_ = false;
   uint32_t telemetryAcceptedCount_ = 0;
   uint32_t telemetryDuplicateCount_ = 0;
+  uint32_t telemetrySequenceGapCount_ = 0;
   uint32_t offlineTransitionCount_ = 0;
 };

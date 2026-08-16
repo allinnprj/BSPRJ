@@ -31,7 +31,6 @@ static constexpr uint8_t OLED_ADDRESS = 0x3C;
 static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 1000;
 static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 2000;
 static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 30000;
-static constexpr unsigned long DIAGNOSTIC_HEALTH_INTERVAL_MS = 300000UL;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
 static constexpr uint8_t GOOGLE_SHEETS_QUEUE_SIZE = 6;
@@ -116,7 +115,6 @@ AudioSnapshot latestSnapshot;
 Sht31Reading latestSht31Reading;
 unsigned long lastDisplayAt = 0;
 unsigned long lastSerialLogAt = 0;
-unsigned long lastDiagnosticHealthAt = 0;
 unsigned long lastGoogleSheetsAttemptAt = 0;
 unsigned long lastDisplayInteractionAt = 0;
 unsigned long lastMeanPersistAt = 0;
@@ -147,11 +145,23 @@ unsigned long currentSheetsFirstAttemptAt = 0;
 String currentSheetsAttemptWindowKey;
 bool diagnosticStatesInitialized = false;
 bool lastDiagnosticWifiConnected = false;
-bool lastDiagnosticMqttConnected = false;
-String lastDiagnosticWifiSsid;
+bool lastDiagnosticWqttConnected = false;
+uint32_t diagnosticWifiOutageStartedAtMs = 0;
+uint32_t diagnosticWqttOutageStartedAtMs = 0;
+String lastDiagnosticStableWifiSsid;
+int16_t lastDiagnosticStableWifiRssiDbm = -127;
+uint8_t lastDiagnosticStableWifiSignalPercent = 0;
+String lastDiagnosticStableWifiIp;
 String lastDiagnosticControllerState;
 uint32_t lastDiagnosticTelemetryAcceptedCount = 0;
 uint32_t lastDiagnosticTelemetryDuplicateCount = 0;
+uint32_t lastDiagnosticTelemetryGapCount = 0;
+uint32_t lastDiagnosticC3Session = 0;
+bool lastDiagnosticC3StateKnown = false;
+bool lastDiagnosticC3InaValid = false;
+bool lastDiagnosticC3ChargeOn = false;
+uint8_t lastDiagnosticC3Mode = 0;
+bool diagnosticHealthDue = false;
 
 const char *signalStateText(SignalState state) {
   switch (state) {
@@ -527,6 +537,7 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
     }
     logService.appendWindowAggregate(completedRecord, PROJECT_BUILD, wifiService.rssiDbm());
     lastCompletedSheetsWindowAt = millis();
+    diagnosticHealthDue = true;
     resetGoogleSheetsAccumulator(activeSheetsWindow, timeService, currentDayPart);
   }
 
@@ -687,96 +698,188 @@ const char *controllerModeText(uint8_t mode) {
   return mode == 1 ? "AUTO" : (mode == 2 ? "MANUAL" : "CLASSIC");
 }
 
-String controllerLinkDiagnosticDetails(uint32_t nowMs) {
-  String details;
-  details.reserve(120);
-  details += F("state=");
-  details += controllerLinkService.stateText();
-  details += F(" build=");
-  details += controllerLinkService.remoteBuild();
-  details += F(" rtt_ms=");
-  details += controllerLinkService.lastRttMs();
-  if (controllerLinkService.isSleeping()) {
-    details += F(" sleep_left_s=");
-    details += controllerLinkService.sleepRemainingSeconds(nowMs);
-  }
-  if (controllerLinkService.hasTelemetry()) {
-    details += F(" q=");
-    details += controllerLinkService.telemetry().sequence;
-    details += F(" tel_age_s=");
-    details += controllerLinkService.telemetryAgeSeconds(nowMs);
-  }
-  return details;
+void fillDiagnosticIdentity(DiagnosticRecord &record) {
+  record.hasPowerContext = true;
+  record.powerUptimeMinutes = powerUptimeMinutes();
+  record.bootSequence = currentBootSequence;
+  record.resetReason = currentResetReason;
+  record.timeState = timeService.isSynced() ? F("SYNC") : F("WAIT");
 }
 
-String controllerTelemetryDiagnosticDetails(uint32_t nowMs) {
+void fillDiagnosticController(DiagnosticRecord &record, uint32_t nowMs) {
+  record.uartState = controllerLinkService.stateText();
+  record.hasC3Counters = true;
+  record.c3AcceptedCount = controllerLinkService.telemetryAcceptedCount();
+  record.c3DuplicateCount = controllerLinkService.telemetryDuplicateCount();
+  record.c3GapCount = controllerLinkService.telemetrySequenceGapCount();
+  record.c3OfflineCount = controllerLinkService.offlineTransitionCount();
   if (!controllerLinkService.hasTelemetry()) {
-    return F("none");
+    return;
   }
+
   const ControllerTelemetrySnapshot &telemetry = controllerLinkService.telemetry();
-  String details;
-  details.reserve(220);
-  details += F("session=");
-  details += telemetry.session;
-  details += F(" q=");
-  details += telemetry.sequence;
-  details += F(" age_s=");
-  details += controllerLinkService.telemetryAgeSeconds(nowMs);
-  details += F(" ina=");
-  details += telemetry.valid ? F("OK") : F("ERR");
-  details += F(" solar_mV_mA=");
-  details += telemetry.solarMillivolts;
-  details += '/';
-  details += telemetry.solarMilliamps;
-  details += F(" battery_mV_mA_soc=");
-  details += telemetry.batteryMillivolts;
-  details += '/';
-  details += telemetry.batteryMilliamps;
-  details += '/';
-  details += telemetry.batterySocPercent;
-  details += F(" load_mV_mA=");
-  details += telemetry.loadMillivolts;
-  details += '/';
-  details += telemetry.loadMilliamps;
-  details += F(" charge=");
-  details += telemetry.chargeOutputOn ? F("ON") : F("OFF");
-  details += F(" mode=");
-  details += controllerModeText(telemetry.solarControlMode);
-  return details;
+  record.hasC3 = true;
+  record.c3Build = controllerLinkService.remoteBuild();
+  record.c3Session = telemetry.session;
+  record.c3Sequence = telemetry.sequence;
+  record.c3AgeSeconds = controllerLinkService.telemetryAgeSeconds(nowMs);
+  record.inaState = telemetry.valid ? F("OK") : F("ERR");
+  record.solarMillivolts = telemetry.solarMillivolts;
+  record.solarMilliamps = telemetry.solarMilliamps;
+  record.batteryMillivolts = telemetry.batteryMillivolts;
+  record.batteryMilliamps = telemetry.batteryMilliamps;
+  record.batterySocPercent = telemetry.batterySocPercent;
+  record.loadMillivolts = telemetry.loadMillivolts;
+  record.loadMilliamps = telemetry.loadMilliamps;
+  record.chargeState = telemetry.chargeOutputOn ? F("ON") : F("OFF");
+  record.controlMode = controllerModeText(telemetry.solarControlMode);
+}
+
+void appendControllerDiagnosticRecord(const String &eventText, uint32_t nowMs,
+                                      const String &info = String()) {
+  DiagnosticRecord record;
+  record.event = eventText;
+  record.info = info;
+  fillDiagnosticIdentity(record);
+  fillDiagnosticController(record, nowMs);
+  logService.appendDiagnosticRecord(record);
+}
+
+String uartDiagnosticEventText(const String &state) {
+  if (state == F("OK")) return F("UART_OK");
+  if (state == F("SLP")) return F("UART_SLP");
+  if (state == F("OFF")) return F("UART_OFF");
+  return F("UART_WAIT");
+}
+
+void appendWifiDiagnosticRecord(const String &eventText, bool connected,
+                                uint32_t durationSeconds = 0) {
+  DiagnosticRecord record;
+  record.event = eventText;
+  if (eventText == F("WIFI_OK")) {
+    record.info = F("duration_s=");
+    record.info += durationSeconds;
+  }
+  fillDiagnosticIdentity(record);
+  record.hasWifi = true;
+  record.wifiState = connected ? F("OK") : F("OFF");
+  record.wifiSsid = lastDiagnosticStableWifiSsid;
+  record.wifiSignalPercent = lastDiagnosticStableWifiSignalPercent;
+  record.wifiRssiDbm = lastDiagnosticStableWifiRssiDbm;
+  record.wifiIp = lastDiagnosticStableWifiIp;
+  logService.appendDiagnosticRecord(record);
+}
+
+void appendWqttDiagnosticRecord(const String &eventText, bool connected,
+                                uint32_t durationSeconds = 0) {
+  DiagnosticRecord record;
+  record.event = eventText;
+  if (eventText == F("WQTT_OK")) {
+    record.info = F("duration_s=");
+    record.info += durationSeconds;
+  }
+  fillDiagnosticIdentity(record);
+  record.wqttState = connected ? F("OK") : F("OFF");
+  logService.appendDiagnosticRecord(record);
 }
 
 void updateDiagnosticEvents(uint32_t nowMs) {
   const bool wifiConnected = wifiService.isConnected();
-  const bool mqttConnected = mqttService.isConnected();
-  const String wifiSsid = wifiService.ssidString();
+  const bool wqttConnected = mqttService.isWqttConnected();
   const String controllerState = controllerLinkService.stateText();
 
-  if (!diagnosticStatesInitialized || wifiConnected != lastDiagnosticWifiConnected ||
-      wifiSsid != lastDiagnosticWifiSsid) {
-    String details = wifiConnected ? F("state=OK") : F("state=OFF");
-    details += F(" ssid=");
-    details += wifiSsid;
-    details += F(" ip=");
-    details += wifiService.ipAddressString();
-    details += F(" signal_pct=");
-    details += wifiService.signalPercent();
-    details += F(" rssi_dbm=");
-    details += wifiService.rssiDbm();
-    logService.appendDiagnosticEvent(F("WIFI_STATE"), details);
+  if (wifiConnected) {
+    const String currentSsid = wifiService.ssidString();
+    const String currentIp = wifiService.ipAddressString();
+    const int16_t currentRssiDbm = wifiService.rssiDbm();
+    if (!currentSsid.isEmpty()) lastDiagnosticStableWifiSsid = currentSsid;
+    if (!currentIp.isEmpty() && currentIp != F("0.0.0.0")) {
+      lastDiagnosticStableWifiIp = currentIp;
+    }
+    if (currentRssiDbm > -127) {
+      lastDiagnosticStableWifiRssiDbm = currentRssiDbm;
+      lastDiagnosticStableWifiSignalPercent = wifiService.signalPercent();
+    }
   }
 
-  if (!diagnosticStatesInitialized || mqttConnected != lastDiagnosticMqttConnected) {
-    logService.appendDiagnosticEvent(F("MQTT_STATE"),
-                                     mqttConnected ? F("state=OK") : F("state=OFF"));
+  if (!diagnosticStatesInitialized) {
+    if (wifiConnected) {
+      appendWifiDiagnosticRecord(F("WIFI_OK"), true);
+    } else {
+      diagnosticWifiOutageStartedAtMs = nowMs;
+    }
+    if (wqttConnected) {
+      appendWqttDiagnosticRecord(F("WQTT_OK"), true);
+    } else {
+      diagnosticWqttOutageStartedAtMs = nowMs;
+    }
+  } else {
+    if (wifiConnected != lastDiagnosticWifiConnected) {
+      if (wifiConnected) {
+        const uint32_t durationSeconds =
+            diagnosticWifiOutageStartedAtMs == 0
+                ? 0
+                : (nowMs - diagnosticWifiOutageStartedAtMs) / 1000UL;
+        appendWifiDiagnosticRecord(F("WIFI_OK"), true, durationSeconds);
+        diagnosticWifiOutageStartedAtMs = 0;
+      } else {
+        diagnosticWifiOutageStartedAtMs = nowMs;
+        appendWifiDiagnosticRecord(F("WIFI_LOST"), false);
+      }
+    }
+    if (wqttConnected != lastDiagnosticWqttConnected) {
+      if (wqttConnected) {
+        const uint32_t durationSeconds =
+            diagnosticWqttOutageStartedAtMs == 0
+                ? 0
+                : (nowMs - diagnosticWqttOutageStartedAtMs) / 1000UL;
+        appendWqttDiagnosticRecord(F("WQTT_OK"), true, durationSeconds);
+        diagnosticWqttOutageStartedAtMs = 0;
+      } else {
+        diagnosticWqttOutageStartedAtMs = nowMs;
+        appendWqttDiagnosticRecord(F("WQTT_LOST"), false);
+      }
+    }
   }
 
   if (!diagnosticStatesInitialized || controllerState != lastDiagnosticControllerState) {
-    logService.appendDiagnosticEvent(F("UART_STATE"), controllerLinkDiagnosticDetails(nowMs));
+    String info = F("build=");
+    info += controllerLinkService.remoteBuild();
+    if (controllerLinkService.isSleeping()) {
+      info += F(" sleep_left_s=");
+      info += controllerLinkService.sleepRemainingSeconds(nowMs);
+    } else {
+      info += F(" rtt_ms=");
+      info += controllerLinkService.lastRttMs();
+    }
+    appendControllerDiagnosticRecord(uartDiagnosticEventText(controllerState), nowMs, info);
   }
 
   const uint32_t acceptedCount = controllerLinkService.telemetryAcceptedCount();
-  if (acceptedCount != lastDiagnosticTelemetryAcceptedCount) {
-    logService.appendDiagnosticEvent(F("C3_TEL"), controllerTelemetryDiagnosticDetails(nowMs));
+  if (acceptedCount != lastDiagnosticTelemetryAcceptedCount &&
+      controllerLinkService.hasTelemetry()) {
+    const ControllerTelemetrySnapshot &telemetry = controllerLinkService.telemetry();
+    const bool newSession = telemetry.session != lastDiagnosticC3Session;
+    const bool criticalStateChanged =
+        lastDiagnosticC3StateKnown &&
+        (telemetry.valid != lastDiagnosticC3InaValid ||
+         telemetry.chargeOutputOn != lastDiagnosticC3ChargeOn ||
+         telemetry.solarControlMode != lastDiagnosticC3Mode);
+    if (newSession) {
+      appendControllerDiagnosticRecord(F("C3_WAKE"), nowMs, F("new_session"));
+    } else if (criticalStateChanged) {
+      String info;
+      if (telemetry.valid != lastDiagnosticC3InaValid) info += F("ina ");
+      if (telemetry.chargeOutputOn != lastDiagnosticC3ChargeOn) info += F("charge ");
+      if (telemetry.solarControlMode != lastDiagnosticC3Mode) info += F("mode ");
+      info.trim();
+      appendControllerDiagnosticRecord(F("C3_CHANGE"), nowMs, info);
+    }
+    lastDiagnosticC3Session = telemetry.session;
+    lastDiagnosticC3InaValid = telemetry.valid;
+    lastDiagnosticC3ChargeOn = telemetry.chargeOutputOn;
+    lastDiagnosticC3Mode = telemetry.solarControlMode;
+    lastDiagnosticC3StateKnown = true;
   }
 
   const uint32_t duplicateCount = controllerLinkService.telemetryDuplicateCount();
@@ -785,97 +888,65 @@ void updateDiagnosticEvents(uint32_t nowMs) {
     details += duplicateCount;
     details += F(" delta=");
     details += duplicateCount - lastDiagnosticTelemetryDuplicateCount;
-    logService.appendDiagnosticEvent(F("C3_DUP"), details);
+    appendControllerDiagnosticRecord(F("C3_DUP"), nowMs, details);
+  }
+
+  const uint32_t gapCount = controllerLinkService.telemetrySequenceGapCount();
+  if (gapCount != lastDiagnosticTelemetryGapCount) {
+    String details = F("total=");
+    details += gapCount;
+    details += F(" delta=");
+    details += gapCount - lastDiagnosticTelemetryGapCount;
+    appendControllerDiagnosticRecord(F("C3_GAP"), nowMs, details);
   }
 
   lastDiagnosticWifiConnected = wifiConnected;
-  lastDiagnosticWifiSsid = wifiSsid;
-  lastDiagnosticMqttConnected = mqttConnected;
+  lastDiagnosticWqttConnected = wqttConnected;
   lastDiagnosticControllerState = controllerState;
   lastDiagnosticTelemetryAcceptedCount = acceptedCount;
   lastDiagnosticTelemetryDuplicateCount = duplicateCount;
+  lastDiagnosticTelemetryGapCount = gapCount;
   diagnosticStatesInitialized = true;
 }
 
 void appendDiagnosticHealth(uint32_t nowMs) {
-  if (lastDiagnosticHealthAt != 0 &&
-      nowMs - lastDiagnosticHealthAt < DIAGNOSTIC_HEALTH_INTERVAL_MS) {
+  if (!diagnosticHealthDue) {
     return;
   }
-  lastDiagnosticHealthAt = nowMs;
+  diagnosticHealthDue = false;
 
-  String details;
-  details.reserve(620);
-  details += F("version=");
-  details += F(PROJECT_VERSION);
-  details += F(" boot_seq=");
-  details += currentBootSequence;
-  details += F(" reset=");
-  details += currentResetReason;
-  details += F(" power_uptime_min=");
-  details += powerUptimeMinutes();
-  details += F(" heap=");
-  details += ESP.getFreeHeap();
-  details += '/';
-  details += ESP.getMinFreeHeap();
-  details += F(" wifi=");
-  details += wifiService.isConnected() ? F("OK") : F("OFF");
-  details += '/';
-  details += wifiService.ssidString();
-  details += '/';
-  details += wifiService.signalPercent();
-  details += F("pct/");
-  details += wifiService.rssiDbm();
-  details += F("dBm time=");
-  details += timeService.isSynced() ? F("SYNC") : F("WAIT");
-  details += F(" noise=");
-  details += latestSnapshot.currentLevel;
-  details += '/';
-  details += latestSnapshot.hourAverage;
-  details += '/';
-  details += latestSnapshot.totalAverage;
-  details += F(" pct=");
-  details += latestSnapshot.currentPercent;
-  details += '/';
-  details += latestSnapshot.hourPercent;
-  details += '/';
-  details += latestSnapshot.totalPercent;
-  details += F(" p2p=");
-  details += latestSnapshot.peakToPeak;
-  details += F(" sig=");
-  details += signalStateText(latestSnapshot.signalState);
-  details += F(" env=");
-  if (latestSht31Reading.available) {
-    details += String(latestSht31Reading.temperatureC, 1);
-    details += F("C/");
-    details += String(latestSht31Reading.humidityPct, 1);
-    details += '%';
-  } else {
-    details += F("OFF");
-  }
-  details += F(" uart[");
-  details += controllerLinkDiagnosticDetails(nowMs);
-  details += F("] tel[");
-  details += controllerTelemetryDiagnosticDetails(nowMs);
-  details += F("] uart_counts=accepted:");
-  details += controllerLinkService.telemetryAcceptedCount();
-  details += F(",dup:");
-  details += controllerLinkService.telemetryDuplicateCount();
-  details += F(",offline:");
-  details += controllerLinkService.offlineTransitionCount();
-  details += F(" mqtt=");
-  details += mqttService.isConnected() ? F("OK") : F("OFF");
-  details += F(" gs=q:");
-  details += pendingSheetsCount;
-  details += F(",attempt:");
-  details += sheetsAttemptCount;
-  details += F(",ok:");
-  details += sheetsSuccessCount;
-  details += F(",fail:");
-  details += sheetsFailureCount;
-  details += F(",drop:");
-  details += sheetsDropCount;
-  logService.appendDiagnosticEvent(F("HEALTH"), details);
+  DiagnosticRecord record;
+  record.event = F("HEALTH");
+  fillDiagnosticIdentity(record);
+  record.hasWifi = true;
+  record.wifiState = wifiService.isConnected() ? F("OK") : F("OFF");
+  record.wifiSsid = wifiService.ssidString();
+  record.wifiSignalPercent = wifiService.signalPercent();
+  record.wifiRssiDbm = wifiService.rssiDbm();
+  record.wifiIp = wifiService.ipAddressString();
+  record.wqttState = mqttService.isWqttConnected() ? F("OK") : F("OFF");
+  record.hasDatacakeCounters = true;
+  record.datacakeOkCount = mqttService.datacakeSuccessCount();
+  record.datacakeFailureCount = mqttService.datacakeFailureCount();
+  fillDiagnosticController(record, nowMs);
+  record.hasSound = true;
+  record.soundNow = latestSnapshot.currentLevel;
+  record.soundHour = latestSnapshot.hourAverage;
+  record.soundTotal = latestSnapshot.totalAverage;
+  record.soundPeakToPeak = latestSnapshot.peakToPeak;
+  record.soundSignal = signalStateText(latestSnapshot.signalState);
+  record.hasEnvironment = latestSht31Reading.available;
+  record.temperatureC = latestSht31Reading.temperatureC;
+  record.humidityPct = latestSht31Reading.humidityPct;
+  record.hasHeap = true;
+  record.freeHeap = ESP.getFreeHeap();
+  record.minFreeHeap = ESP.getMinFreeHeap();
+  record.hasGoogleSheetsCounters = true;
+  record.googleSheetsQueue = pendingSheetsCount;
+  record.googleSheetsOkCount = sheetsSuccessCount;
+  record.googleSheetsFailureCount = sheetsFailureCount;
+  record.googleSheetsDropCount = sheetsDropCount;
+  logService.appendDiagnosticRecord(record);
 }
 
 void scanI2cBus(TwoWire *wire) {
@@ -1058,13 +1129,11 @@ void setup() {
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
-  String bootDetails = F("version=");
-  bootDetails += F(PROJECT_VERSION);
-  bootDetails += F(" boot_seq=");
-  bootDetails += currentBootSequence;
-  bootDetails += F(" reset=");
-  bootDetails += currentResetReason;
-  logService.appendDiagnosticEvent(F("BOOT"), bootDetails);
+  DiagnosticRecord bootRecord;
+  bootRecord.event = F("BOOT");
+  bootRecord.info = String(F("version=")) + F(PROJECT_VERSION);
+  fillDiagnosticIdentity(bootRecord);
+  logService.appendDiagnosticRecord(bootRecord);
   logService.appendRuntimeEvent(F("BOOT"), String(), String(), PROJECT_BUILD, currentBootSequence,
                                 currentResetReason, powerUptimeMinutes(),
                                 formatCompactUptime(powerUptimeMs()), wifiService.rssiDbm());

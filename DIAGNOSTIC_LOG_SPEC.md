@@ -26,7 +26,7 @@ Keep the balcony device diagnosable and OTA-serviceable without bringing it home
 One header is written per file. Rows use fixed columns so field names are not repeated inside every `HEALTH` record.
 
 ```text
-date	time	uptime_s	power_uptime_min	build	boot_seq	reset	event	time_state	wifi	ssid	wifi_pct	rssi_dbm	ip	wqtt	dc_ok	dc_fail	uart	c3_build	c3_session	c3_q	c3_age_s	c3_ok	c3_dup	c3_gap	ina	solar_mv	solar_ma	battery_mv	battery_ma	soc	load_mv	load_ma	charge	mode	now	hour	total	p2p	signal	temp_c	hum_pct	heap	min_heap	gs_queue	gs_ok	gs_fail	gs_drop	info
+date	time	uptime_s	power_uptime_min	build	boot_seq	reset	event	time_state	wifi	ssid	wifi_pct	rssi_dbm	ip	wqtt	dc_ok	dc_fail	uart	c3_build	c3_session	c3_q	c3_age_s	c3_ok	c3_dup	c3_gap	uart_off	ina	solar_mv	solar_ma	battery_mv	battery_ma	soc	load_mv	load_ma	charge	mode	now	hour	total	p2p	signal	temp_c	hum_pct	heap	min_heap	gs_queue	gs_ok	gs_fail	gs_drop	info
 ```
 
 Empty fields are allowed when an event does not use a value. Tabs, carriage returns, and line feeds are forbidden inside a field.
@@ -88,7 +88,7 @@ Downloads must continue to use streaming; a complete file must never be loaded i
 
 - Static RAM must remain close to build `127` (`65,388` bytes); no more than `1 KiB` unexplained growth.
 - Linked Flash should preferably not exceed build `127` (`1,348,931` bytes); any growth above `2 KiB` requires justification or trimming.
-- OTA-slot reserve must remain above `220 KiB`.
+- OTA-slot reserve must remain above `220,000 bytes` (approximately `214.8 KiB`).
 - No large JSON document, compression library, or in-memory file bundle is allowed.
 - Estimated retention from a representative short device run must be at least `96 hours`.
 
