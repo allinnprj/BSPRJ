@@ -21,6 +21,7 @@ struct ControllerTelemetrySnapshot {
 class ControllerLinkService {
  public:
   void begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin);
+  bool restoreExpectedSleep(uint32_t remainingSeconds, uint32_t build, uint32_t nowMs);
   void update(uint32_t nowMs);
 
   const char* stateText() const;
@@ -47,7 +48,7 @@ class ControllerLinkService {
 
   void sendPing(uint32_t nowMs);
   void sendTelemetryAck(uint32_t session, uint32_t sequence);
-  void recordValidActivity(uint32_t nowMs);
+  bool recordValidActivity(uint32_t nowMs);
   void processInput(uint32_t nowMs);
   void processLine(uint32_t nowMs);
 
@@ -55,7 +56,8 @@ class ControllerLinkService {
   static constexpr uint32_t PING_INTERVAL_MS = 5000;
   static constexpr uint32_t RESPONSE_TIMEOUT_MS = 10000;
   static constexpr uint8_t OFFLINE_MISS_THRESHOLD = 3;
-  static constexpr uint32_t OFFLINE_SILENCE_TIMEOUT_MS = 90000;
+  static constexpr uint32_t WAIT_SILENCE_TIMEOUT_MS = 90000;
+  static constexpr uint32_t OFFLINE_SILENCE_TIMEOUT_MS = 240000;
   static constexpr uint32_t MAX_EXPECTED_SLEEP_SECONDS = 86400;
   static constexpr size_t RX_LINE_CAPACITY = 160;
 
@@ -74,6 +76,7 @@ class ControllerLinkService {
   uint32_t remoteBuild_ = 0;
   uint32_t sleepUntilMs_ = 0;
   uint8_t consecutiveMisses_ = 0;
+  uint32_t startedAtMs_ = 0;
   uint32_t lastValidActivityAtMs_ = 0;
   bool hasValidActivity_ = false;
   ControllerTelemetrySnapshot telemetry_ = {};

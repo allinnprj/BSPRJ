@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## UART wait/off semantics and planned-sleep restart continuity - 2026-08-18
+
+1. Added WROOM build `129` (`0.1.75-EXP`) after the build `128` approximately `48 h 40 min` field journal proved reliable rotation, `293` continuous ten-minute windows, `1119` accepted C3 frames, `4` handled duplicates, `C3_GAP=0`, and `GS_DROP=0`, but exposed two self-recovering awake-state `UART_OFF` transitions and one false post-restart `OFF` while C3 was in a previously declared Deep Sleep.
+2. Split degraded and missing-link semantics. Three missed PONG responses plus `90 s` without valid C3 traffic now changes an online link to `WAIT`; a real `OFF` requires `240 s` without any valid C3 traffic. Any strictly parsed `TEL` or matching `PONG` immediately restores `OK`, including recovery from `WAIT`.
+3. A declared C3 sleep deadline and C3 build are now retained in RTC memory only for the next planned software restart. WROOM restores `SLP` after that restart, clears the one-shot checkpoint immediately, starts a fresh `240 s` wake grace period when the expected sleep ends, and never restores this state after power-on, brownout, watchdog, or other reset causes.
+4. Corrected the current WROOM OTA route: device target `192.168.1.134` and PC callback `192.168.1.81`. No upload was performed. UART frame formats, telemetry/ACK/deduplication, sound processing, cloud payloads, C3 build `187`, and C3 firmware behavior are unchanged.
+5. Validation: `git diff --check` and `pio run -e esp32dev` -> SUCCESS, RAM `65,436 / 327,680` (`20.0%`), Flash `1,350,111 / 1,572,864` (`85.8%`), linked OTA-slot reserve `222,753` bytes, firmware `1,350,512` bytes, SHA-256 `6C2E8E980099CED7769834F1D28E017677ECD76EF1BEE1A25F3FE3E70E6DCECF`. The linked image is `628` bytes above build `128`; manual WROOM OTA and the focused `3-5 h` physical gate remain.
+
 ## Analysis-ready remote diagnostics and lean web service - 2026-08-16
 
 1. Added WROOM build `128` (`0.1.74-EXP`) as the finalized local implementation of the balcony diagnostic-journal contract. `/diagnostics.log` now uses the fixed 50-column TSV v2 schema, and compact `HEALTH` records are aligned with completed ten-minute sound windows instead of running as an independent five-minute stream.

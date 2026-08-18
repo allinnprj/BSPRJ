@@ -63,6 +63,7 @@ bool parseNextSigned(const char*& cursor, int32_t& value) {
 
 void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin) {
   serial_ = &serial;
+  startedAtMs_ = millis();
   serial_->begin(BAUD_RATE, SERIAL_8N1, rxPin, txPin);
   Serial.print(F("[UART] link ready -> RX="));
   Serial.print(rxPin);
@@ -70,6 +71,29 @@ void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t
   Serial.print(txPin);
   Serial.print(F(" baud="));
   Serial.println(BAUD_RATE);
+}
+
+bool ControllerLinkService::restoreExpectedSleep(uint32_t remainingSeconds,
+                                                 uint32_t build,
+                                                 uint32_t nowMs) {
+  if (remainingSeconds == 0 || remainingSeconds > MAX_EXPECTED_SLEEP_SECONDS || build == 0) {
+    return false;
+  }
+
+  pingPending_ = false;
+  pingSent_ = false;
+  consecutiveMisses_ = 0;
+  lastValidActivityAtMs_ = nowMs;
+  hasValidActivity_ = true;
+  remoteBuild_ = build;
+  sleepUntilMs_ = nowMs + remainingSeconds * 1000U;
+  state_ = State::Sleeping;
+  Serial.print(F("[UART] SLEEP RESTORED -> C3 build "));
+  Serial.print(remoteBuild_);
+  Serial.print(F(" for "));
+  Serial.print(remainingSeconds);
+  Serial.println(F(" s"));
+  return true;
 }
 
 void ControllerLinkService::update(uint32_t nowMs) {
@@ -87,6 +111,8 @@ void ControllerLinkService::update(uint32_t nowMs) {
     pingPending_ = false;
     pingSent_ = false;
     consecutiveMisses_ = 0;
+    startedAtMs_ = nowMs;
+    hasValidActivity_ = false;
     Serial.println(F("[UART] WAKE WAIT -> expected C3 wake window"));
   }
 
@@ -95,13 +121,17 @@ void ControllerLinkService::update(uint32_t nowMs) {
     if (consecutiveMisses_ < OFFLINE_MISS_THRESHOLD) {
       ++consecutiveMisses_;
     }
-    const bool validTrafficRecentlySeen =
-        hasValidActivity_ && nowMs - lastValidActivityAtMs_ < OFFLINE_SILENCE_TIMEOUT_MS;
-    if (consecutiveMisses_ >= OFFLINE_MISS_THRESHOLD &&
-        !validTrafficRecentlySeen && state_ != State::Offline) {
-      state_ = State::Offline;
-      ++offlineTransitionCount_;
-      Serial.println(F("[UART] OFFLINE -> PONG timeouts and 90 s without valid C3 traffic"));
+    const uint32_t silenceMs =
+        nowMs - (hasValidActivity_ ? lastValidActivityAtMs_ : startedAtMs_);
+    if (consecutiveMisses_ >= OFFLINE_MISS_THRESHOLD) {
+      if (silenceMs >= OFFLINE_SILENCE_TIMEOUT_MS && state_ != State::Offline) {
+        state_ = State::Offline;
+        ++offlineTransitionCount_;
+        Serial.println(F("[UART] OFFLINE -> PONG timeouts and 240 s without valid C3 traffic"));
+      } else if (silenceMs >= WAIT_SILENCE_TIMEOUT_MS && state_ == State::Online) {
+        state_ = State::Waiting;
+        Serial.println(F("[UART] WAIT -> PONG timeouts and 90 s without valid C3 traffic"));
+      }
     }
   }
 
@@ -192,15 +222,14 @@ void ControllerLinkService::sendTelemetryAck(uint32_t session, uint32_t sequence
   serial_->println(sequence);
 }
 
-void ControllerLinkService::recordValidActivity(uint32_t nowMs) {
+bool ControllerLinkService::recordValidActivity(uint32_t nowMs) {
+  const bool restoredOnline = state_ != State::Online;
   lastValidActivityAtMs_ = nowMs;
   hasValidActivity_ = true;
   consecutiveMisses_ = 0;
-  if (state_ == State::Offline) {
-    state_ = State::Online;
-    Serial.print(F("[UART] ONLINE -> valid C3 traffic build "));
-    Serial.println(remoteBuild_);
-  }
+  sleepUntilMs_ = 0;
+  state_ = State::Online;
+  return restoredOnline;
 }
 
 void ControllerLinkService::processInput(uint32_t nowMs) {
@@ -264,7 +293,10 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
       return;
     }
 
-    recordValidActivity(nowMs);
+    if (recordValidActivity(nowMs)) {
+      Serial.print(F("[UART] ONLINE -> valid C3 traffic build "));
+      Serial.println(remoteBuild_);
+    }
     sendTelemetryAck(incoming.session, incoming.sequence);
     if (hasTelemetry_ && telemetry_.session == incoming.session &&
         telemetry_.sequence == incoming.sequence) {
@@ -366,13 +398,11 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
   consecutiveMisses_ = 0;
   lastRttMs_ = nowMs - pendingSinceMs_;
   remoteBuild_ = build;
-  recordValidActivity(nowMs);
-  if (state_ != State::Online) {
+  if (recordValidActivity(nowMs)) {
     Serial.print(F("[UART] ONLINE -> C3 build "));
     Serial.print(remoteBuild_);
     Serial.print(F(" rtt="));
     Serial.print(lastRttMs_);
     Serial.println(F(" ms"));
   }
-  state_ = State::Online;
 }

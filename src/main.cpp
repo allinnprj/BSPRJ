@@ -46,6 +46,8 @@ static constexpr uint16_t SHT31_LOST_WARN_SECONDS = 120;
 static constexpr unsigned long SHT31_RECOVER_INTERVAL_MS = 60000UL;
 static constexpr bool STARTUP_I2C_SCAN_ENABLED = false;
 static constexpr uint32_t POWER_SESSION_MAGIC = 0xB510B510UL;
+static constexpr uint32_t CONTROLLER_SLEEP_RTC_MAGIC = 0xC35E3A91UL;
+static constexpr uint32_t CONTROLLER_SLEEP_RTC_MAX_SECONDS = 86400UL;
 static constexpr uint16_t NOISE_LEVEL_SILENT_MAX = 350;
 static constexpr uint16_t NOISE_LEVEL_NORMAL_MAX = 650;
 static constexpr uint16_t NOISE_LEVEL_LOUD_MAX = 850;
@@ -54,6 +56,9 @@ RTC_NOINIT_ATTR uint32_t rtcPowerSessionMagic;
 RTC_NOINIT_ATTR uint32_t rtcBootSequence;
 RTC_NOINIT_ATTR uint64_t rtcPowerUptimeBaseMs;
 RTC_NOINIT_ATTR uint64_t rtcLastKnownPowerUptimeMs;
+RTC_NOINIT_ATTR uint32_t rtcControllerSleepMagic;
+RTC_NOINIT_ATTR uint64_t rtcControllerSleepUntilPowerUptimeMs;
+RTC_NOINIT_ATTR uint32_t rtcControllerSleepBuild;
 
 enum class DayPart : uint8_t {
   Night,
@@ -1093,6 +1098,22 @@ void setup() {
   currentBootSequence = rtcBootSequence;
   savePowerUptimeCheckpoint();
 
+  uint32_t restoredControllerSleepSeconds = 0;
+  uint32_t restoredControllerBuild = 0;
+  if (resetReason == ESP_RST_SW && rtcControllerSleepMagic == CONTROLLER_SLEEP_RTC_MAGIC &&
+      rtcControllerSleepBuild != 0 &&
+      rtcControllerSleepUntilPowerUptimeMs > powerUptimeMs()) {
+    const uint64_t remainingMs = rtcControllerSleepUntilPowerUptimeMs - powerUptimeMs();
+    const uint64_t remainingSeconds = (remainingMs + 999ULL) / 1000ULL;
+    if (remainingSeconds <= CONTROLLER_SLEEP_RTC_MAX_SECONDS) {
+      restoredControllerSleepSeconds = static_cast<uint32_t>(remainingSeconds);
+      restoredControllerBuild = rtcControllerSleepBuild;
+    }
+  }
+  rtcControllerSleepMagic = 0;
+  rtcControllerSleepUntilPowerUptimeMs = 0;
+  rtcControllerSleepBuild = 0;
+
   Serial.println();
   Serial.println(F("ESP32 sound statistics clean restart"));
   Serial.print(F("Version: "));
@@ -1118,6 +1139,10 @@ void setup() {
   Serial.print(F(" DATA="));
   Serial.println(I2S_DATA_PIN);
   controllerLinkService.begin(Serial2, CONTROLLER_UART_RX_PIN, CONTROLLER_UART_TX_PIN);
+  if (restoredControllerSleepSeconds > 0) {
+    controllerLinkService.restoreExpectedSleep(restoredControllerSleepSeconds,
+                                               restoredControllerBuild, millis());
+  }
 
   wifiService.begin();
   if (!audioSampler.begin(I2S_BCLK_PIN, I2S_WS_PIN, I2S_DATA_PIN)) {
@@ -1365,6 +1390,17 @@ void loop() {
       completedWindowBoundaryReady && sheetsDeliveryReady) {
     scheduledRestartStarted = true;
     savePowerUptimeCheckpoint();
+    rtcControllerSleepMagic = 0;
+    rtcControllerSleepUntilPowerUptimeMs = 0;
+    rtcControllerSleepBuild = 0;
+    const uint32_t controllerSleepRemainingSeconds =
+        controllerLinkService.sleepRemainingSeconds(nowMs);
+    if (controllerSleepRemainingSeconds > 0 && controllerLinkService.remoteBuild() != 0) {
+      rtcControllerSleepUntilPowerUptimeMs =
+          powerUptimeMs() + static_cast<uint64_t>(controllerSleepRemainingSeconds) * 1000ULL;
+      rtcControllerSleepBuild = controllerLinkService.remoteBuild();
+      rtcControllerSleepMagic = CONTROLLER_SLEEP_RTC_MAGIC;
+    }
     logService.appendRuntimeEvent(F("SCHEDULED_RESTART"), currentDateText(), currentTimeText(),
                                   PROJECT_BUILD, currentBootSequence, currentResetReason,
                                   powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),
