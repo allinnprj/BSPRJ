@@ -107,3 +107,31 @@
 74. [ ] Move the validated release from `devlop` to `main`.
 75. [ ] Record and publish the final project release.
 76. [ ] Create the final as-built `NETLIST` for the complete system after all controller, power, sensor, GPS, GSM, and interconnection wiring is finalized.
+
+## G. Active ESP32-WROOM-32U to ESP32-C3 SuperMini Completion Plan
+
+- This is the active controller-link sequence approved after tasks `53-55`.
+- Complete it incrementally in the listed order. Do not start bidirectional C3 commands before the receive-only link correction and short physical acceptance gate pass.
+- WROOM work belongs to `BSPRJ`. C3 source changes and C3 uploads require a separately agreed stage; the user performs the C3 upload from its own VS Code project.
+
+77. [x] Confirm the final short UART wiring: C3 `GPIO21/U0TXD -> 2.2 kOhm -> WROOM GPIO16/U2RXD`, WROOM `GPIO17/U2TXD -> 2.2 kOhm -> C3 GPIO20/U0RXD`, common GND only, no UART-side `3.3V/5V/EN/BOOT` connection.
+78. [x] Confirm the receive-only transport baseline: strict `115200 8N1`, `PING/PONG`, declared `SLEEP`, `SLP -> WAIT -> OK`, real `TEL -> ACK`, session/sequence handling, duplicate re-ACK, strict parsing, C3-to-WQTT forwarding, Telegram `C3 Controller`, and `/c3sts` coalescing.
+79. [x] Accept the build `128/187` long-run evidence: approximately `48 h 40 min`, valid diagnostic rotation, `293` continuous ten-minute windows, `1119` accepted C3 frames, `4` handled duplicates, `C3_GAP=0`, `GS_DROP=0`, stable heap, and complete local-to-Sheets reconciliation.
+80. [ ] Correct WROOM UART liveness semantics: remove the two observed short false `UART_OFF` transitions, preserve or reconstruct declared C3 sleep across a planned WROOM restart, use `SLP/WAIT/UNKNOWN` while an expected wake is pending, immediately restore `OK` on valid C3 traffic, and still detect a real missing link as `OFF`.
+81. [ ] Correct WROOM OTA routing for the current network without uploading: target `192.168.1.134`, PC callback `192.168.1.81`, while keeping USB recovery available.
+82. [ ] Prepare the next WROOM build with the smallest UART-state/OTA edit, synchronized version/build and `CHANGELOG.md`, then pass `git diff --check` and `pio run -e esp32dev` with RAM, Flash, and OTA-slot headroom recorded. Do not change or upload C3 for this step.
+83. [ ] After the user uploads WROOM, run a focused `3-5 h` physical acceptance test covering active telemetry, several `SLP -> WAIT -> OK` cycles, a software WROOM restart while C3 sleeps, zero false `OFF`, `C3_GAP=0`, `GS_DROP=0`, stable heap, and automatic recovery without touching the wiring.
+84. [ ] Prove true missing-link detection with a safe controlled test performed only with power removed, or use an agreed non-destructive protocol test mode if disturbing the permanent wiring is unsafe.
+85. [ ] Freeze the corrected receive-only UART transport as accepted after tasks `80-84`; do not repeat the `49 h` run unless the focused evidence exposes a regression.
+86. [ ] Before bidirectional work, create and verify fresh backups of the accepted WROOM build and the separately managed C3 build `187`, including hashes and recovery notes.
+87. [ ] Extend `CONTROLLER_UART_PROTOCOL.md` with a bounded WROOM-to-C3 command envelope: protocol version, WROOM session, command sequence, allowlisted command, validated arguments, time-to-live, ACK/result frames, maximum length, and malformed-frame rejection.
+88. [ ] Implement the command sender/queue on WROOM and, only in a separately approved C3 stage, the minimal C3 command executor without weakening autonomous INA3221, solar-charge, GPS, or Deep-Sleep logic.
+89. [ ] Validate exactly-once command behavior: bounded retry, duplicate suppression across Deep Sleep, explicit result with actual state, expiration of stale queued commands, fail-safe handling after either controller restarts, and diagnostic evidence for every command lifecycle.
+90. [ ] Route C3 commands through the existing authorized WROOM Telegram bot with replay protection and truthful `Queued/Waiting/Accepted/Executed/Failed` states; do not create a second full Telegram bot for C3.
+91. [ ] Add the minimum safe C3 command set in stages: status first, temporary Wi-Fi/OTA enable with an automatic timeout, Wi-Fi disable, and separately confirmed restart; defer charge/mode control until its safety contract is reviewed.
+92. [ ] After UART command and gateway acceptance, disable normal C3 Wi-Fi, prove that telemetry and control use WROOM, retain a time-limited C3 OTA window, automatically return Wi-Fi to OFF, and preserve USB recovery.
+93. [ ] Extend the UART contract for the already tested C3 GPS result: valid fix, latitude/longitude, satellites, HDOP, and age; let WROOM create and send the Google Maps link without disturbing the C3 weekly GPS schedule.
+94. [ ] Validate both controllers on the real shared battery/converter path, including charge transitions, UART integrity, resets, ground/noise behavior, and later SIM800 interference/current peaks.
+95. [ ] Update the protocol, data dictionaries, architecture, `progress.md`, `memory.md`, and append-only history with the accepted physical results.
+96. [ ] Commit and push each accepted stage to `devlop`; move to `main` only after command, Wi-Fi-off/OTA, GPS relay, shared-power, and recovery gates pass.
+97. [ ] Feed the verified final controller wiring and protocol into task `76`; create the final as-built `NETLIST` only after GPS, SIM800, power, sensors, and all interconnections are physically finalized.
