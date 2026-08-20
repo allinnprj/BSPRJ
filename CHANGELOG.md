@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets automatic raw-header recovery - 2026-08-20
+
+1. Added a lightweight raw-header repair path for the active `log`: every accepted `doPost()` row now restores the 36 header values, semantic background colors, bold 11-point text, alignment, wrapping, medium borders, and the frozen first row.
+2. Kept full column sizing and body-table formatting in the existing full-layout path. The automatic repair touches only row `1`, so it does not replace the alternating odd/even body colors or reformat archives on every upload.
+3. New daily `log` sheets still receive the complete layout immediately when they are created; `Refresh all table layout/order` remains an optional repair for existing raw and analytics sheets rather than a daily requirement.
+4. Validation: all four Google Sheets regressions passed, including a new contract check proving that every accepted prepended row calls the header self-heal path. Firmware was not changed; WROOM `0.1.75-EXP` build `129` and C3 build `189` require no upload for this Apps Script-only step.
+5. The updated bound `Code.gs` must be saved and the web-app deployment moved to a new version before live automatic recovery can be validated on the next accepted 10-minute window and the next date rollover.
+
 ## UART wait/off semantics and planned-sleep restart continuity - 2026-08-18
 
 1. Added WROOM build `129` (`0.1.75-EXP`) after the build `128` approximately `48 h 40 min` field journal proved reliable rotation, `293` continuous ten-minute windows, `1119` accepted C3 frames, `4` handled duplicates, `C3_GAP=0`, and `GS_DROP=0`, but exposed two self-recovering awake-state `UART_OFF` transitions and one false post-restart `OFF` while C3 was in a previously declared Deep Sleep.

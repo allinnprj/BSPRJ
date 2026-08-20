@@ -600,7 +600,7 @@ function ensureHeaderRowValues_(sheet) {
   }
 }
 
-function ensureHeaderFormatting_(sheet) {
+function ensureRawHeaderFormatting_(sheet) {
   ensureHeaderRowValues_(sheet);
 
   sheet.setFrozenRows(1);
@@ -617,6 +617,11 @@ function ensureHeaderFormatting_(sheet) {
     .setBackgrounds([HEADER_COLORS]);
 
   fullHeaderRange.setBorder(true, true, true, true, true, true, '#666666', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
+}
+
+function ensureHeaderFormatting_(sheet) {
+  ensureRawHeaderFormatting_(sheet);
+
   sheet.setColumnWidths(1, HEADERS.length, 72);
   sheet.setColumnWidth(1, 110);  // DEV ID
   sheet.setColumnWidth(2, 80);   // VER
@@ -881,7 +886,7 @@ function prependLogRow_(sheet, rowValues) {
     sheet.deleteRow(sheet.getMaxRows());
   }
 
-  ensureHeaderRowValues_(sheet);
+  ensureRawHeaderFormatting_(sheet);
   applyLogRowFormatting_(sheet, 2, Math.max(sheet.getLastRow() - 1, 1));
   return 2;
 }

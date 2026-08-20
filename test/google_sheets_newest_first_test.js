@@ -15,7 +15,7 @@ const state = {
 };
 const sandbox = { state };
 const hooks = `
-  ensureHeaderRowValues_ = () => { state.headerChecks += 1; };
+  ensureRawHeaderFormatting_ = () => { state.headerChecks += 1; };
   applyLogRowFormatting_ = (sheet, startRow, rowCount) => {
     state.formattedRows.push([startRow, rowCount]);
   };
@@ -106,6 +106,7 @@ assert.strictEqual(prependState.insertedBefore, 2);
 assert.strictEqual(prependState.deletedRow, 11);
 assert.strictEqual(prependState.maxRows, 10, 'Prepending must not consume blank-sheet capacity.');
 assert.deepStrictEqual(JSON.parse(JSON.stringify(prependState.values)), [newRow]);
+assert.strictEqual(state.headerChecks, 1, 'Every accepted raw row must self-heal the header formatting.');
 assert.deepStrictEqual(JSON.parse(JSON.stringify(state.formattedRows.at(-1))), [2, 3]);
 
 const dateSheet = {
@@ -187,9 +188,13 @@ function getFunctionSource(functionName) {
   assert.match(getFunctionSource(functionName), /sortRowsNewestFirst_/);
 });
 assert.match(getFunctionSource('rebuildAnalyticsCore_'), /cleanRowsNewestFirst/);
-assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFontColor\('#274e13'\)/);
-assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFrozenRows\(1\)/);
-assert.match(getFunctionSource('ensureHeaderFormatting_'), /setFrozenColumns\(0\)/);
+assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /ensureHeaderRowValues_/);
+assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /setFontColor\('#274e13'\)/);
+assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /setBackgrounds\(\[HEADER_COLORS\]\)/);
+assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /setFrozenRows\(1\)/);
+assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /setFrozenColumns\(0\)/);
+assert.match(getFunctionSource('ensureHeaderFormatting_'), /ensureRawHeaderFormatting_/);
+assert.match(getFunctionSource('prependLogRow_'), /ensureRawHeaderFormatting_/);
 const rawBodyBackgrounds = JSON.parse(JSON.stringify(sandbox.__buildDataBackgrounds(3)));
 assert.notDeepStrictEqual(rawBodyBackgrounds[0], rawBodyBackgrounds[1]);
 assert.deepStrictEqual(rawBodyBackgrounds[0], rawBodyBackgrounds[2]);
