@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Pre-bidirectional full backups - 2026-08-22
+
+1. Created a fresh full private snapshot of uploaded WROOM `0.1.75-EXP` build `129`: `D:\DEV\BSPRJ-backups\BSPRJ_FULL_2026-08-22_00-37-36.tar`, `110,389,760` bytes, SHA-256 `03FFAB887331E5D15F7A37C90F6D976F8288807FDC12BC6AE13C2698085516E3`.
+2. Created a separate fresh full private snapshot of the current uploaded C3 `1.2.0-c3` build `191`: `D:\DEV\INA3221-C3-backups\INA3221-C3_FULL_2026-08-22_00-27-16.tar`, `4,440,384,000` bytes, SHA-256 `697765058A6417F013E9548F35DAC46C2CFD1E9D411BCB0FE58920CA6D5EE587`.
+3. Both packages contain a portable workspace without the external `.git` pointer, `.pio` and the captured `firmware.bin`, local private configuration, a verified `git/repository.bundle`, `RESTORE_MANIFEST.json`, `RESTORE_INSTRUCTIONS.md`, and `SHA256SUMS.txt`. Critical-file hashes, complete workspace inventories, Git bundle verification, and standalone restore tests passed.
+4. These archives must remain private because they include `include/secrets.h`. No firmware source, version, build, device upload, branch, commit, or remote repository was changed by this backup stage.
+
 ## Google Sheets automatic raw-header recovery - 2026-08-20
 
 1. Added a lightweight raw-header repair path for the active `log`: every accepted `doPost()` row now restores the 36 header values, semantic background colors, bold 11-point text, alignment, wrapping, medium borders, and the frozen first row.
