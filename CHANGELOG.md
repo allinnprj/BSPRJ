@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Short C3 build-change notice in BS - 2026-08-22
+
+1. Added local BS `0.1.79-EXP` build `133`. After the normal first `C3 Controller` card establishes a baseline, BS now sends one compact `🔧 C3 Update / Online · build N` Telegram message when the C3 build number changes while BS remains running.
+2. The notice is driven only by the accepted UART build value. Ordinary C3 Deep-Sleep sessions, wakeups, retries, and restarts with the same build do not generate it, and BS does not claim that the change was necessarily caused by OTA.
+3. The user confirmed C3 build `194` was uploaded through the C3 project's own Telegram OTA flow. That C3 bot remains the primary future C3 upload path. The already implemented BS `/c3ota` command is retained as an optional reserve but its remaining ACK/sleep acceptance work is deliberately skipped and does not block the next integration stage.
+4. No firmware upload was performed. Physical proof is intentionally deferred until the next real C3 build change: after manually uploading BS build `133`, the next normal C3 update must produce exactly one compact BS-group notice.
+5. Validation: `node test/controller_command_contract_test.js`, `git diff --check`, and `pio run -e esp32dev` pass. RAM is `65,612 / 327,680` (`20.0%`), linked Flash is `1,363,207 / 1,572,864` (`86.7%`), OTA-slot reserve is `209,657` bytes, and the firmware image is `1,363,616` bytes with SHA-256 `1DCABA335801F937FE164879F266FE1B7F3A03D4FE13A75D4E5F4D99BF913726`.
+6. Physical deployment proof: the user uploaded BS build `133`. Telegram `/bssts` showed `0.1.79-EXP build 133`, BS Online, Wi-Fi `100% (-44 dBm) NKAANNE`, WQTT `OK`, Sheets queue `0`, and C3 link `OK` with telemetry age `4 s`. The remote journal confirms the build-133 boot and subsequent HEALTH rows with C3 build `194`; this establishes the notification baseline. The one-message build-change behavior remains intentionally pending until the next real C3 firmware update.
+
 ## Bounded C3 OTA activation through BS - 2026-08-22
 
 1. Added local BS `0.1.78-EXP` build `132` and paired local C3 `1.2.0-c3` build `193`. The authorized `/c3ota` Telegram command queues only `OTA_ON 600`, using the persisted command-v1 sender and the C3 project's existing 10-minute ArduinoOTA listener; no second OTA server or second C3 bot was created.
@@ -8,6 +17,8 @@
 4. C3 persists the OTA duration without changing the build-192 command record layout/session history, activates the existing listener before returning `OK OTA_ON=600`, suppresses automatic sleep while the request awaits Wi-Fi and while the window is active, and retains duplicate/no-reexecution behavior. Normal C3 Wi-Fi, Telegram, MQTT, Sheets, NTP, INA3221, Charge, Solar Control, GPS, and sleep durations are unchanged; `WIFI_OFF`, `RESTART`, and control commands remain disabled.
 5. No upload was performed. Manual order is C3 build `193` first, then BS build `132`; physical acceptance must prove awake activation, queued-during-`SLP`, one real OTA upload/recovery, automatic 10-minute expiry, and return to the normal sleep plan.
 6. Validation: both command contract tests and `git diff --check` pass. `pio run -e esp32dev` succeeds with RAM `65,604 / 327,680` (`20.0%`), linked Flash `1,362,591 / 1,572,864` (`86.6%`), OTA-slot reserve `210,273` bytes, and a `1,362,992`-byte firmware image (SHA-256 `F2B5F023166756B045326EDD8FBB13746593F9249892E4B03C3289EFE078658A`). Relative to build `131`, RAM is unchanged and linked Flash increases by `2,576` bytes.
+7. First physical evidence: BS build `132` detected C3 build `193`, queued OTA sequences `6` and `7`, and correctly retained their terminal `ACK_TIMEOUT` after four transmissions because no `CACK` arrived. In parallel, C3 physically opened the listener, completed the OTA image in `121 s`, restarted, and returned online as build `193`. This proves the OTA side effect but exposes missing command-frame transmission completion.
+8. C3 build `194` was then uploaded successfully through an OTA window opened by build `193` and appeared in the BS journal as a new C3 session at `18:57:03`. The preceding sequence `8` (`18:53:51..18:53:58`) ended `OK actual=OTA_ON=600`, but it was still executed by build `193`; therefore it does not validate the build-194 `CACK/CRES` flush correction. BS build `132` remains unchanged and needs no new upload. One new awake `/c3ota` on build `194` is still required.
 
 ## Fresh C3 status and live BS status command - 2026-08-22
 

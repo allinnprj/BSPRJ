@@ -115,10 +115,14 @@ assert.match(telegram, /C3OtaReplyStage::AwaitResult/);
 assert.match(telegram, /controllerLink\.isSleeping\(\)/);
 assert.match(telegram, /sleepRemainingSeconds\(millis\(\)\)/);
 assert.match(telegram, /Upload from the C3 project/);
+assert.match(telegram, /controllerLink\.remoteBuild\(\) == observedControllerBuild_/);
+assert.match(telegram, /sendControllerBuildChanged_\(controllerLink\.remoteBuild\(\)\)/);
+assert.match(telegram, /C3 Update/);
+assert.match(telegram, /Online · build/);
 assert.doesNotMatch(source, /WIFI_OFF|RESTART/,
   'WIFI_OFF and RESTART remain outside this implementation stage.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.78-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 132\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.79-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 133\b/);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',

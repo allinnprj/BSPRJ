@@ -77,6 +77,7 @@ class TelegramAlertService {
                              uint32_t nowMs, int wifiRssiDbm,
                              uint8_t wifiSignalPercent, const String &wifiSsid,
                              const char *refreshState = nullptr);
+  bool sendControllerBuildChanged_(uint32_t buildNumber);
   bool sendBsStatus_(const BsStatusView &status,
                      const ControllerLinkService &controllerLink);
   bool sendStatusMessage_(const String &message, const char *logLabel);
@@ -97,6 +98,7 @@ class TelegramAlertService {
       const ControllerLinkService &controllerLink, uint32_t nowMs,
       int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid,
       const char *refreshState) const;
+  String buildControllerBuildChangedMessage_(uint32_t buildNumber) const;
   String buildBsStatusMessage_(const BsStatusView &status,
                                const ControllerLinkService &controllerLink) const;
   String buildC3OtaMessage_(const ControllerLinkService &controllerLink,
@@ -111,6 +113,7 @@ class TelegramAlertService {
   bool wifiWasConnected_ = false;
   bool restorePending_ = false;
   bool controllerStatusSentThisBoot_ = false;
+  uint32_t observedControllerBuild_ = 0;
   bool commandPreferencesReady_ = false;
   bool c3StatusReplyPending_ = false;
   bool c3RefreshCommandPending_ = false;
