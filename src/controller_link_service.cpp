@@ -797,6 +797,21 @@ void ControllerLinkService::sendTelemetryAck(uint32_t session, uint32_t sequence
   serial_->println(sequence);
 }
 
+void ControllerLinkService::sendSleepAck(uint32_t sleepSeconds, uint32_t build) {
+  char frame[SLEEP_ACK_FRAME_CAPACITY] = {};
+  const int written = snprintf(frame,
+                               sizeof(frame),
+                               "SACK %lu C3 %lu\n",
+                               static_cast<unsigned long>(sleepSeconds),
+                               static_cast<unsigned long>(build));
+  if (written <= 0 || static_cast<size_t>(written) >= sizeof(frame)) {
+    return;
+  }
+  serial_->write(reinterpret_cast<const uint8_t*>(frame),
+                 static_cast<size_t>(written));
+  serial_->flush();
+}
+
 bool ControllerLinkService::recordValidActivity(uint32_t nowMs) {
   const bool restoredOnline = state_ != State::Online;
   lastValidActivityAtMs_ = nowMs;
@@ -987,6 +1002,7 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
     remoteBuild_ = build;
     sleepUntilMs_ = nowMs + sleepSeconds * 1000U;
     state_ = State::Sleeping;
+    sendSleepAck(sleepSeconds, build);
     Serial.print(F("[UART] SLEEP -> C3 build "));
     Serial.print(remoteBuild_);
     Serial.print(F(" for "));

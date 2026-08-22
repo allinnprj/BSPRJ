@@ -90,6 +90,7 @@ class ControllerLinkService {
 
   void sendPing(uint32_t nowMs);
   void sendTelemetryAck(uint32_t session, uint32_t sequence);
+  void sendSleepAck(uint32_t sleepSeconds, uint32_t build);
   void updateCommand(uint32_t nowMs);
   void sendCommandFrame(uint32_t nowMs, bool resultRecovery);
   bool processCommandAck(uint32_t nowMs, const char* line);
@@ -142,6 +143,7 @@ class ControllerLinkService {
   static constexpr uint32_t MAX_EXPECTED_SLEEP_SECONDS = 86400;
   static constexpr size_t RX_LINE_CAPACITY = 160;
   static constexpr size_t COMMAND_FRAME_CAPACITY = 48;
+  static constexpr size_t SLEEP_ACK_FRAME_CAPACITY = 40;
   static constexpr uint32_t COMMAND_RECORD_MAGIC = 0x4333434DU;
   static constexpr uint16_t COMMAND_RECORD_SCHEMA = 1;
   static constexpr uint32_t COMMAND_PROTOCOL_VERSION = 1;

@@ -23,6 +23,7 @@ assert.match(header, /#include <Preferences\.h>/);
 assert.match(header, /bool queueStatusCommand\(uint32_t ttlSeconds = 120\)/);
 assert.match(header, /bool queueOtaOnCommand\(uint32_t windowSeconds = 600,/);
 assert.match(header, /static constexpr size_t COMMAND_FRAME_CAPACITY = 48/);
+assert.match(header, /static constexpr size_t SLEEP_ACK_FRAME_CAPACITY = 40/);
 assert.match(header, /static constexpr uint32_t COMMAND_MAX_TTL_SECONDS = 7200/);
 assert.match(header, /static constexpr uint32_t STATUS_MAX_TTL_SECONDS = 120/);
 assert.match(header, /static constexpr uint32_t OTA_ON_MIN_SECONDS = 300/);
@@ -95,6 +96,9 @@ assert.match(source, /isAllowedCommandResult/);
 assert.match(source, /putBytes\("record"/);
 assert.match(source, /getBytes\("record"/);
 assert.match(source, /if \(\*cursor != '\\0'\)/);
+assert.match(source, /"SACK %lu C3 %lu\\n"/);
+assert.match(source, /sendSleepAck\(sleepSeconds, build\)/);
+assert.match(source, /ControllerLinkService::sendSleepAck[\s\S]*serial_->write\([\s\S]*serial_->flush\(\)/);
 assert.match(source, /parseNextUnsigned\(cursor, gpsFixed\)/);
 assert.match(source, /gpsLatitudeMicrodegrees < -90000000/);
 assert.match(source, /gpsLongitudeMicrodegrees > 180000000/);
@@ -134,8 +138,8 @@ assert.match(mqtt, /telemetry\.gpsFixed/);
 assert.match(mqtt, /telemetry\.gpsLatitudeMicrodegrees/);
 assert.doesNotMatch(source, /WIFI_OFF|RESTART/,
   'WIFI_OFF and RESTART remain outside this implementation stage.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.80-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 134\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.81-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 135\b/);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',

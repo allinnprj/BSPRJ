@@ -18,7 +18,7 @@ Canonical controller names in user-facing discussion and project status are:
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
 - The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
 - The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass `STATUS 0`. The C3 project's own Telegram OTA path is primary; the BS-triggered OTA path is retained only as a reserve.
-- Uploaded BS build `133` and C3 build `194` are the current physical baseline. Local BS build `134` and C3 build `195` add the optional saved-GPS suffix described below; no upload has been performed.
+- Uploaded BS build `134` and C3 build `196` are the current physical baseline. Local BS build `135` and C3 build `197` add the bounded sleep acknowledgement described below; no upload has been performed.
 
 ## Heartbeat
 
@@ -44,10 +44,18 @@ C3 announcement:
 SLEEP <seconds> C3 <build>
 ```
 
+BS acknowledgement:
+
+```text
+SACK <seconds> C3 <build>
+```
+
 Rules:
 
 - C3 sends and flushes the frame only after sleep cancellation checks pass.
-- WROOM accepts `1..86400` seconds, changes state to `SLP`, and pauses PING traffic.
+- BS accepts `1..86400` seconds, changes state to `SLP`, pauses PING traffic, and immediately flushes the exact matching `SACK`.
+- C3 waits at most `2 s` for the exact duration/build acknowledgement and makes at most four attempts. A missing BS never prevents autonomous Deep Sleep; C3 enters sleep after the bounded retry window.
+- Every valid repeated `SLEEP` is acknowledged idempotently. Unknown, malformed, mismatched, delayed, or unrelated frames do not satisfy the C3 sleep transaction.
 - At the declared boundary WROOM changes to wake-wait state and resumes PING.
 - Loss without a valid `SLEEP` frame remains an unexpected `OFF` condition.
 
@@ -103,7 +111,8 @@ Reliability rules:
 - Forced ACK-loss retry/deduplication injection: deferred; source/build validation and nominal ACK transport are accepted for the next stage.
 - WQTT cloud forwarding through WROOM: passed physically on WROOM build 120 and C3 build 185 (`q=2` and `q=9` published successfully).
 - C3 build 191 sleep framing: two live `SLEEP` announcements (`600 s` and `5400 s`) were recorded on 2026-08-22. The `600 s` cycle completed through `SLP -> WAIT -> OK`; the `5400 s` sleep was still active at the captured boundary. The journal snapshot had `UART_SLP=2`, `UART_WAIT=2`, `UART_OK=2`, `C3_GAP=0`, and `UART_OFF=0`. Longer evidence and the scheduled-WROOM-restart-during-`SLP` case continue in parallel and do not block command-contract design.
-- Saved GPS relay: local source/build validation passes on BS build `134` and C3 build `195`; physical `/c3sts`, diagnostic, and WQTT proof remains pending.
+- Saved GPS relay: uploaded BS build `134` and C3 build `195+` physically pass `/c3sts`, Google Maps, and bounded diagnostics; retained WQTT payload inspection remains optional.
+- Build `196` proved that blind sleep-frame repetition was intermittent (`UART_OFF 10 -> 14`). Local BS `135` / C3 `197` therefore add bounded exact `SLEEP/SACK`; physical proof remains three consecutive cycles with no new OFF.
 - The evidence status and remaining physical gates are maintained in `CONTROLLER_LINK_ACCEPTANCE.md`.
 - Commands, command ACK/result, authorization, and safe command failure are later implementation/acceptance stages.
 
@@ -239,7 +248,7 @@ Wi-Fi: 92% (-54 dBm) NKAANNE_plus
 
 ## Bounded Command Protocol v1 - Staged Implementation
 
-This section freezes the BS-to-C3 command contract. The receive-only frames above remain unchanged. Uploaded builds `131/192` physically prove `STATUS 0`; uploaded `132/193` prove the OTA side effect/upload/restart. Local C3 build `194` adds flushed command ACK/result delivery; later stages remain specification-only.
+This section freezes the BS-to-C3 command contract. The existing PING/PONG, TEL/ACK, command, and C3 `SLEEP` announcement formats remain unchanged; paired local builds `135/197` only add the bounded `SACK` response described above. Uploaded builds `131/192` physically prove `STATUS 0`; uploaded `132/193` prove the OTA side effect/upload/restart. C3 build `194` adds flushed command ACK/result delivery; later stages remain specification-only.
 
 ### Design Boundaries
 

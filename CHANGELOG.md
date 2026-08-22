@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Confirmed C3 sleep announcement handshake - 2026-08-23
+
+1. Physical C3 build `196` evidence rejected blind repetition as insufficient: four accepted `UART_SLP` cycles coexisted with four false `UART_OFF` transitions, and the counter grew from `10` to `14` while C3 continued normal wake recovery. No reset, WDT, brownout, WQTT, Datacake, Sheets-drop, or sequence-gap evidence explained the misses.
+2. Added local BS `0.1.81-EXP` build `135`. Every strict valid `SLEEP <seconds> C3 <build>` frame still enters `SLP` with unchanged timing, and BS now immediately returns and flushes `SACK <seconds> C3 <build>`. Repeated valid sleep frames are acknowledged idempotently.
+3. Added paired local C3 `1.2.0-c3` build `197`. C3 sends the unchanged sleep frame, waits at most `2 s` for the exact matching `SACK`, and makes at most four attempts. Unrelated input is ignored during this final sleep boundary; absence of BS never blocks autonomy because C3 still enters the already configured Deep Sleep after the bounded wait.
+4. Upload order is BS build `135` first, then C3 build `197`. BS `135` remains backward-compatible with uploaded C3 `196`; uploading C3 first would only add a bounded wait because BS `134` cannot return `SACK`.
+5. Sleep duration/timer identity, BS liveness thresholds, PING/PONG, TEL/ACK, command frames, sound processing, INA3221, Charge, Smart Auto/Classic, GPS, Wi-Fi, cloud, Telegram, Sheets, and OTA behavior are unchanged. No upload was performed.
+6. Validation: `node test/controller_command_contract_test.js`, paired C3 `node tests/firmware_contract_test.js`, and both `git diff --check` checks pass. `pio run -e esp32dev` succeeds with RAM `65,636 / 327,680` (`20.0%`), linked Flash `1,365,491 / 1,572,864` (`86.8%`), OTA-slot reserve `207,373` bytes, and a `1,365,888`-byte image with SHA-256 `5D2B5BC6C8067FE4EFF01FFC6C2B9A5A80B04DD8B7A8B4D39F182017A54D4A2C`. C3 build `197` succeeds at RAM `13.2%`, Flash `65.7%`, image `1,381,264` bytes, SHA-256 `3DAE5B68F9138436AFD7DD6A557029A986DA92910AD300C35E377A7F010F2511`. Physical acceptance requires three consecutive `SLP -> WAIT -> OK` cycles with no new `UART_OFF`.
+
 ## Saved C3 GPS FIX relay through BS - 2026-08-22
 
 1. Added local BS `0.1.80-EXP` build `134` and paired local C3 `1.2.0-c3` build `195`. C3 appends its already saved, manually confirmed GPS FIX to the existing reliable `TEL/ACK` frame as integer latitude/longitude microdegrees, satellites, HDOP tenths, and fix epoch; it does not power or query GPS, create a schedule, or change sleep behavior.
