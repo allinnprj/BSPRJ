@@ -39,7 +39,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current whole-project readiness estimate: `55%`.
+- Current whole-project readiness estimate: `56%`.
 
 ## Russian Report Block
 
@@ -51,13 +51,13 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 - Относительная статистика шума и классификация: 60%
 - Реальная dB-калибровка: 0%
 - INA3221 и солнечная зарядка: 100%
-- Связь между контроллерами: 70%
-- GPS и контекст места/времени: 65%
+- Связь между контроллерами: 75%
+- GPS и контекст места/времени: 80%
 - GSM/мобильная связь: 0%
 - Общее питание и автономная работа: 25%
 - Основная прошивка, логи, OTA и диагностика: 80%
 - Постоянная сборка и финальная полевая проверка: 10%
-- Общая готовность проекта: 55%
+- Общая готовность проекта: 56%
 ```
 
 | Subsystem | Readiness | Confirmed state | Main remaining work |
@@ -66,11 +66,11 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 | Relative sound statistics and classification | `60%` | Clean logs support preliminary `SILENT / NORMAL / LOUD / PEAK` boundaries and build `110` implements the accepted `P2P` thresholds in firmware and Google Sheets summary logic. A later local Apps Script pass aligned Telegram, dashboard charts, conclusions, and daily verdict readings to show `AVG P2P` beside those levels instead of implying old `NOW %` verdicts. A guarded Sheets reset command and technical-column hide/show controls now support a clean final run. Build validation passed, but deployed cloud output is not field-validated yet. | Deploy the updated Apps Script, run `Reset for clean run`, hide technical columns for normal observation, start a clean physical power-cycle, then validate that Telegram, charts, AppSheet, MQTT/Datacake, local logs, and Sheets summaries classify real windows consistently. |
 | Real dB calibration | `0%` | A reference sound-level meter is available, but no calibration dataset or conversion model has been accepted. | Define the calibration protocol, collect paired readings, choose the appropriate acoustic metric and weighting limitations, implement and validate the model. |
 | INA3221 and solar battery charging | `100%` | The separate `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller has completed its full standalone test. | No standalone INA3221/solar work remains. Its later link to BSPRJ and shared-power validation are tracked as separate integration subsystems. |
-| Communication between controllers | `70%` | UART, declared sleep/recovery, real telemetry, ACK/deduplication, WQTT, Telegram status, `/bssts`, fresh `/c3sts`, and duplicate coalescing are physically proven. C3 build `194` was uploaded through its own Telegram OTA flow, which is now primary; BS `/c3ota` remains an optional reserve. Local builds `134/195` extend the same reliable frame with an optional saved GPS FIX while keeping legacy compatibility. | Upload BS first and C3 second; accept the build-change notice and GPS relay. Continue rare restart/missing-link evidence in parallel, then migrate only the remaining justified routine data and prove shared power. |
-| GPS and location/time context | `65%` | The GPS module is integrated and tested on C3 with manual Current/Fixed handling. Local BS build `134` and C3 build `195` relay only the saved FIX with Maps/satellites/HDOP/age and WQTT metadata. | Upload in safe order and physically validate `/c3sts`, diagnostic, and WQTT output; then include it in final system context. |
+| Communication between controllers | `75%` | UART, sleep/recovery, INA3221 telemetry, ACK/deduplication, WQTT power delivery, Telegram status, legacy compatibility, build-change notice, and fresh extended build-195 `/c3sts` are physically proven. | Confirm GPS diagnostic/WQTT publication, continue rare restart/missing-link evidence in parallel, then migrate only justified remaining data and prove shared power. |
+| GPS and location/time context | `80%` | GPS is integrated and tested on C3 with manual Current/Fixed handling. Uploaded builds `134/195` physically relayed the saved FIX to a BS Google Maps card with `9` satellites, HDOP `2.4`, and truthful age. | Confirm diagnostic/WQTT evidence, decide final location refresh policy without adding unwanted automatic acquisition, and include the result in final system validation. |
 | GSM/mobile connectivity | `0%` | Required future subsystem only. | Select/finalize the module and power path, implement connectivity and recovery, then validate network behavior and power demand. |
 | Shared power and autonomous operation | `25%` | Battery operation and shared-power field behavior have been observed, and power-related gaps can be distinguished in logs. | Stabilize battery/charging contacts and transitions, prove operation with both controllers, manage GSM current peaks, and complete long autonomous testing. |
 | Core firmware, logging, OTA, and health diagnostics | `80%` | Build `128` physically proved the bounded TSV v2 journal and rotation. Uploaded build `129` then produced approximately `21 h` of parseable diagnostics, `127` continuous analytical windows exactly reconciled with Sheets, `GS_DROP=0`, and stable heap. Local build `134` adds bounded saved-GPS handling without changing the web/log architecture. | Physically prove the GPS extension, complete the planned-restart-during-`SLP` evidence, and finalize the remaining production cleanup. |
 | Permanent assembly and end-to-end field validation | `10%` | Current breadboard system has accumulated useful field evidence inside the enclosure. | Replace temporary contacts where required, complete integrated assembly, weather/power validation, and final multi-day acceptance test. |
 
-The overall estimate remains `55%`: standalone INA3221/solar work, the receive-only UART baseline, STATUS/Telegram, the C3-owned OTA path, the optional BS OTA side effect/restart, and deployment of BS build `133` are proven. Local builds `134/195` implement the saved GPS relay but do not count as physical completion yet. Gateway acceptance, the later C3 Wi-Fi decision, dB calibration, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies. The estimate is weighted rather than a simple average.
+The overall estimate is now `56%`: standalone INA3221/solar work, the UART/STATUS gateway, C3-owned OTA, uploaded builds `134/195`, backward compatibility, one build-change notice, and fresh saved-GPS Maps output are physically proven. Diagnostic/WQTT closure, the later C3 Wi-Fi decision, dB calibration, GSM, integrated autonomous power, permanent assembly, and complete system validation remain substantial dependencies. The estimate is weighted rather than a simple average.
