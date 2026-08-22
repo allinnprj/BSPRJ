@@ -272,14 +272,36 @@ uint32_t ControllerLinkService::offlineTransitionCount() const {
 }
 
 bool ControllerLinkService::queueStatusCommand(uint32_t ttlSeconds) {
+  return queueCommand(CommandKind::Status, 0, ttlSeconds,
+                      STATUS_MAX_TTL_SECONDS);
+}
+
+bool ControllerLinkService::queueOtaOnCommand(uint32_t windowSeconds,
+                                              uint32_t ttlSeconds) {
+  if (windowSeconds < OTA_ON_MIN_SECONDS ||
+      windowSeconds > OTA_ON_MAX_SECONDS) {
+    return false;
+  }
+  return queueCommand(CommandKind::OtaOn, windowSeconds, ttlSeconds,
+                      COMMAND_MAX_TTL_SECONDS);
+}
+
+bool ControllerLinkService::queueCommand(CommandKind command,
+                                         uint32_t argument,
+                                         uint32_t ttlSeconds,
+                                         uint32_t maxTtlSeconds) {
   if (!commandPreferencesReady_ || hasCommand() ||
-      ttlSeconds < COMMAND_MIN_TTL_SECONDS || ttlSeconds > STATUS_MAX_TTL_SECONDS) {
+      command == CommandKind::None ||
+      ttlSeconds < COMMAND_MIN_TTL_SECONDS || ttlSeconds > maxTtlSeconds) {
     return false;
   }
 
   const time_t nowEpoch = time(nullptr);
   if (nowEpoch < MIN_VALID_COMMAND_EPOCH) {
-    emitCommandEvent("CMD_REJECT", F("command=STATUS reason=TIME_UNSYNCED"));
+    String details = F("command=");
+    details += command == CommandKind::Status ? F("STATUS") : F("OTA_ON");
+    details += F(" reason=TIME_UNSYNCED");
+    emitCommandEvent("CMD_REJECT", details);
     return false;
   }
 
@@ -295,18 +317,21 @@ bool ControllerLinkService::queueStatusCommand(uint32_t ttlSeconds) {
   commandRecord_.magic = COMMAND_RECORD_MAGIC;
   commandRecord_.schema = COMMAND_RECORD_SCHEMA;
   commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Queued);
-  commandRecord_.command = static_cast<uint8_t>(CommandKind::Status);
+  commandRecord_.command = static_cast<uint8_t>(command);
   commandRecord_.sequence = commandRecord_.nextSequence++;
   commandRecord_.expiresAtEpoch = static_cast<uint64_t>(nowEpoch) + ttlSeconds;
   commandRecord_.ttlSeconds = 0;
-  commandRecord_.argument = 0;
+  commandRecord_.argument = argument;
   commandRecord_.result[0] = '\0';
   commandRecord_.actual[0] = '\0';
 
   if (!saveCommandRecord()) {
     commandRecord_ = previous;
     commandPreferencesReady_ = false;
-    emitCommandEvent("CMD_REJECT", F("command=STATUS reason=PERSISTENCE"));
+    String details = F("command=");
+    details += command == CommandKind::Status ? F("STATUS") : F("OTA_ON");
+    details += F(" reason=PERSISTENCE");
+    emitCommandEvent("CMD_REJECT", details);
     return false;
   }
 
@@ -320,8 +345,12 @@ bool ControllerLinkService::queueStatusCommand(uint32_t ttlSeconds) {
   details += commandRecord_.session;
   details += F(" sequence=");
   details += commandRecord_.sequence;
-  details += F(" command=STATUS ttl_s=");
+  details += F(" command=");
+  details += command == CommandKind::Status ? F("STATUS") : F("OTA_ON");
+  details += F(" ttl_s=");
   details += ttlSeconds;
+  details += F(" argument=");
+  details += argument;
   emitCommandEvent("CMD_QUEUE", details);
   return true;
 }
@@ -391,6 +420,8 @@ ControllerCommandSnapshot ControllerLinkService::commandSnapshot() const {
   snapshot.argument = commandRecord_.argument;
   if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::Status) {
     strncpy(snapshot.command, "STATUS", sizeof(snapshot.command) - 1);
+  } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::OtaOn) {
+    strncpy(snapshot.command, "OTA_ON", sizeof(snapshot.command) - 1);
   }
   strncpy(snapshot.result, commandRecord_.result, sizeof(snapshot.result) - 1);
   strncpy(snapshot.actual, commandRecord_.actual, sizeof(snapshot.actual) - 1);
@@ -413,11 +444,15 @@ bool ControllerLinkService::loadCommandRecord() {
                           static_cast<uint8_t>(ControllerCommandState::Expired);
   const bool idleValid = state == ControllerCommandState::Idle &&
                          command == CommandKind::None && commandRecord_.sequence == 0;
+  const bool activeCommandValid =
+      (command == CommandKind::Status && commandRecord_.argument == 0) ||
+      (command == CommandKind::OtaOn &&
+       commandRecord_.argument >= OTA_ON_MIN_SECONDS &&
+       commandRecord_.argument <= OTA_ON_MAX_SECONDS);
   const bool activeValid = state != ControllerCommandState::Idle &&
-                           command == CommandKind::Status && commandRecord_.sequence != 0 &&
+                           activeCommandValid && commandRecord_.sequence != 0 &&
                            commandRecord_.expiresAtEpoch >=
-                               static_cast<uint64_t>(MIN_VALID_COMMAND_EPOCH) &&
-                           commandRecord_.argument == 0;
+                               static_cast<uint64_t>(MIN_VALID_COMMAND_EPOCH);
   if (commandRecord_.magic != COMMAND_RECORD_MAGIC ||
       commandRecord_.schema != COMMAND_RECORD_SCHEMA ||
       commandRecord_.session == 0 || commandRecord_.nextSequence == 0 ||
@@ -451,6 +486,18 @@ void ControllerLinkService::initializeCommandRecord() {
     commandRecord_.session = 1;
   }
   commandRecord_.nextSequence = 1;
+}
+
+const char* ControllerLinkService::commandName() const {
+  switch (static_cast<CommandKind>(commandRecord_.command)) {
+    case CommandKind::Status:
+      return "STATUS";
+    case CommandKind::OtaOn:
+      return "OTA_ON";
+    case CommandKind::None:
+    default:
+      return "NONE";
+  }
 }
 
 void ControllerLinkService::emitCommandEvent(const char* eventText,
@@ -548,24 +595,34 @@ void ControllerLinkService::sendCommandFrame(uint32_t nowMs, bool resultRecovery
     if (!saveCommandRecord()) {
       commandPreferencesReady_ = false;
       commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Failed);
-      emitCommandEvent("CMD_REJECT", F("command=STATUS reason=PERSISTENCE"));
+      String details = F("command=");
+      details += commandName();
+      details += F(" reason=PERSISTENCE");
+      emitCommandEvent("CMD_REJECT", details);
       return;
     }
   }
 
+  const CommandKind command = static_cast<CommandKind>(commandRecord_.command);
+  const bool argumentValid =
+      (command == CommandKind::Status && commandRecord_.argument == 0) ||
+      (command == CommandKind::OtaOn &&
+       commandRecord_.argument >= OTA_ON_MIN_SECONDS &&
+       commandRecord_.argument <= OTA_ON_MAX_SECONDS);
   if (commandRecord_.ttlSeconds < COMMAND_MIN_TTL_SECONDS ||
-      commandRecord_.ttlSeconds > COMMAND_MAX_TTL_SECONDS ||
-      static_cast<CommandKind>(commandRecord_.command) != CommandKind::Status) {
+      commandRecord_.ttlSeconds > COMMAND_MAX_TTL_SECONDS || !argumentValid) {
     setCommandTerminal(ControllerCommandState::Failed, "FAILED", "FRAME_INVALID", nowMs);
     return;
   }
 
   char frame[COMMAND_FRAME_CAPACITY] = {};
-  const int written = snprintf(frame, sizeof(frame), "CMD %lu %lu %lu %lu STATUS 0",
+  const int written = snprintf(frame, sizeof(frame), "CMD %lu %lu %lu %lu %s %lu",
                                static_cast<unsigned long>(COMMAND_PROTOCOL_VERSION),
                                static_cast<unsigned long>(commandRecord_.session),
                                static_cast<unsigned long>(commandRecord_.sequence),
-                               static_cast<unsigned long>(commandRecord_.ttlSeconds));
+                               static_cast<unsigned long>(commandRecord_.ttlSeconds),
+                               commandName(),
+                               static_cast<unsigned long>(commandRecord_.argument));
   if (written <= 0 || static_cast<size_t>(written) >= sizeof(frame)) {
     setCommandTerminal(ControllerCommandState::Failed, "FAILED", "FRAME_OVERFLOW", nowMs);
     return;
@@ -577,7 +634,9 @@ void ControllerLinkService::sendCommandFrame(uint32_t nowMs, bool resultRecovery
   details += commandRecord_.session;
   details += F(" sequence=");
   details += commandRecord_.sequence;
-  details += F(" command=STATUS attempt=");
+  details += F(" command=");
+  details += commandName();
+  details += F(" attempt=");
   if (resultRecovery) {
     ++commandResultRecoveryRetries_;
     lastCommandResultRetryAtMs_ = nowMs;
@@ -622,7 +681,10 @@ bool ControllerLinkService::processCommandAck(uint32_t nowMs, const char* line) 
     if (!saveCommandRecord()) {
       commandPreferencesReady_ = false;
       commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Failed);
-      emitCommandEvent("CMD_REJECT", F("command=STATUS reason=PERSISTENCE"));
+      String details = F("command=");
+      details += commandName();
+      details += F(" reason=PERSISTENCE");
+      emitCommandEvent("CMD_REJECT", details);
       return false;
     }
     commandAcceptedAtMs_ = nowMs;
@@ -659,6 +721,20 @@ bool ControllerLinkService::processCommandResult(uint32_t nowMs, const char* lin
 
   if (!hasCommand() || session != commandRecord_.session ||
       sequence != commandRecord_.sequence) {
+    return false;
+  }
+
+  char expectedActual[24] = {};
+  if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::Status) {
+    strncpy(expectedActual, "STATUS", sizeof(expectedActual) - 1);
+  } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::OtaOn) {
+    snprintf(expectedActual, sizeof(expectedActual), "OTA_ON=%lu",
+             static_cast<unsigned long>(commandRecord_.argument));
+  } else {
+    return false;
+  }
+  if ((strcmp(result, "OK") == 0 && strcmp(actual, expectedActual) != 0) ||
+      (strcmp(result, "OK") != 0 && strcmp(actual, "NONE") != 0)) {
     return false;
   }
 

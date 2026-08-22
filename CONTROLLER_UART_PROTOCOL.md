@@ -17,7 +17,7 @@ Canonical controller names in user-facing discussion and project status are:
 - Maximum accepted C3 input line length remains 47 printable characters plus terminator.
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
 - The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
-- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `130` implements the dormant persistent sender/queue and strict `CACK/CRES` receiver; uploaded C3 build `192` implements only the strict persistent `STATUS 0` executor and fresh ordinary telemetry request. Local BS build `131` connects the existing authorized `/c3sts` as the first caller; it is not uploaded yet.
+- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass the authorized `STATUS 0` bridge through `/c3sts`. Local BS build `132` and C3 build `193` add only the next `OTA_ON 300..900` stage; `WIFI_OFF`, `RESTART`, and controller-actuation commands remain disabled.
 
 ## Heartbeat
 
@@ -227,9 +227,9 @@ Wi-Fi: 92% (-54 dBm) NKAANNE_plus
 - This does not report or enable C3 Wi-Fi and does not change the UART protocol or C3 build 185.
 - Physical acceptance requires the line to appear in both the startup `Device Online` card and a `/c3sts` `C3 Controller` reply after manual WROOM build 125 upload.
 
-## Bounded Command Protocol v1 - Specification Only
+## Bounded Command Protocol v1 - Staged Implementation
 
-This section freezes the WROOM-to-C3 command contract. The receive-only frames above remain unchanged. Local, not-uploaded WROOM build 130 implements the persistent one-command sender and strict `CACK/CRES` receiver without a Telegram or automatic enqueue surface. Current C3 build 191 does not parse or execute `CMD`, so no command can complete or cause a C3 side effect yet.
+This section freezes the BS-to-C3 command contract. The receive-only frames above remain unchanged. Uploaded builds `131/192` implement and physically prove `STATUS 0`. Local, not-uploaded builds `132/193` add only bounded `OTA_ON`; later stages remain specification-only.
 
 ### Design Boundaries
 
@@ -271,8 +271,8 @@ The complete line must contain no more than 47 printable ASCII characters before
 
 | Stage | Command | Argument | Effect | Initial state |
 | --- | --- | --- | --- | --- |
-| A | `STATUS` | exactly `0` | Execute a safe command round-trip and request a fresh ordinary telemetry publication. It changes no C3 state. | First and only command enabled in the initial implementation. |
-| B | `OTA_ON` | `300..900` seconds | Enable the existing C3 Wi-Fi/OTA service for a bounded window, hold C3 awake for that window, then automatically disable Wi-Fi and return authority to the normal sleep plan. | Specified, disabled until STATUS acceptance passes. |
+| A | `STATUS` | exactly `0` | Execute a safe command round-trip and request a fresh ordinary telemetry publication. It changes no C3 state. | Uploaded and physically accepted on builds `131/192`. |
+| B | `OTA_ON` | `300..900` seconds | Enable the existing C3 ArduinoOTA listener for a bounded window and hold C3 awake until that listener expires. Normal C3 Wi-Fi remains unchanged in this stage because C3 still owns Telegram/MQTT/Sheets/NTP. | Implemented locally on builds `132/193`; physical proof pending. |
 | C | `WIFI_OFF` | exactly `0` | End an active OTA window, report the result over UART, flush it, disable C3 Wi-Fi, and return to the normal autonomous plan. | Specified, disabled until OTA_ON acceptance passes. |
 | D | `RESTART` | exactly `0` | Report `RESTARTING`, flush UART, wait the existing safe post-frame interval, then perform a software restart. | Specified, disabled until separately approved and tested. |
 
@@ -327,7 +327,7 @@ Allowed result tokens:
 - `CACK` timeout is 2 seconds. WROOM may make at most three identical retransmissions after the first send.
 - After `CACK`, WROOM waits at most 15 seconds for `CRES`; recovery requests are identical command retransmissions, no faster than every 5 seconds and no more than three times.
 - If a not-yet-started command expires on C3, C3 stores and returns `CRES ... EXPIRED NONE`.
-- Commands that intentionally hold C3 awake, such as a future `OTA_ON`, must publish a terminal result immediately after the bounded window is established; they do not keep the command transaction pending for the whole window.
+- `OTA_ON` publishes a terminal result immediately after the bounded listener is established; it does not keep the command transaction pending for the whole window. The listener timeout returns authority to the existing sleep plan.
 
 ### Strict Rejection Rules
 
@@ -350,12 +350,11 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 
 ### Implementation and Acceptance Order
 
-1. Implement the persistent single-command sender/queue on WROOM, but expose no user command yet.
-2. In the separately managed C3 project, implement only strict parsing, persistence, duplicate handling, and `STATUS 0`.
-3. Pass parser/contract tests and both local firmware builds; do not upload automatically.
-4. Manually upload C3 in its own VS Code project, then add the existing authorized BS `/c3sts` command as the minimal acceptance trigger; this avoids an otherwise untestable local sender and an unnecessary intermediate BS upload.
-5. Build and manually upload BS once, then prove STATUS success, duplicate replay, TTL expiry, malformed rejection, and both-controller restart recovery with truthful `Queued/Waiting/Accepted/Executed/Failed/Expired` states.
-6. Add `OTA_ON`, then `WIFI_OFF`, then `RESTART` as separate approved stages. Do not add Charge/mode control in this protocol version.
+1. `[done]` Implement the persistent single-command sender/queue on BS and the strict C3 `STATUS 0` executor.
+2. `[done]` Route `/c3sts` through the existing authorized BS bot and physically prove a fresh status lifecycle plus duplicate-command coalescing on builds `131/192`.
+3. `[local]` Add only `/c3ota -> OTA_ON 600`, reuse the existing C3 listener, pass both contract tests/builds, and do not upload automatically.
+4. `[next]` Manually upload C3 build `193`, then BS build `132`; prove awake activation, declared-sleep queuing, one OTA/recovery cycle, listener timeout, and return to normal sleep.
+5. `[later]` Add `WIFI_OFF`, then separately approved `RESTART`. Do not add Charge/mode control in protocol v1.
 
 ### Telegram Status Bridge
 
@@ -364,3 +363,4 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 - If C3 is `SLP`, `WAIT`, or `OFF`, BS does not enqueue `STATUS` because UART cannot wake C3. It replies with `Data: Cached` and preserves the telemetry age.
 - `/bssts` is BS-local. It reports already available BS runtime values and a short C3 link summary without sending UART traffic or taking a new sensor measurement.
 - Both commands accept the normal bot-name suffix and coalesce duplicate requests found in one Telegram poll.
+- `/c3ota` accepts the same suffix and coalescing rule. It requests a fixed 600-second listener window. With link `OK`, queue lifetime is 180 seconds; with declared `SLP`, it is the remaining sleep plus 180 seconds, capped at 7200. `WAIT/OFF` is refused. Telegram first reports `Queued`, then reports `Enabled/EXECUTED` only after the matching C3 terminal result.

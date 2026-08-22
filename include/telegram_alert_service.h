@@ -46,6 +46,15 @@ class TelegramAlertService {
   bool isConfigured() const;
 
  private:
+  enum class C3OtaReplyStage : uint8_t {
+    None = 0,
+    QueuedNotice = 1,
+    AwaitResult = 2,
+    Terminal = 3,
+    Unavailable = 4,
+    Busy = 5,
+  };
+
   static constexpr unsigned long kOnlineWarmupMs = 20000UL;
   static constexpr unsigned long kRetryIntervalMs = 30000UL;
   static constexpr unsigned long kRestoreThresholdMs = 90000UL;
@@ -90,6 +99,9 @@ class TelegramAlertService {
       const char *refreshState) const;
   String buildBsStatusMessage_(const BsStatusView &status,
                                const ControllerLinkService &controllerLink) const;
+  String buildC3OtaMessage_(const ControllerLinkService &controllerLink,
+                            C3OtaReplyStage stage,
+                            uint32_t nowMs) const;
   static String htmlEscape_(const String &value);
   static String urlEncode_(const String &value);
   static String formatDowntimeText_(unsigned long downtimeMs);
@@ -104,6 +116,7 @@ class TelegramAlertService {
   bool c3RefreshCommandPending_ = false;
   bool c3HadTelemetryAtRequest_ = false;
   bool bsStatusReplyPending_ = false;
+  C3OtaReplyStage c3OtaReplyStage_ = C3OtaReplyStage::None;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;
   unsigned long restoreDowntimeMs_ = 0;

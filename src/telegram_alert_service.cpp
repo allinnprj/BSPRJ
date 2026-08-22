@@ -180,6 +180,17 @@ bool isBsStatusCommand(String command) {
   return command.indexOf(' ') < 0 && command.length() > strlen("/bssts@");
 }
 
+bool isC3OtaCommand(String command) {
+  command.trim();
+  if (command == F("/c3ota")) {
+    return true;
+  }
+  if (!command.startsWith(F("/c3ota@"))) {
+    return false;
+  }
+  return command.indexOf(' ') < 0 && command.length() > strlen("/c3ota@");
+}
+
 }  // namespace
 
 void TelegramAlertService::begin() {
@@ -204,13 +215,14 @@ void TelegramAlertService::begin() {
   c3RefreshCommandPending_ = false;
   c3HadTelemetryAtRequest_ = false;
   bsStatusReplyPending_ = false;
+  c3OtaReplyStage_ = C3OtaReplyStage::None;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /c3sts /bssts poll=60s last_update="));
+      Serial.print(F("[TG] commands ready -> /c3sts /bssts /c3ota poll=60s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
@@ -356,9 +368,55 @@ void TelegramAlertService::updateCommands(
     return;
   }
 
+  const ControllerCommandSnapshot activeCommand =
+      controllerLink.commandSnapshot();
+  if (c3OtaReplyStage_ == C3OtaReplyStage::None &&
+      strcmp(activeCommand.command, "OTA_ON") == 0) {
+    c3OtaReplyStage_ = controllerLink.commandTerminal()
+                           ? C3OtaReplyStage::Terminal
+                           : C3OtaReplyStage::QueuedNotice;
+  }
+  if (c3OtaReplyStage_ == C3OtaReplyStage::AwaitResult &&
+      (strcmp(activeCommand.command, "OTA_ON") != 0 ||
+       controllerLink.commandTerminal())) {
+    c3OtaReplyStage_ = strcmp(activeCommand.command, "OTA_ON") == 0
+                           ? C3OtaReplyStage::Terminal
+                           : C3OtaReplyStage::Unavailable;
+  }
+  if (c3OtaReplyStage_ != C3OtaReplyStage::None &&
+      c3OtaReplyStage_ != C3OtaReplyStage::AwaitResult) {
+    if ((lastSuccessfulSendAtMs_ != 0 &&
+         currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
+        (lastStatusReplyAttemptAtMs_ != 0 &&
+         currentMs - lastStatusReplyAttemptAtMs_ < kRetryIntervalMs)) {
+      return;
+    }
+    lastStatusReplyAttemptAtMs_ = currentMs;
+    const C3OtaReplyStage sentStage = c3OtaReplyStage_;
+    const bool sent = sendStatusMessage_(
+        buildC3OtaMessage_(controllerLink, sentStage, currentMs), "C3 OTA");
+    Serial.print(F("[TG] command /c3ota -> "));
+    Serial.println(sent ? F("OK") : F("FAIL"));
+    if (sent) {
+      lastStatusReplyAttemptAtMs_ = 0;
+      if (sentStage == C3OtaReplyStage::QueuedNotice) {
+        c3OtaReplyStage_ = C3OtaReplyStage::AwaitResult;
+      } else {
+        c3OtaReplyStage_ = C3OtaReplyStage::None;
+        if (sentStage == C3OtaReplyStage::Terminal &&
+            controllerLink.commandTerminal() &&
+            !controllerLink.clearTerminalCommand()) {
+          Serial.println(F("[TG] command /c3ota -> terminal clear failed"));
+        }
+      }
+    }
+    return;
+  }
+
   if (c3StatusReplyPending_) {
     const bool commandFinished =
-        c3RefreshCommandPending_ && controllerLink.commandTerminal();
+        c3RefreshCommandPending_ && controllerLink.commandTerminal() &&
+        strcmp(controllerLink.commandSnapshot().command, "STATUS") == 0;
     if (currentMs - c3StatusReplyQueuedAtMs_ > kPendingReplyMaxAgeMs &&
         !commandFinished) {
       c3StatusReplyPending_ = false;
@@ -629,6 +687,7 @@ void TelegramAlertService::processCommandUpdates_(
   uint32_t newestUpdateId = lastCommandUpdateId_;
   uint8_t c3StatusRequestCount = 0;
   uint8_t bsStatusRequestCount = 0;
+  uint8_t c3OtaRequestCount = 0;
   int searchAt = 0;
   while (true) {
     const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
@@ -696,6 +755,10 @@ void TelegramAlertService::processCommandUpdates_(
       if (bsStatusRequestCount < UINT8_MAX) {
         ++bsStatusRequestCount;
       }
+    } else if (isC3OtaCommand(command)) {
+      if (c3OtaRequestCount < UINT8_MAX) {
+        ++c3OtaRequestCount;
+      }
     }
   }
 
@@ -719,6 +782,48 @@ void TelegramAlertService::processCommandUpdates_(
     Serial.println(F("[TG] command /bssts -> queued"));
   }
 
+  if (c3OtaRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /c3ota x"));
+    Serial.println(c3OtaRequestCount);
+  }
+  if (c3OtaRequestCount > 0) {
+    if (controllerLink.hasCommand()) {
+      const ControllerCommandSnapshot command =
+          controllerLink.commandSnapshot();
+      if (strcmp(command.command, "OTA_ON") == 0 &&
+          !controllerLink.commandTerminal()) {
+        if (c3OtaReplyStage_ == C3OtaReplyStage::None) {
+          c3OtaReplyStage_ = C3OtaReplyStage::QueuedNotice;
+        }
+      } else {
+        c3OtaReplyStage_ = C3OtaReplyStage::Busy;
+      }
+    } else if (!controllerLink.commandPersistenceReady() ||
+               (!controllerLink.isOnline() && !controllerLink.isSleeping())) {
+      c3OtaReplyStage_ = C3OtaReplyStage::Unavailable;
+    } else {
+      uint32_t ttlSeconds = 180;
+      if (controllerLink.isSleeping()) {
+        const uint32_t remainingSleep =
+            controllerLink.sleepRemainingSeconds(millis());
+        ttlSeconds = remainingSleep >= 7020 ? 7200 : remainingSleep + 180;
+      }
+      c3OtaReplyStage_ = controllerLink.queueOtaOnCommand(600, ttlSeconds)
+                             ? C3OtaReplyStage::QueuedNotice
+                             : C3OtaReplyStage::Unavailable;
+    }
+    lastStatusReplyAttemptAtMs_ = 0;
+    Serial.print(F("[TG] command /c3ota -> "));
+    Serial.println(
+        c3OtaReplyStage_ == C3OtaReplyStage::QueuedNotice
+            ? F("queued")
+            : c3OtaReplyStage_ == C3OtaReplyStage::AwaitResult
+                  ? F("already pending")
+                  : c3OtaReplyStage_ == C3OtaReplyStage::Busy
+                        ? F("busy")
+                        : F("unavailable"));
+  }
+
   if (c3StatusRequestCount > 1) {
     Serial.print(F("[TG] command coalesced -> /c3sts x"));
     Serial.println(c3StatusRequestCount);
@@ -738,7 +843,8 @@ void TelegramAlertService::processCommandUpdates_(
     }
     if (!controllerLink.hasCommand()) {
       c3RefreshCommandPending_ = controllerLink.queueStatusCommand();
-    } else if (!controllerLink.commandTerminal()) {
+    } else if (!controllerLink.commandTerminal() &&
+               strcmp(controllerLink.commandSnapshot().command, "STATUS") == 0) {
       c3RefreshCommandPending_ = true;
     }
   }
@@ -747,6 +853,43 @@ void TelegramAlertService::processCommandUpdates_(
   lastStatusReplyAttemptAtMs_ = 0;
   Serial.print(F("[TG] command /c3sts -> queued "));
   Serial.println(c3RefreshCommandPending_ ? F("fresh") : F("cached"));
+}
+
+String TelegramAlertService::buildC3OtaMessage_(
+    const ControllerLinkService &controllerLink,
+    C3OtaReplyStage stage,
+    uint32_t nowMs) const {
+  String message;
+  message.reserve(240);
+  message += F("🛠 <b>C3 OTA</b>\n");
+  if (stage == C3OtaReplyStage::QueuedNotice) {
+    message += F("State: <b>Queued</b>\nWindow: <b>10 min</b>\nLink: <b>");
+    message += controllerLink.stateText();
+    message += F("</b>\nStarts: ");
+    if (controllerLink.isSleeping()) {
+      message += F("after next wake (about ");
+      message += controllerLink.sleepRemainingSeconds(nowMs);
+      message += F(" sec)");
+    } else {
+      message += F("now");
+    }
+  } else if (stage == C3OtaReplyStage::Terminal) {
+    const ControllerCommandSnapshot command = controllerLink.commandSnapshot();
+    if (command.state == ControllerCommandState::Executed) {
+      message += F("State: <b>Enabled</b>\nWindow: <b>10 min</b>\nResult: <b>EXECUTED</b>\nUpload from the C3 project");
+    } else {
+      message += F("State: <b>Not enabled</b>\nResult: <b>");
+      message += controllerLink.commandStateText();
+      message += F("</b>\nTry again after the C3 link recovers");
+    }
+  } else if (stage == C3OtaReplyStage::Busy) {
+    message += F("State: <b>Busy</b>\nAnother C3 command is still active");
+  } else {
+    message += F("State: <b>Unavailable</b>\nLink: <b>");
+    message += controllerLink.stateText();
+    message += F("</b>\nTry again after the C3 link is OK or SLP");
+  }
+  return message;
 }
 
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,

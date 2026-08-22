@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Bounded C3 OTA activation through BS - 2026-08-22
+
+1. Added local BS `0.1.78-EXP` build `132` and paired local C3 `1.2.0-c3` build `193`. The authorized `/c3ota` Telegram command queues only `OTA_ON 600`, using the persisted command-v1 sender and the C3 project's existing 10-minute ArduinoOTA listener; no second OTA server or second C3 bot was created.
+2. An awake `OK` link gets a 180-second command lifetime. A declared `SLP` link gets the remaining announced sleep plus 180 seconds, capped at the protocol maximum of 7200 seconds; BS never transmits during declared sleep. `WAIT/OFF` is rejected without creating a misleading queue.
+3. Telegram reports two distinct states: an initial `Queued` card and, only after matching `CRES`, a terminal `Enabled / EXECUTED` or truthful failure/expiry card. Duplicate `/c3ota` updates in one poll are coalesced. `/c3sts` attaches only to `STATUS`, so it cannot consume or clear an OTA transaction.
+4. C3 persists the OTA duration without changing the build-192 command record layout/session history, activates the existing listener before returning `OK OTA_ON=600`, suppresses automatic sleep while the request awaits Wi-Fi and while the window is active, and retains duplicate/no-reexecution behavior. Normal C3 Wi-Fi, Telegram, MQTT, Sheets, NTP, INA3221, Charge, Solar Control, GPS, and sleep durations are unchanged; `WIFI_OFF`, `RESTART`, and control commands remain disabled.
+5. No upload was performed. Manual order is C3 build `193` first, then BS build `132`; physical acceptance must prove awake activation, queued-during-`SLP`, one real OTA upload/recovery, automatic 10-minute expiry, and return to the normal sleep plan.
+6. Validation: both command contract tests and `git diff --check` pass. `pio run -e esp32dev` succeeds with RAM `65,604 / 327,680` (`20.0%`), linked Flash `1,362,591 / 1,572,864` (`86.6%`), OTA-slot reserve `210,273` bytes, and a `1,362,992`-byte firmware image (SHA-256 `F2B5F023166756B045326EDD8FBB13746593F9249892E4B03C3289EFE078658A`). Relative to build `131`, RAM is unchanged and linked Flash increases by `2,576` bytes.
+
 ## Fresh C3 status and live BS status command - 2026-08-22
 
 1. Added BS `0.1.77-EXP` build `131`. The authorized `/c3sts` Telegram command now uses the build-130 persistent `STATUS` sender only while C3 is awake and the UART link is `OK`; a successful `CMD/CACK/TEL/CRES` cycle is labelled `Data: Fresh`.
