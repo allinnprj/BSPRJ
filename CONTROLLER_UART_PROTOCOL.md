@@ -4,6 +4,12 @@
 
 This is the canonical application protocol for the short 3.3 V UART link between the autonomous ESP32-C3 power controller and the BSPRJ ESP32-WROOM network gateway.
 
+Canonical controller names in user-facing discussion and project status are:
+
+- `BS`: the main BSPRJ ESP32-WROOM-32U noise, network, logging, and gateway controller.
+- `C3`: the autonomous ESP32-C3 SuperMini INA3221, Solar Control, GPS, and sleep controller.
+- Use `WROOM` or `SuperMini` only when a hardware-specific distinction is required. Existing device IDs, filenames, class names, and wire labels remain unchanged.
+
 - Transport: `115200 8N1`.
 - Line ending: `LF`; optional incoming `CR` is ignored.
 - Encoding: printable ASCII only.
@@ -11,7 +17,7 @@ This is the canonical application protocol for the short 3.3 V UART link between
 - Maximum accepted C3 input line length remains 47 printable characters plus terminator.
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
 - The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
-- The bounded WROOM-to-C3 command envelope is specified below. Local WROOM build 130 implements only the dormant persistent sender/queue and strict `CACK/CRES` receiver; no caller can enqueue a command yet. Uploaded WROOM build 129 and C3 build 191 execute no remote command.
+- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `130` implements the dormant persistent sender/queue and strict `CACK/CRES` receiver; uploaded C3 build `192` implements only the strict persistent `STATUS 0` executor and fresh ordinary telemetry request. Local BS build `131` connects the existing authorized `/c3sts` as the first caller; it is not uploaded yet.
 
 ## Heartbeat
 
@@ -347,6 +353,14 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 1. Implement the persistent single-command sender/queue on WROOM, but expose no user command yet.
 2. In the separately managed C3 project, implement only strict parsing, persistence, duplicate handling, and `STATUS 0`.
 3. Pass parser/contract tests and both local firmware builds; do not upload automatically.
-4. Manually upload each controller in its own VS Code project and prove STATUS success, duplicate replay, TTL expiry, malformed rejection, and both-controller restart recovery.
-5. Only after STATUS acceptance, expose the authorized Telegram command with `Queued/Waiting/Accepted/Executed/Failed/Expired` states.
+4. Manually upload C3 in its own VS Code project, then add the existing authorized BS `/c3sts` command as the minimal acceptance trigger; this avoids an otherwise untestable local sender and an unnecessary intermediate BS upload.
+5. Build and manually upload BS once, then prove STATUS success, duplicate replay, TTL expiry, malformed rejection, and both-controller restart recovery with truthful `Queued/Waiting/Accepted/Executed/Failed/Expired` states.
 6. Add `OTA_ON`, then `WIFI_OFF`, then `RESTART` as separate approved stages. Do not add Charge/mode control in this protocol version.
+
+### Telegram Status Bridge
+
+- `/c3sts` is the user-facing Telegram command; `STATUS 0` is its internal UART refresh mechanism, not a second Telegram command.
+- If C3 is `OK`, BS queues one persisted `STATUS` request and sends one Telegram card after the terminal result. `EXECUTED` is shown as `Data: Fresh`; failed or expired refreshes remain truthful and use the last accepted telemetry as cached data.
+- If C3 is `SLP`, `WAIT`, or `OFF`, BS does not enqueue `STATUS` because UART cannot wake C3. It replies with `Data: Cached` and preserves the telemetry age.
+- `/bssts` is BS-local. It reports already available BS runtime values and a short C3 link summary without sending UART traffic or taking a new sensor measurement.
+- Both commands accept the normal bot-name suffix and coalesce duplicate requests found in one Telegram poll.

@@ -79,9 +79,20 @@ assert.match(source, /getBytes\("record"/);
 
 assert.match(main, /setCommandEventHandler\(recordControllerCommandEvent\)/);
 assert.doesNotMatch(main, /queueStatusCommand\s*\(/,
-  'This stage must not expose or automatically enqueue STATUS.');
-assert.doesNotMatch(telegram, /queueStatusCommand\s*\(/,
-  'Telegram exposure belongs to a later approved stage.');
+  'STATUS must only be triggered by the authorized Telegram command path.');
+assert.match(telegram, /isC3StatusCommand\(command\)/);
+assert.match(telegram, /isBsStatusCommand\(command\)/);
+assert.match(telegram, /controllerLink\.isOnline\(\)/);
+assert.match(telegram, /controllerLink\.queueStatusCommand\(\)/);
+assert.match(telegram, /c3RefreshCommandPending_/);
+assert.match(telegram, /controllerLink\.commandTerminal\(\)/);
+assert.match(telegram, /c3TelemetryReceivedAtRequestMs_/);
+assert.match(telegram, /freshTelemetryReceived/);
+assert.match(telegram, /"CACHED"/);
+assert.match(telegram, /Data: <b>Fresh<\/b>/);
+assert.match(telegram, /command coalesced -> \/c3sts x/);
+assert.match(telegram, /command coalesced -> \/bssts x/);
+assert.match(telegram, /BS Controller/);
 assert.doesNotMatch(source, /OTA_ON|WIFI_OFF|RESTART/,
   'Only STATUS is executable in the WROOM command sender stage.');
 

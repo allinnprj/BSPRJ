@@ -5,6 +5,29 @@
 
 #include "controller_link_service.h"
 
+struct BsStatusView {
+  const String &ipAddress;
+  int wifiRssiDbm;
+  uint8_t wifiSignalPercent;
+  const String &wifiSsid;
+  bool timeSynced;
+  const char *versionText;
+  uint32_t buildNumber;
+  const String &uptimeText;
+  uint16_t currentLevel;
+  uint32_t hourAverage;
+  uint32_t totalAverage;
+  uint32_t hourSamplesCollected;
+  const char *dayPartText;
+  const char *noiseLevelText;
+  const char *signalStateText;
+  bool environmentAvailable;
+  float temperatureC;
+  float humidityPct;
+  bool wqttConnected;
+  uint8_t googleSheetsQueue;
+};
+
 class TelegramAlertService {
  public:
   void begin();
@@ -17,7 +40,8 @@ class TelegramAlertService {
                               const ControllerLinkService &controllerLink);
   void updateCommands(bool wifiConnected, bool timeSynced, int wifiRssiDbm,
                       uint8_t wifiSignalPercent, const String &wifiSsid,
-                      const ControllerLinkService &controllerLink);
+                      ControllerLinkService &controllerLink,
+                      const BsStatusView &bsStatus);
 
   bool isConfigured() const;
 
@@ -42,10 +66,14 @@ class TelegramAlertService {
                          const String &uptimeText, unsigned long downtimeMs);
   bool sendControllerStatus_(const ControllerLinkService &controllerLink,
                              uint32_t nowMs, int wifiRssiDbm,
-                             uint8_t wifiSignalPercent, const String &wifiSsid);
-  bool pollCommands_(const ControllerLinkService &controllerLink);
+                             uint8_t wifiSignalPercent, const String &wifiSsid,
+                             const char *refreshState = nullptr);
+  bool sendBsStatus_(const BsStatusView &status,
+                     const ControllerLinkService &controllerLink);
+  bool sendStatusMessage_(const String &message, const char *logLabel);
+  bool pollCommands_(ControllerLinkService &controllerLink);
   void processCommandUpdates_(const String &response,
-                              const ControllerLinkService &controllerLink);
+                              ControllerLinkService &controllerLink);
   String buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                    uint8_t wifiSignalPercent, const String &wifiSsid,
                                    bool timeSynced,
@@ -58,7 +86,10 @@ class TelegramAlertService {
                                    const String &uptimeText, unsigned long downtimeMs) const;
   String buildControllerStatusMessage_(
       const ControllerLinkService &controllerLink, uint32_t nowMs,
-      int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid) const;
+      int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid,
+      const char *refreshState) const;
+  String buildBsStatusMessage_(const BsStatusView &status,
+                               const ControllerLinkService &controllerLink) const;
   static String htmlEscape_(const String &value);
   static String urlEncode_(const String &value);
   static String formatDowntimeText_(unsigned long downtimeMs);
@@ -69,7 +100,10 @@ class TelegramAlertService {
   bool restorePending_ = false;
   bool controllerStatusSentThisBoot_ = false;
   bool commandPreferencesReady_ = false;
-  bool statusReplyPending_ = false;
+  bool c3StatusReplyPending_ = false;
+  bool c3RefreshCommandPending_ = false;
+  bool c3HadTelemetryAtRequest_ = false;
+  bool bsStatusReplyPending_ = false;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;
   unsigned long restoreDowntimeMs_ = 0;
@@ -77,7 +111,9 @@ class TelegramAlertService {
   unsigned long lastControllerAttemptAtMs_ = 0;
   unsigned long lastCommandPollAtMs_ = 0;
   unsigned long lastSuccessfulSendAtMs_ = 0;
-  unsigned long statusReplyQueuedAtMs_ = 0;
+  unsigned long c3StatusReplyQueuedAtMs_ = 0;
+  uint32_t c3TelemetryReceivedAtRequestMs_ = 0;
+  unsigned long bsStatusReplyQueuedAtMs_ = 0;
   unsigned long lastStatusReplyAttemptAtMs_ = 0;
   uint32_t lastCommandUpdateId_ = 0;
   Preferences commandPreferences_;

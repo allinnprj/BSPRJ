@@ -158,7 +158,7 @@ bool parseJsonStringField(const String &source, const char *quotedKey,
   return false;
 }
 
-bool isStatusCommand(String command) {
+bool isC3StatusCommand(String command) {
   command.trim();
   if (command == F("/c3sts")) {
     return true;
@@ -167,6 +167,17 @@ bool isStatusCommand(String command) {
     return false;
   }
   return command.indexOf(' ') < 0 && command.length() > strlen("/c3sts@");
+}
+
+bool isBsStatusCommand(String command) {
+  command.trim();
+  if (command == F("/bssts")) {
+    return true;
+  }
+  if (!command.startsWith(F("/bssts@"))) {
+    return false;
+  }
+  return command.indexOf(' ') < 0 && command.length() > strlen("/bssts@");
 }
 
 }  // namespace
@@ -184,18 +195,22 @@ void TelegramAlertService::begin() {
   lastControllerAttemptAtMs_ = 0;
   lastCommandPollAtMs_ = millis();
   lastSuccessfulSendAtMs_ = 0;
-  statusReplyQueuedAtMs_ = 0;
+  c3StatusReplyQueuedAtMs_ = 0;
+  bsStatusReplyQueuedAtMs_ = 0;
   lastStatusReplyAttemptAtMs_ = 0;
   lastCommandUpdateId_ = 0;
   commandPreferencesReady_ = false;
-  statusReplyPending_ = false;
+  c3StatusReplyPending_ = false;
+  c3RefreshCommandPending_ = false;
+  c3HadTelemetryAtRequest_ = false;
+  bsStatusReplyPending_ = false;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /c3sts poll=60s last_update="));
+      Serial.print(F("[TG] commands ready -> /c3sts /bssts poll=60s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
@@ -310,20 +325,20 @@ void TelegramAlertService::updateControllerStatus(
 void TelegramAlertService::updateCommands(
     bool wifiConnected, bool timeSynced, int wifiRssiDbm,
     uint8_t wifiSignalPercent, const String &wifiSsid,
-    const ControllerLinkService &controllerLink) {
+    ControllerLinkService &controllerLink, const BsStatusView &bsStatus) {
   const uint32_t currentMs = millis();
   if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
       !timeSynced || !onlineSentThisBoot_) {
     return;
   }
 
-  if (statusReplyPending_) {
-    if (currentMs - statusReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
-      statusReplyPending_ = false;
-      Serial.println(F("[TG] command /c3sts -> expired before reply"));
+  if (bsStatusReplyPending_) {
+    if (currentMs - bsStatusReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
+      bsStatusReplyPending_ = false;
+      Serial.println(F("[TG] command /bssts -> expired before reply"));
       return;
     }
-    if (currentMs - statusReplyQueuedAtMs_ < kSendSpacingMs ||
+    if (currentMs - bsStatusReplyQueuedAtMs_ < kSendSpacingMs ||
         (lastSuccessfulSendAtMs_ != 0 &&
          currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
         (lastStatusReplyAttemptAtMs_ != 0 &&
@@ -331,12 +346,61 @@ void TelegramAlertService::updateCommands(
       return;
     }
     lastStatusReplyAttemptAtMs_ = currentMs;
+    const bool sent = sendBsStatus_(bsStatus, controllerLink);
+    Serial.print(F("[TG] command /bssts -> "));
+    Serial.println(sent ? F("OK") : F("FAIL"));
+    if (sent) {
+      bsStatusReplyPending_ = false;
+      lastStatusReplyAttemptAtMs_ = 0;
+    }
+    return;
+  }
+
+  if (c3StatusReplyPending_) {
+    const bool commandFinished =
+        c3RefreshCommandPending_ && controllerLink.commandTerminal();
+    if (currentMs - c3StatusReplyQueuedAtMs_ > kPendingReplyMaxAgeMs &&
+        !commandFinished) {
+      c3StatusReplyPending_ = false;
+      c3RefreshCommandPending_ = false;
+      Serial.println(F("[TG] command /c3sts -> expired before reply"));
+      return;
+    }
+    if (c3RefreshCommandPending_ && !commandFinished) {
+      return;
+    }
+    if (currentMs - c3StatusReplyQueuedAtMs_ < kSendSpacingMs ||
+        (lastSuccessfulSendAtMs_ != 0 &&
+         currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
+        (lastStatusReplyAttemptAtMs_ != 0 &&
+         currentMs - lastStatusReplyAttemptAtMs_ < kRetryIntervalMs)) {
+      return;
+    }
+
+    const bool freshTelemetryReceived =
+        commandFinished &&
+        controllerLink.commandSnapshot().state == ControllerCommandState::Executed &&
+        controllerLink.hasTelemetry() &&
+        (!c3HadTelemetryAtRequest_ ||
+         controllerLink.telemetry().receivedAtMs != c3TelemetryReceivedAtRequestMs_);
+    const char *refreshState = freshTelemetryReceived
+                                   ? "FRESH"
+                                   : (commandFinished
+                                          ? controllerLink.commandStateText()
+                                          : "CACHED");
+    lastStatusReplyAttemptAtMs_ = currentMs;
     const bool sent = sendControllerStatus_(controllerLink, currentMs, wifiRssiDbm,
-                                            wifiSignalPercent, wifiSsid);
+                                            wifiSignalPercent, wifiSsid,
+                                            refreshState);
     Serial.print(F("[TG] command /c3sts -> "));
     Serial.println(sent ? F("OK") : F("FAIL"));
     if (sent) {
-      statusReplyPending_ = false;
+      c3StatusReplyPending_ = false;
+      lastStatusReplyAttemptAtMs_ = 0;
+      if (commandFinished && !controllerLink.clearTerminalCommand()) {
+        Serial.println(F("[TG] command /c3sts -> terminal clear failed"));
+      }
+      c3RefreshCommandPending_ = false;
     }
     return;
   }
@@ -457,7 +521,21 @@ bool TelegramAlertService::sendWifiRestored_(const String &ipAddress, int wifiRs
 
 bool TelegramAlertService::sendControllerStatus_(
     const ControllerLinkService &controllerLink, uint32_t nowMs,
-    int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid) {
+    int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid,
+    const char *refreshState) {
+  return sendStatusMessage_(buildControllerStatusMessage_(
+                                controllerLink, nowMs, wifiRssiDbm,
+                                wifiSignalPercent, wifiSsid, refreshState),
+                            "C3");
+}
+
+bool TelegramAlertService::sendBsStatus_(
+    const BsStatusView &status, const ControllerLinkService &controllerLink) {
+  return sendStatusMessage_(buildBsStatusMessage_(status, controllerLink), "BS");
+}
+
+bool TelegramAlertService::sendStatusMessage_(const String &message,
+                                              const char *logLabel) {
   WiFiClientSecure client;
   client.setInsecure();
   client.setHandshakeTimeout(4);
@@ -468,20 +546,23 @@ bool TelegramAlertService::sendControllerStatus_(
   http.setTimeout(kTelegramHttpTimeoutMs);
   String url = String(kTelegramApiBase) + TELEGRAM_BOT_TOKEN + F("/sendMessage");
   if (!http.begin(client, url)) {
-    Serial.println(F("[TG] C3 HTTP begin failed"));
+    Serial.print(F("[TG] "));
+    Serial.print(logLabel);
+    Serial.println(F(" HTTP begin failed"));
     return false;
   }
 
   String payload = F("chat_id=");
   payload += urlEncode_(String(TELEGRAM_CHAT_ID));
   payload += F("&parse_mode=HTML&disable_web_page_preview=true&text=");
-  payload += urlEncode_(buildControllerStatusMessage_(
-      controllerLink, nowMs, wifiRssiDbm, wifiSignalPercent, wifiSsid));
+  payload += urlEncode_(message);
 
   http.addHeader(F("Content-Type"), F("application/x-www-form-urlencoded"));
   const int httpCode = http.POST(payload);
   if (httpCode > 0) {
-    Serial.print(F("[TG] C3 POST -> "));
+    Serial.print(F("[TG] "));
+    Serial.print(logLabel);
+    Serial.print(F(" POST -> "));
     Serial.println(httpCode);
     if (httpCode >= 200 && httpCode < 300) {
       lastSuccessfulSendAtMs_ = millis();
@@ -490,11 +571,15 @@ bool TelegramAlertService::sendControllerStatus_(
     }
     const String response = http.getString();
     if (response.length() > 0) {
-      Serial.print(F("[TG] C3 body -> "));
+      Serial.print(F("[TG] "));
+      Serial.print(logLabel);
+      Serial.print(F(" body -> "));
       Serial.println(response);
     }
   } else {
-    Serial.print(F("[TG] C3 POST failed -> "));
+    Serial.print(F("[TG] "));
+    Serial.print(logLabel);
+    Serial.print(F(" POST failed -> "));
     Serial.println(http.errorToString(httpCode));
   }
 
@@ -503,7 +588,7 @@ bool TelegramAlertService::sendControllerStatus_(
 }
 
 bool TelegramAlertService::pollCommands_(
-    const ControllerLinkService &controllerLink) {
+    ControllerLinkService &controllerLink) {
   WiFiClientSecure client;
   client.setInsecure();
   client.setHandshakeTimeout(4);
@@ -540,9 +625,10 @@ bool TelegramAlertService::pollCommands_(
 }
 
 void TelegramAlertService::processCommandUpdates_(
-    const String &response, const ControllerLinkService &controllerLink) {
+    const String &response, ControllerLinkService &controllerLink) {
   uint32_t newestUpdateId = lastCommandUpdateId_;
-  uint8_t statusRequestCount = 0;
+  uint8_t c3StatusRequestCount = 0;
+  uint8_t bsStatusRequestCount = 0;
   int searchAt = 0;
   while (true) {
     const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
@@ -602,9 +688,13 @@ void TelegramAlertService::processCommandUpdates_(
       continue;
     }
 
-    if (isStatusCommand(command)) {
-      if (statusRequestCount < UINT8_MAX) {
-        ++statusRequestCount;
+    if (isC3StatusCommand(command)) {
+      if (c3StatusRequestCount < UINT8_MAX) {
+        ++c3StatusRequestCount;
+      }
+    } else if (isBsStatusCommand(command)) {
+      if (bsStatusRequestCount < UINT8_MAX) {
+        ++bsStatusRequestCount;
       }
     }
   }
@@ -619,17 +709,44 @@ void TelegramAlertService::processCommandUpdates_(
     lastCommandUpdateId_ = newestUpdateId;
   }
 
-  if (statusRequestCount == 0) {
+  if (bsStatusRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /bssts x"));
+    Serial.println(bsStatusRequestCount);
+  }
+  if (bsStatusRequestCount > 0) {
+    bsStatusReplyPending_ = true;
+    bsStatusReplyQueuedAtMs_ = millis();
+    Serial.println(F("[TG] command /bssts -> queued"));
+  }
+
+  if (c3StatusRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /c3sts x"));
+    Serial.println(c3StatusRequestCount);
+  }
+  if (c3StatusRequestCount == 0) {
     return;
   }
-  if (statusRequestCount > 1) {
-    Serial.print(F("[TG] command coalesced -> /c3sts x"));
-    Serial.println(statusRequestCount);
+
+  c3RefreshCommandPending_ = false;
+  c3HadTelemetryAtRequest_ = controllerLink.hasTelemetry();
+  c3TelemetryReceivedAtRequestMs_ = c3HadTelemetryAtRequest_
+                                        ? controllerLink.telemetry().receivedAtMs
+                                        : 0;
+  if (controllerLink.isOnline() && controllerLink.commandPersistenceReady()) {
+    if (controllerLink.commandTerminal() && !controllerLink.clearTerminalCommand()) {
+      Serial.println(F("[TG] command /c3sts -> terminal clear failed, cached reply"));
+    }
+    if (!controllerLink.hasCommand()) {
+      c3RefreshCommandPending_ = controllerLink.queueStatusCommand();
+    } else if (!controllerLink.commandTerminal()) {
+      c3RefreshCommandPending_ = true;
+    }
   }
-  statusReplyPending_ = true;
-  statusReplyQueuedAtMs_ = millis();
+  c3StatusReplyPending_ = true;
+  c3StatusReplyQueuedAtMs_ = millis();
   lastStatusReplyAttemptAtMs_ = 0;
-  Serial.println(F("[TG] command /c3sts -> queued"));
+  Serial.print(F("[TG] command /c3sts -> queued "));
+  Serial.println(c3RefreshCommandPending_ ? F("fresh") : F("cached"));
 }
 
 String TelegramAlertService::buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
@@ -712,7 +829,8 @@ String TelegramAlertService::buildWifiRestoredMessage_(const String &ipAddress, 
 
 String TelegramAlertService::buildControllerStatusMessage_(
     const ControllerLinkService &controllerLink, uint32_t nowMs,
-    int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid) const {
+    int wifiRssiDbm, uint8_t wifiSignalPercent, const String &wifiSsid,
+    const char *refreshState) const {
   const ControllerTelemetrySnapshot &telemetry = controllerLink.telemetry();
   String message;
   message.reserve(512);
@@ -729,6 +847,17 @@ String TelegramAlertService::buildControllerStatusMessage_(
   message += F(" dBm) ");
   message += htmlEscape_(wifiSsid.isEmpty() ? String("unknown") : wifiSsid);
   message += '\n';
+  if (refreshState != nullptr) {
+    if (strcmp(refreshState, "FRESH") == 0) {
+      message += F("Data: <b>Fresh</b>\n");
+    } else if (strcmp(refreshState, "CACHED") == 0) {
+      message += F("Data: <b>Cached</b>\n");
+    } else {
+      message += F("Data: <b>Cached</b> · refresh <b>");
+      message += htmlEscape_(String(refreshState));
+      message += F("</b>\n");
+    }
+  }
   if (!controllerLink.hasTelemetry()) {
     message += F("Telemetry: <b>Waiting for C3</b>");
     return message;
@@ -763,6 +892,78 @@ String TelegramAlertService::buildControllerStatusMessage_(
   message += F("</b>\nMode: <b>");
   message += controllerModeText(telemetry.solarControlMode);
   message += F("</b>");
+  return message;
+}
+
+String TelegramAlertService::buildBsStatusMessage_(
+    const BsStatusView &status,
+    const ControllerLinkService &controllerLink) const {
+  String message;
+  message.reserve(640);
+  message += F("🔊 <b>BS Controller</b>\n");
+  message += F("State: <b>Online</b>\n");
+  message += F("Version: <code>");
+  message += htmlEscape_(String(status.versionText));
+  message += F("</code> build <code>");
+  message += String(status.buildNumber);
+  message += F("</code>\n");
+  message += F("Uptime: ");
+  message += htmlEscape_(status.uptimeText);
+  message += F("\n\nWi-Fi: <b>");
+  message += String(status.wifiSignalPercent);
+  message += F("%</b> (");
+  message += String(status.wifiRssiDbm);
+  message += F(" dBm) ");
+  message += htmlEscape_(status.wifiSsid.isEmpty() ? String("unknown")
+                                                   : status.wifiSsid);
+  message += F("\nIP: <code>");
+  message += htmlEscape_(status.ipAddress.isEmpty() ? String("0.0.0.0")
+                                                    : status.ipAddress);
+  message += F("</code>\nTime: <b>");
+  message += status.timeSynced ? F("Synced") : F("Waiting");
+  message += F("</b>\n\nSound (relative): Now <b>");
+  message += String(status.currentLevel);
+  message += F("</b> · H ");
+  if (status.hourSamplesCollected >= 3600U) {
+    message += F("<b>");
+    message += String(status.hourAverage);
+    message += F("</b>");
+  } else {
+    message += F("<b>Warmup ");
+    message += String(status.hourSamplesCollected / 60U);
+    message += F("/60 min</b>");
+  }
+  message += F(" · M <b>");
+  message += String(status.totalAverage);
+  message += F("</b>\nPeriod: <b>");
+  message += htmlEscape_(String(status.dayPartText));
+  message += F("</b> · Level: <b>");
+  message += htmlEscape_(String(status.noiseLevelText));
+  message += F("</b>\nSignal: <b>");
+  message += htmlEscape_(String(status.signalStateText));
+  message += F("</b>\nEnvironment: ");
+  if (status.environmentAvailable) {
+    message += F("<b>");
+    message += String(status.temperatureC, 1);
+    message += F(" °C</b> / <b>");
+    message += String(status.humidityPct, 1);
+    message += F("%</b>");
+  } else {
+    message += F("<b>Waiting</b>");
+  }
+  message += F("\n\nCloud: WQTT <b>");
+  message += status.wqttConnected ? F("OK") : F("OFF");
+  message += F("</b> · Sheets queue <b>");
+  message += String(status.googleSheetsQueue);
+  message += F("</b>\nC3 link: <b>");
+  message += htmlEscape_(String(controllerLink.stateText()));
+  message += F("</b>");
+  if (controllerLink.hasTelemetry()) {
+    message += F(" · telemetry age <b>");
+    message += String(controllerLink.telemetryAgeSeconds(millis()));
+    message += F(" s</b>");
+  }
+  appendLinks(message, status.ipAddress);
   return message;
 }
 

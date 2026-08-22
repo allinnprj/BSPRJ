@@ -1256,17 +1256,44 @@ void loop() {
   uploadPendingGoogleSheetsWindow();
   updateMqttState(latestSnapshot);
   const String wifiSsid = wifiService.ssidString();
-  telegramAlertService.update(wifiService.isConnected(), wifiService.ipAddressString(),
+  const String bsIpAddress = wifiService.ipAddressString();
+  const String bsUptimeText = formatCompactUptime(powerUptimeMs());
+  const char *bsDayPartText = timeService.isSynced()
+                                  ? dayPartText(dayPartFromHour(timeService.hour()))
+                                  : "WAITING";
+  const BsStatusView bsStatus = {
+      bsIpAddress,
+      wifiService.rssiDbm(),
+      wifiService.signalPercent(),
+      wifiSsid,
+      timeService.isSynced(),
+      PROJECT_VERSION,
+      PROJECT_BUILD,
+      bsUptimeText,
+      latestSnapshot.currentLevel,
+      latestSnapshot.hourAverage,
+      latestSnapshot.totalAverage,
+      latestSnapshot.hourSamplesCollected,
+      bsDayPartText,
+      noiseLevelText(latestSnapshot.currentLevel),
+      signalStateText(latestSnapshot.signalState),
+      latestSht31Reading.available,
+      latestSht31Reading.temperatureC,
+      latestSht31Reading.humidityPct,
+      mqttService.isWqttConnected(),
+      pendingSheetsCount,
+  };
+  telegramAlertService.update(wifiService.isConnected(), bsIpAddress,
                               wifiService.rssiDbm(), wifiService.signalPercent(),
                               wifiSsid,
                               timeService.isSynced(), PROJECT_VERSION, PROJECT_BUILD,
-                              formatCompactUptime(powerUptimeMs()));
+                              bsUptimeText);
   telegramAlertService.updateControllerStatus(
       wifiService.isConnected(), wifiService.rssiDbm(), wifiService.signalPercent(),
       wifiSsid, controllerLinkService);
   telegramAlertService.updateCommands(
       wifiService.isConnected(), timeService.isSynced(), wifiService.rssiDbm(),
-      wifiService.signalPercent(), wifiSsid, controllerLinkService);
+      wifiService.signalPercent(), wifiSsid, controllerLinkService, bsStatus);
   updateDiagnosticEvents(nowMs);
   appendDiagnosticHealth(nowMs);
   if (!otaStarted && latestSnapshot.statsUpdated &&

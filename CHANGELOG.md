@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Fresh C3 status and live BS status command - 2026-08-22
+
+1. Added BS `0.1.77-EXP` build `131`. The authorized `/c3sts` Telegram command now uses the build-130 persistent `STATUS` sender only while C3 is awake and the UART link is `OK`; a successful `CMD/CACK/TEL/CRES` cycle is labelled `Data: Fresh`.
+2. Preserved the low-cost read-only behavior during C3 Deep Sleep or a degraded link. `/c3sts` immediately returns the last accepted telemetry as `Data: Cached` and does not enqueue a command that cannot wake C3.
+3. Added `/bssts` and `/bssts@BotName`. It reports the current BS version/build, uptime, Wi-Fi/SSID/IP, time state, relative `Now/H/M`, day part, noise level, microphone signal, SHT31 reading, WQTT state, Sheets queue, C3 link/telemetry age, and existing statistics/log links without requesting C3 or taking new measurements.
+4. Kept duplicate-command coalescing for both `/c3sts` and `/bssts`, the existing authorized-chat and freshness checks, the 60-second Telegram poll interval, and bounded HTTP timeouts. No C3 Wi-Fi, Charge, Solar Control, GPS, sleep, MQTT, Sheets, log, sound-processing, or UART telemetry format changed.
+5. C3 remains `1.2.0-c3` build `192`. No firmware upload is performed automatically; physical acceptance requires a manual BS build-131 upload and tests of `/bssts`, awake `/c3sts`, sleeping `/c3sts`, and duplicate coalescing.
+6. Validation: `node test/controller_command_contract_test.js` and `git diff --check` pass; `pio run -e esp32dev` succeeds with RAM `65,604 / 327,680` (`20.0%`), linked Flash `1,360,015 / 1,572,864` (`86.5%`), OTA-slot reserve `212,849` bytes, and a `1,360,416`-byte firmware image (SHA-256 `991EA069DAF0DBF78BCD9FC38C2FDE97C4334164FD070E352AD345A706E70787`). Relative to build `130`, RAM increases by `16` bytes and linked Flash by `5,168` bytes.
+
 ## Dormant persistent WROOM command sender - 2026-08-22
 
 1. Added local WROOM `0.1.76-EXP` build `130` as the first implementation-only step of command protocol v1. `ControllerLinkService` now owns one versioned `c3_command` NVS record with a persistent random command epoch, monotonic sequence, absolute expiry time, STATUS request identity, state, and terminal result.
