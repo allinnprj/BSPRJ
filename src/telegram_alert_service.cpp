@@ -35,6 +35,27 @@ String formatVoltage(int32_t millivolts) {
   return String(millivolts / 1000.0F, 3) + F(" V");
 }
 
+String formatGpsCoordinate(int32_t microdegrees) {
+  return String(microdegrees / 1000000.0, 6);
+}
+
+String gpsFixAgeText(uint32_t fixEpoch) {
+  const time_t currentEpoch = time(nullptr);
+  if (fixEpoch < 1700000000UL || currentEpoch < static_cast<time_t>(fixEpoch)) {
+    return F("unknown");
+  }
+  const uint32_t seconds = static_cast<uint32_t>(currentEpoch - fixEpoch);
+  if (seconds >= 86400UL) {
+    return String(seconds / 86400UL) + F(" d ") +
+           String((seconds % 86400UL) / 3600UL) + F(" h");
+  }
+  if (seconds >= 3600UL) {
+    return String(seconds / 3600UL) + F(" h ") +
+           String((seconds % 3600UL) / 60UL) + F(" min");
+  }
+  return String(seconds / 60UL) + F(" min");
+}
+
 const __FlashStringHelper *controllerModeText(uint8_t mode) {
   switch (mode) {
     case 1:
@@ -1053,6 +1074,21 @@ String TelegramAlertService::buildControllerStatusMessage_(
   message += F("</b>\nMode: <b>");
   message += controllerModeText(telemetry.solarControlMode);
   message += F("</b>");
+  if (telemetry.gpsFixed) {
+    const String latitude = formatGpsCoordinate(telemetry.gpsLatitudeMicrodegrees);
+    const String longitude = formatGpsCoordinate(telemetry.gpsLongitudeMicrodegrees);
+    message += F("\n\n📍 <a href=\"https://www.google.com/maps/search/?api=1&amp;query=");
+    message += latitude;
+    message += F("%2C");
+    message += longitude;
+    message += F("\">Google Maps</a>\nGPS: <b>");
+    message += telemetry.gpsSatellites;
+    message += F(" sat</b> · HDOP <b>");
+    message += String(telemetry.gpsHdopTenths / 10.0F, 1);
+    message += F("</b> · age <b>");
+    message += gpsFixAgeText(telemetry.gpsFixEpoch);
+    message += F("</b>");
+  }
   return message;
 }
 

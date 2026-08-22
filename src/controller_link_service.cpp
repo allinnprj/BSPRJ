@@ -853,6 +853,10 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
     uint32_t soc = 0;
     uint32_t charge = 0;
     uint32_t mode = 0;
+    uint32_t gpsFixed = 0;
+    uint32_t gpsSatellites = 0;
+    uint32_t gpsHdopTenths = 0;
+    uint32_t gpsFixEpoch = 0;
     if (!parseUnsigned(cursor, incoming.session) ||
         !parseNextUnsigned(cursor, incoming.sequence) ||
         !parseNextUnsigned(cursor, valid) ||
@@ -864,7 +868,7 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
         !parseNextSigned(cursor, incoming.loadMilliamps) ||
         !parseNextUnsigned(cursor, soc) ||
         !parseNextUnsigned(cursor, charge) ||
-        !parseNextUnsigned(cursor, mode) || *cursor != '\0' ||
+        !parseNextUnsigned(cursor, mode) ||
         incoming.session == 0 || incoming.sequence == 0 || valid > 1 ||
         soc > 100 || charge > 1 || mode > 2 ||
         incoming.solarMillivolts < -5000 || incoming.solarMillivolts > 100000 ||
@@ -874,6 +878,31 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
         incoming.batteryMilliamps < -100000 || incoming.batteryMilliamps > 100000 ||
         incoming.loadMilliamps < -100000 || incoming.loadMilliamps > 100000) {
       return;
+    }
+
+    if (*cursor != '\0') {
+      if (!parseNextUnsigned(cursor, gpsFixed) ||
+          !parseNextSigned(cursor, incoming.gpsLatitudeMicrodegrees) ||
+          !parseNextSigned(cursor, incoming.gpsLongitudeMicrodegrees) ||
+          !parseNextUnsigned(cursor, gpsSatellites) ||
+          !parseNextUnsigned(cursor, gpsHdopTenths) ||
+          !parseNextUnsigned(cursor, gpsFixEpoch) || *cursor != '\0' ||
+          gpsFixed > 1 || gpsSatellites > 99 || gpsHdopTenths > 9999 ||
+          incoming.gpsLatitudeMicrodegrees < -90000000 ||
+          incoming.gpsLatitudeMicrodegrees > 90000000 ||
+          incoming.gpsLongitudeMicrodegrees < -180000000 ||
+          incoming.gpsLongitudeMicrodegrees > 180000000 ||
+          (gpsFixed != 0 && gpsFixEpoch < 1700000000UL) ||
+          (gpsFixed == 0 &&
+           (incoming.gpsLatitudeMicrodegrees != 0 ||
+            incoming.gpsLongitudeMicrodegrees != 0 || gpsSatellites != 0 ||
+            gpsHdopTenths != 0 || gpsFixEpoch != 0))) {
+        return;
+      }
+      incoming.gpsFixed = gpsFixed != 0;
+      incoming.gpsSatellites = static_cast<uint8_t>(gpsSatellites);
+      incoming.gpsHdopTenths = static_cast<uint16_t>(gpsHdopTenths);
+      incoming.gpsFixEpoch = gpsFixEpoch;
     }
 
     if (recordValidActivity(nowMs)) {
@@ -929,10 +958,12 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
     Serial.print(F("% charge="));
     Serial.print(telemetry_.chargeOutputOn ? F("ON") : F("OFF"));
     Serial.print(F(" mode="));
-    Serial.println(telemetry_.solarControlMode == 1
-                       ? F("AUTO")
-                       : (telemetry_.solarControlMode == 2 ? F("MANUAL")
-                                                           : F("CLASSIC")));
+    Serial.print(telemetry_.solarControlMode == 1
+                     ? F("AUTO")
+                     : (telemetry_.solarControlMode == 2 ? F("MANUAL")
+                                                         : F("CLASSIC")));
+    Serial.print(F(" gps="));
+    Serial.println(telemetry_.gpsFixed ? F("FIX") : F("NONE"));
     return;
   }
 

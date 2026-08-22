@@ -17,6 +17,12 @@ struct ControllerTelemetrySnapshot {
   uint8_t batterySocPercent = 0;
   bool chargeOutputOn = false;
   uint8_t solarControlMode = 0;
+  bool gpsFixed = false;
+  int32_t gpsLatitudeMicrodegrees = 0;
+  int32_t gpsLongitudeMicrodegrees = 0;
+  uint8_t gpsSatellites = 0;
+  uint16_t gpsHdopTenths = 0;
+  uint32_t gpsFixEpoch = 0;
   uint32_t receivedAtMs = 0;
 };
 

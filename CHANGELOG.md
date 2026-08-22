@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Saved C3 GPS FIX relay through BS - 2026-08-22
+
+1. Added local BS `0.1.80-EXP` build `134` and paired local C3 `1.2.0-c3` build `195`. C3 appends its already saved, manually confirmed GPS FIX to the existing reliable `TEL/ACK` frame as integer latitude/longitude microdegrees, satellites, HDOP tenths, and fix epoch; it does not power or query GPS, create a schedule, or change sleep behavior.
+2. BS keeps backward compatibility with the uploaded build-194 power-only frame and strictly validates the optional GPS suffix. A valid saved FIX is exposed in `/c3sts` as a Google Maps link with satellites, HDOP, and age, and is included in the retained WQTT C3 telemetry JSON.
+3. Added bounded diagnostics: accepted UART telemetry reports only `gps=FIX/NONE`, and the rotating journal emits `C3_GPS` only when saved-fix state or epoch changes. Coordinates, bot tokens, and chat identifiers are not written to the diagnostic journal.
+4. Safe manual deployment order is BS build `134` first, then C3 build `195`. This lets the new BS continue accepting the currently uploaded legacy C3 build `194`; uploading C3 first would temporarily make the old BS reject the extended frame.
+5. No firmware upload was performed. Physical acceptance requires the uploaded build pair, one saved manual C3 FIX, `/c3sts` Google Maps output, `C3_GPS fixed=1`, and one matching WQTT JSON payload. The C3 project's own Telegram OTA remains the primary C3 upload path.
+6. Validation: both focused contract tests and both `git diff --check` checks pass. `pio run -e esp32dev` succeeds with RAM `65,636 / 327,680` (`20.0%`), linked Flash `1,365,335 / 1,572,864` (`86.8%`), OTA-slot reserve `207,529` bytes, and a `1,365,744`-byte image with SHA-256 `B6714A5249402149C29DDAAF6EC8372C79A1B10D1FDBBE134B0004F049BC915E`.
+7. First physical gate passed: the user uploaded BS build `134`. Telegram confirmed BS Online, `100% (-47 dBm) NKAANNE`, synchronized time, and an `OK` link to the still-uploaded legacy C3 build `194` with fresh telemetry `q=134`, age `6 s`, and INA3221 `OK`. This proves backward-compatible parsing and normal power telemetry before the C3 half changes. C3 build `195` and the saved-FIX outputs remain pending.
+
 ## Short C3 build-change notice in BS - 2026-08-22
 
 1. Added local BS `0.1.79-EXP` build `133`. After the normal first `C3 Controller` card establishes a baseline, BS now sends one compact `🔧 C3 Update / Online · build N` Telegram message when the C3 build number changes while BS remains running.

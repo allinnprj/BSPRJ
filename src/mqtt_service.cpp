@@ -162,7 +162,7 @@ bool MqttService::publishControllerTelemetry(
   lastControllerPublishAttemptAt_ = nowMs;
 
   String payload;
-  payload.reserve(320);
+  payload.reserve(440);
   payload += F("{\"session\":");
   payload += telemetry.session;
   payload += F(",\"sequence\":");
@@ -190,7 +190,22 @@ bool MqttService::publishControllerTelemetry(
                  ? F("smart_auto")
                  : (telemetry.solarControlMode == 2 ? F("legacy_manual")
                                                      : F("classic"));
-  payload += F("\"}");
+  payload += F("\",\"gps\":{\"fixed\":");
+  payload += telemetry.gpsFixed ? F("true") : F("false");
+  if (telemetry.gpsFixed) {
+    payload += F(",\"latitude\":");
+    payload += String(telemetry.gpsLatitudeMicrodegrees / 1000000.0, 6);
+    payload += F(",\"longitude\":");
+    payload += String(telemetry.gpsLongitudeMicrodegrees / 1000000.0, 6);
+    payload += F(",\"satellites\":");
+    payload += telemetry.gpsSatellites;
+    payload += F(",\"hdop\":");
+    payload += String(telemetry.gpsHdopTenths / 10.0F, 1);
+    payload += F(",\"fix_epoch\":");
+    payload += telemetry.gpsFixEpoch;
+  }
+  payload += F("}");
+  payload += F("}");
 
   const bool published =
       publishWqttText("controller/c3/telemetry", payload, true);

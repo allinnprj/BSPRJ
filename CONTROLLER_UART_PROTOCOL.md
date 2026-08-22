@@ -17,7 +17,8 @@ Canonical controller names in user-facing discussion and project status are:
 - Maximum accepted C3 input line length remains 47 printable characters plus terminator.
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
 - The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
-- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass `STATUS 0`. Uploaded BS build `132` / C3 build `193` physically pass OTA activation/upload/restart, but build `193` did not guarantee command-frame TX completion and BS received no `CACK`. Local C3 build `194` adds only flushed `CACK/CRES`; later commands remain disabled.
+- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass `STATUS 0`. The C3 project's own Telegram OTA path is primary; the BS-triggered OTA path is retained only as a reserve.
+- Uploaded BS build `133` and C3 build `194` are the current physical baseline. Local BS build `134` and C3 build `195` add the optional saved-GPS suffix described below; no upload has been performed.
 
 ## Heartbeat
 
@@ -55,7 +56,7 @@ Rules:
 C3 data frame:
 
 ```text
-TEL <session> <sequence> <valid> <solar_mV> <solar_mA> <battery_mV> <battery_mA> <load_mV> <load_mA> <soc_pct> <charge> <mode>
+TEL <session> <sequence> <valid> <solar_mV> <solar_mA> <battery_mV> <battery_mA> <load_mV> <load_mA> <soc_pct> <charge> <mode> [<gps_fixed> <lat_e6> <lon_e6> <sat> <hdop10> <fix_epoch>]
 ```
 
 WROOM acknowledgement:
@@ -76,6 +77,13 @@ Field contract:
 | `soc_pct` | Existing voltage-only approximate AGM SOC, `0..100`; not a precision coulomb-counted SOC. |
 | `charge` | `0=OFF`, `1=ON` for the C3 GPIO3 charge output. |
 | `mode` | `0=Classic`, `1=Smart Auto`, `2=reserved legacy Manual`. |
+| `gps_fixed` | Optional suffix flag: `1` only for an already saved manual C3 FIX, otherwise `0`. |
+| `lat_e6`, `lon_e6` | Signed integer degrees multiplied by `1,000,000`; valid FIX ranges are `-90000000..90000000` and `-180000000..180000000`. |
+| `sat` | Saved FIX satellite count, `0..99`. |
+| `hdop10` | Saved FIX HDOP multiplied by `10`, `0..9999`. |
+| `fix_epoch` | Saved FIX UTC Unix epoch, at least `1700000000` when `gps_fixed=1`. |
+
+The six GPS fields form one optional all-or-nothing suffix. BS build `134` accepts both the original 12-value payload used through C3 build `194` and the extended build-195 payload. When `gps_fixed=0`, every remaining GPS field must be zero. The maximum extended frame is 125 characters, below the 159-character BS input limit.
 
 Reliability rules:
 
@@ -95,6 +103,7 @@ Reliability rules:
 - Forced ACK-loss retry/deduplication injection: deferred; source/build validation and nominal ACK transport are accepted for the next stage.
 - WQTT cloud forwarding through WROOM: passed physically on WROOM build 120 and C3 build 185 (`q=2` and `q=9` published successfully).
 - C3 build 191 sleep framing: two live `SLEEP` announcements (`600 s` and `5400 s`) were recorded on 2026-08-22. The `600 s` cycle completed through `SLP -> WAIT -> OK`; the `5400 s` sleep was still active at the captured boundary. The journal snapshot had `UART_SLP=2`, `UART_WAIT=2`, `UART_OK=2`, `C3_GAP=0`, and `UART_OFF=0`. Longer evidence and the scheduled-WROOM-restart-during-`SLP` case continue in parallel and do not block command-contract design.
+- Saved GPS relay: local source/build validation passes on BS build `134` and C3 build `195`; physical `/c3sts`, diagnostic, and WQTT proof remains pending.
 - The evidence status and remaining physical gates are maintained in `CONTROLLER_LINK_ACCEPTANCE.md`.
 - Commands, command ACK/result, authorization, and safe command failure are later implementation/acceptance stages.
 
@@ -117,7 +126,8 @@ Payload contract:
   "battery": {"voltage_v": 12.304, "current_a": 0.100, "soc_pct": 60},
   "load": {"voltage_v": 7.144, "current_a": 0.160},
   "charge": "off",
-  "mode": "classic"
+  "mode": "classic",
+  "gps": {"fixed": true, "latitude": 40.409264, "longitude": 49.867092, "satellites": 12, "hdop": 1.5, "fix_epoch": 1787385600}
 }
 ```
 
@@ -364,3 +374,4 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 - `/bssts` is BS-local. It reports already available BS runtime values and a short C3 link summary without sending UART traffic or taking a new sensor measurement.
 - Both commands accept the normal bot-name suffix and coalesce duplicate requests found in one Telegram poll.
 - `/c3ota` accepts the same suffix and coalescing rule. It requests a fixed 600-second listener window. With link `OK`, queue lifetime is 180 seconds; with declared `SLP`, it is the remaining sleep plus 180 seconds, capped at 7200. `WAIT/OFF` is refused. Telegram first reports `Queued`, then reports `Enabled/EXECUTED` only after the matching C3 terminal result.
+- Starting with local BS build `134`, the C3 card adds a Google Maps link, satellites, HDOP, and saved-fix age only when the accepted telemetry contains a valid saved FIX. An absent FIX is not treated as an error and does not trigger GPS acquisition.

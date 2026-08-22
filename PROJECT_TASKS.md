@@ -88,7 +88,7 @@
 55. [x] Keep the BSPRJ ESP32 as the primary noise, logging, and network controller; WROOM build `120` physically passed repeated C3-to-WQTT gateway delivery with accepted sequences `q=2` and `q=9`.
 56. [ ] Implement automatic `LOW_BAT` behavior from measured power data.
 57. [ ] Validate the main controller operating from the battery/converter path managed and monitored by the ESP32-C3 solar controller.
-58. [ ] Connect and integrate the separately completed and tested GPS module into the main BSPRJ controller.
+58. [ ] Complete system-level GPS integration through C3: the tested GPS remains physically and logically owned by C3, while local builds `134/195` relay its saved manual FIX to BS; physical gateway proof remains.
 59. [ ] Validate time and day-part statistics without NTP.
 60. [x] Optimize the current ESP32 firmware and review RAM, Flash, and OTA-slot capacity before GSM integration; build `128` passes at `65,436` bytes RAM and `1,349,483` bytes linked Flash with `223,381` bytes OTA-slot reserve, so an ESP32-S3 migration is not currently required.
 61. [ ] Design the power path for GSM current peaks.
@@ -129,8 +129,8 @@
 89. [ ] Validate exactly-once command behavior: bounded retry, duplicate suppression across Deep Sleep, explicit result with actual state, expiration of stale queued commands, fail-safe handling after either controller restarts, and diagnostic evidence for every command lifecycle.
 90. [x] Route C3 status through the existing authorized BS Telegram bot with replay protection and truthful lifecycle states; do not create another full bot in BS. `/c3sts` is physically accepted, `/c3ota` remains an optional reserve, and uploaded BS build `133` adds one compact build-change notice for natural proof on the next real C3 update.
 91. [ ] Keep the minimum safe C3 command set staged: STATUS is physically accepted, while BS-triggered OTA is retained but no longer an active acceptance gate because future C3 uploads use the C3 bot. Reassess `WIFI_OFF` only after routine data migration; keep restart separately confirmed.
-92. [ ] Migrate routine C3 Internet-bound telemetry through BS and prove the gateway path first. Preserve C3's current Wi-Fi and own-bot OTA recovery during this stage; decide later whether normal C3 Wi-Fi can be reduced or disabled without losing the selected upload path. USB recovery remains mandatory.
-93. [ ] Extend the UART contract for the already tested C3 GPS result: valid fix, latitude/longitude, satellites, HDOP, and age; let WROOM create and send the Google Maps link without disturbing the C3 weekly GPS schedule.
+92. [ ] Migrate routine C3 Internet-bound telemetry through BS and prove the gateway path first. Power telemetry is physically proven and local builds `134/195` add the saved GPS FIX. Preserve C3's current Wi-Fi and own-bot OTA recovery during this stage; decide later whether normal C3 Wi-Fi can be reduced or disabled without losing the selected upload path. USB recovery remains mandatory.
+93. [ ] Physically accept the local saved-GPS UART extension: C3 build `195` sends only its already saved manual FIX; BS build `134` validates it, creates the Google Maps link, publishes it to WQTT, and logs only bounded FIX metadata. Confirm `/c3sts`, `C3_GPS`, and matching WQTT JSON without changing the manual-only GPS workflow.
 94. [ ] Validate both controllers on the real shared battery/converter path, including charge transitions, UART integrity, resets, ground/noise behavior, and later SIM800 interference/current peaks.
 95. [ ] Update the protocol, data dictionaries, architecture, `progress.md`, `memory.md`, and append-only history with the accepted physical results.
 96. [ ] Commit and push each accepted stage to `devlop`; move to `main` only after command, Wi-Fi-off/OTA, GPS relay, shared-power, and recovery gates pass.

@@ -166,6 +166,8 @@ bool lastDiagnosticC3StateKnown = false;
 bool lastDiagnosticC3InaValid = false;
 bool lastDiagnosticC3ChargeOn = false;
 uint8_t lastDiagnosticC3Mode = 0;
+bool lastDiagnosticC3GpsFixed = false;
+uint32_t lastDiagnosticC3GpsFixEpoch = 0;
 bool diagnosticHealthDue = false;
 
 void recordControllerCommandEvent(const char *eventText, const String &details) {
@@ -884,10 +886,25 @@ void updateDiagnosticEvents(uint32_t nowMs) {
       info.trim();
       appendControllerDiagnosticRecord(F("C3_CHANGE"), nowMs, info);
     }
+    if (telemetry.gpsFixed != lastDiagnosticC3GpsFixed ||
+        telemetry.gpsFixEpoch != lastDiagnosticC3GpsFixEpoch) {
+      String info = telemetry.gpsFixed ? F("fixed=1") : F("fixed=0");
+      if (telemetry.gpsFixed) {
+        info += F(" sat=");
+        info += telemetry.gpsSatellites;
+        info += F(" hdop10=");
+        info += telemetry.gpsHdopTenths;
+        info += F(" epoch=");
+        info += telemetry.gpsFixEpoch;
+      }
+      appendControllerDiagnosticRecord(F("C3_GPS"), nowMs, info);
+    }
     lastDiagnosticC3Session = telemetry.session;
     lastDiagnosticC3InaValid = telemetry.valid;
     lastDiagnosticC3ChargeOn = telemetry.chargeOutputOn;
     lastDiagnosticC3Mode = telemetry.solarControlMode;
+    lastDiagnosticC3GpsFixed = telemetry.gpsFixed;
+    lastDiagnosticC3GpsFixEpoch = telemetry.gpsFixEpoch;
     lastDiagnosticC3StateKnown = true;
   }
 

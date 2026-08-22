@@ -7,6 +7,7 @@ const header = fs.readFileSync(path.join(root, 'include', 'controller_link_servi
 const source = fs.readFileSync(path.join(root, 'src', 'controller_link_service.cpp'), 'utf8');
 const main = fs.readFileSync(path.join(root, 'src', 'main.cpp'), 'utf8');
 const telegram = fs.readFileSync(path.join(root, 'src', 'telegram_alert_service.cpp'), 'utf8');
+const mqtt = fs.readFileSync(path.join(root, 'src', 'mqtt_service.cpp'), 'utf8');
 const protocol = fs.readFileSync(path.join(root, 'CONTROLLER_UART_PROTOCOL.md'), 'utf8');
 const version = fs.readFileSync(path.join(root, 'include', 'project_version.h'), 'utf8');
 
@@ -29,6 +30,9 @@ assert.match(header, /static constexpr uint32_t OTA_ON_MAX_SECONDS = 900/);
 assert.match(header, /static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4/);
 assert.match(header, /static constexpr uint8_t COMMAND_MAX_RESULT_RECOVERY_RETRIES = 2/);
 assert.match(header, /PersistedCommandRecord commandRecord_/);
+assert.match(header, /bool gpsFixed = false/);
+assert.match(header, /int32_t gpsLatitudeMicrodegrees = 0/);
+assert.match(header, /uint32_t gpsFixEpoch = 0/);
 
 const beginBody = functionBody(
   source,
@@ -90,8 +94,13 @@ assert.match(source, /strcmp\(ackKind, "DUP"\)/);
 assert.match(source, /isAllowedCommandResult/);
 assert.match(source, /putBytes\("record"/);
 assert.match(source, /getBytes\("record"/);
+assert.match(source, /if \(\*cursor != '\\0'\)/);
+assert.match(source, /parseNextUnsigned\(cursor, gpsFixed\)/);
+assert.match(source, /gpsLatitudeMicrodegrees < -90000000/);
+assert.match(source, /gpsLongitudeMicrodegrees > 180000000/);
 
 assert.match(main, /setCommandEventHandler\(recordControllerCommandEvent\)/);
+assert.match(main, /appendControllerDiagnosticRecord\(F\("C3_GPS"\)/);
 assert.doesNotMatch(main, /queueStatusCommand\s*\(/,
   'STATUS must only be triggered by the authorized Telegram command path.');
 assert.match(telegram, /isC3StatusCommand\(command\)/);
@@ -119,10 +128,14 @@ assert.match(telegram, /controllerLink\.remoteBuild\(\) == observedControllerBui
 assert.match(telegram, /sendControllerBuildChanged_\(controllerLink\.remoteBuild\(\)\)/);
 assert.match(telegram, /C3 Update/);
 assert.match(telegram, /Online · build/);
+assert.match(telegram, /Google Maps/);
+assert.match(telegram, /gpsFixAgeText\(telemetry\.gpsFixEpoch\)/);
+assert.match(mqtt, /telemetry\.gpsFixed/);
+assert.match(mqtt, /telemetry\.gpsLatitudeMicrodegrees/);
 assert.doesNotMatch(source, /WIFI_OFF|RESTART/,
   'WIFI_OFF and RESTART remain outside this implementation stage.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.79-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 133\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.80-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 134\b/);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',
