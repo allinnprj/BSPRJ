@@ -168,6 +168,10 @@ bool lastDiagnosticC3ChargeOn = false;
 uint8_t lastDiagnosticC3Mode = 0;
 bool diagnosticHealthDue = false;
 
+void recordControllerCommandEvent(const char *eventText, const String &details) {
+  logService.appendDiagnosticEvent(String(eventText), details);
+}
+
 const char *signalStateText(SignalState state) {
   switch (state) {
     case SignalState::Clip:
@@ -1154,6 +1158,7 @@ void setup() {
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
   logService.begin();
+  controllerLinkService.setCommandEventHandler(recordControllerCommandEvent);
   DiagnosticRecord bootRecord;
   bootRecord.event = F("BOOT");
   bootRecord.info = String(F("version=")) + F(PROJECT_VERSION);

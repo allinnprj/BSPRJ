@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## Dormant persistent WROOM command sender - 2026-08-22
+
+1. Added local WROOM `0.1.76-EXP` build `130` as the first implementation-only step of command protocol v1. `ControllerLinkService` now owns one versioned `c3_command` NVS record with a persistent random command epoch, monotonic sequence, absolute expiry time, STATUS request identity, state, and terminal result.
+2. Added a dormant `queueStatusCommand()` API with no caller. It requires working NVS and synchronized wall-clock time, persists before UART transmission, waits while C3 is not `OK`, freezes the first transmitted TTL, sends a maximum 47-character `CMD 1 ... STATUS 0` frame, and uses bounded identical ACK/result recovery attempts.
+3. Added strict matching `CACK 1 ... NEW|DUP` and `CRES 1 ...` parsing, terminal `Executed/Failed/Expired` retention, explicit clearing, duplicate/result recovery support, and bounded `CMD_QUEUE/TX/ACK/DUP/RESULT/RETRY/EXPIRE/REJECT` diagnostic callbacks.
+4. Added `test/controller_command_contract_test.js` to enforce persistence-before-send, STATUS-only execution, no Telegram/main enqueue caller, existing C3 line-capacity compatibility, sleep-safe waiting, retry limits, and the absence of executable `OTA_ON`, `WIFI_OFF`, or `RESTART` behavior in this stage.
+5. C3 build `191`, Telegram commands, receive-only frames, INA3221, Charge/GPIO3, Classic/Smart Auto, GPS, Deep Sleep, MQTT, Sheets, sound processing, and all device firmware remain unchanged. No upload is authorized in this stage.
+6. Validation: `node test/controller_command_contract_test.js` and `git diff --check` pass; `pio run -e esp32dev` succeeds with RAM `65,588 / 327,680` (`20.0%`), linked Flash `1,354,847 / 1,572,864` (`86.1%`), OTA-slot reserve `218,017` bytes, and a `1,355,248`-byte firmware image (SHA-256 `694BB04F9EEB6E8BDAA389CB4D0C21D0E94397D2048C6CF41BB29288AD5C7649`). Relative to build 129, RAM increases by `152` bytes and linked Flash by `4,736` bytes.
+
+## Controller-link evidence ledger and bounded command specification - 2026-08-22
+
+1. Added `CONTROLLER_LINK_ACCEPTANCE.md` as the compact physical-evidence ledger. The receive-only UART formats are accepted for continued development, while build-191 long-run sleep coverage, scheduled WROOM restart during declared `SLP`, and safe true-missing-link proof remain visible non-blocking evidence debt required before final link acceptance.
+2. Recorded the first build-191 live baseline: two correct `SLEEP` announcements (`600 s` and `5400 s`), `UART_SLP=2`, `UART_WAIT=2`, `UART_OK=2`, `UART_OFF=0`, and maximum `C3_GAP=0` in the 2026-08-22 remote diagnostic journal.
+3. Extended `CONTROLLER_UART_PROTOCOL.md` with specification-only command protocol v1: `CMD/CACK/CRES`, persistent WROOM command epoch and sequence, `1..7200 s` TTL, one persisted outstanding command, bounded identical retries, duplicate result replay, strict rejection, the existing 47-character C3 input limit, and truthful lifecycle diagnostics.
+4. Staged the allowlist as `STATUS`, then `OTA_ON`, `WIFI_OFF`, and separately approved `RESTART`. Charge, Solar Control mode, GPIO3, GPS scheduling, and sleep-setting commands are explicitly excluded from v1.
+5. Corrected the canonical heartbeat text to the deployed build-129 semantics: `WAIT` after three PONG misses plus 90 seconds of silence and `OFF` only after 240 seconds without valid C3 activity.
+6. Documentation only: WROOM remains `0.1.75-EXP` build `129`, C3 remains `1.2.0-c3` build `191`, no firmware source/build/upload or device state changed.
+
 ## Pre-bidirectional full backups - 2026-08-22
 
 1. Created a fresh full private snapshot of uploaded WROOM `0.1.75-EXP` build `129`: `D:\DEV\BSPRJ-backups\BSPRJ_FULL_2026-08-22_00-37-36.tar`, `110,389,760` bytes, SHA-256 `03FFAB887331E5D15F7A37C90F6D976F8288807FDC12BC6AE13C2698085516E3`.

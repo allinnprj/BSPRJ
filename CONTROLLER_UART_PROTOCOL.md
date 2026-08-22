@@ -7,9 +7,11 @@ This is the canonical application protocol for the short 3.3 V UART link between
 - Transport: `115200 8N1`.
 - Line ending: `LF`; optional incoming `CR` is ignored.
 - Encoding: printable ASCII only.
-- Maximum accepted WROOM line length: 159 characters plus terminator.
+- Maximum accepted WROOM input line length: 159 characters plus terminator.
+- Maximum accepted C3 input line length remains 47 printable characters plus terminator.
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
-- Current protocol stage transports diagnostics only. It does not yet publish C3 data to WROOM cloud services or execute remote power commands.
+- The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
+- The bounded WROOM-to-C3 command envelope is specified below. Local WROOM build 130 implements only the dormant persistent sender/queue and strict `CACK/CRES` receiver; no caller can enqueue a command yet. Uploaded WROOM build 129 and C3 build 191 execute no remote command.
 
 ## Heartbeat
 
@@ -25,7 +27,7 @@ C3 response:
 PONG <sequence> C3 <build>
 ```
 
-WROOM accepts only the currently pending `PONG` sequence. A strictly parsed `PONG`, `TEL`, or `SLEEP` frame counts as valid C3 activity. Unexpected state `OFF` requires both at least three consecutive 10-second `PONG` response timeouts and 90 seconds without any valid C3 frame. This prevents a busy but actively transmitting C3 from being reported offline. A valid frame restores an already-offline link immediately.
+WROOM accepts only the currently pending `PONG` sequence. A strictly parsed `PONG`, `TEL`, or `SLEEP` frame counts as valid C3 activity. Three consecutive 10-second `PONG` response timeouts plus 90 seconds without any valid C3 frame change an online link to `WAIT`; a real unexpected `OFF` requires 240 seconds without valid C3 activity. This prevents a busy but actively transmitting C3 from being reported offline. A valid frame restores a waiting or offline link immediately.
 
 ## Planned Deep Sleep
 
@@ -86,7 +88,9 @@ Reliability rules:
 - Telemetry `TEL -> ACK`, increasing sequence, and real INA3221 values: passed physically on WROOM build 119 and C3 build 185 (`q=5` through `q=11`, INA `OK`, consistent power/state fields).
 - Forced ACK-loss retry/deduplication injection: deferred; source/build validation and nominal ACK transport are accepted for the next stage.
 - WQTT cloud forwarding through WROOM: passed physically on WROOM build 120 and C3 build 185 (`q=2` and `q=9` published successfully).
-- Remaining cloud services, commands, command ACK, authorization, and safe command failure: later stages.
+- C3 build 191 sleep framing: two live `SLEEP` announcements (`600 s` and `5400 s`) were recorded on 2026-08-22. The `600 s` cycle completed through `SLP -> WAIT -> OK`; the `5400 s` sleep was still active at the captured boundary. The journal snapshot had `UART_SLP=2`, `UART_WAIT=2`, `UART_OK=2`, `C3_GAP=0`, and `UART_OFF=0`. Longer evidence and the scheduled-WROOM-restart-during-`SLP` case continue in parallel and do not block command-contract design.
+- The evidence status and remaining physical gates are maintained in `CONTROLLER_LINK_ACCEPTANCE.md`.
+- Commands, command ACK/result, authorization, and safe command failure are later implementation/acceptance stages.
 
 ## WROOM MQTT Gateway Stage
 
@@ -216,3 +220,133 @@ Wi-Fi: 92% (-54 dBm) NKAANNE_plus
 - The SSID is read from the current `WiFi.SSID()` connection and escaped for Telegram HTML.
 - This does not report or enable C3 Wi-Fi and does not change the UART protocol or C3 build 185.
 - Physical acceptance requires the line to appear in both the startup `Device Online` card and a `/c3sts` `C3 Controller` reply after manual WROOM build 125 upload.
+
+## Bounded Command Protocol v1 - Specification Only
+
+This section freezes the WROOM-to-C3 command contract. The receive-only frames above remain unchanged. Local, not-uploaded WROOM build 130 implements the persistent one-command sender and strict `CACK/CRES` receiver without a Telegram or automatic enqueue surface. Current C3 build 191 does not parse or execute `CMD`, so no command can complete or cause a C3 side effect yet.
+
+### Design Boundaries
+
+- WROOM remains the only network/Telegram gateway for UART commands.
+- C3 remains autonomous for INA3221, Charge/GPIO3, Classic/Smart Auto, GPS, and Deep Sleep.
+- One command may be outstanding at a time. There is no unbounded queue on either controller.
+- WROOM cannot electrically wake a sleeping C3. A queued command waits for valid C3 activity or expires.
+- No v1 command changes Charge, Solar Control mode, thresholds, Solar window, GPS schedule, or sleep duration.
+- Command processing must not block `PING/PONG`, `TEL/ACK`, the sound loop, or the existing C3 autonomous control loop.
+
+### Command Frame
+
+WROOM request:
+
+```text
+CMD 1 <wroom_session> <command_sequence> <ttl_s> <command> <arg>
+```
+
+Example safe first-stage request:
+
+```text
+CMD 1 305419896 1 120 STATUS 0
+```
+
+Field contract:
+
+| Field | Contract |
+| --- | --- |
+| `1` | Protocol version. Only exact decimal `1` is accepted. |
+| `wroom_session` | Non-zero random 32-bit command epoch persisted by WROOM across ordinary restarts while commands are enabled. |
+| `command_sequence` | Non-zero monotonically increasing 32-bit value inside one WROOM command epoch. |
+| `ttl_s` | Remaining lifetime when the frame is first transmitted, `1..7200` seconds. It is not reset by retry. |
+| `command` | Exact uppercase allowlisted token. Maximum 8 characters. |
+| `arg` | One canonical unsigned decimal argument. `0` means no argument; leading zeroes are rejected except for the single token `0`. |
+
+The complete line must contain no more than 47 printable ASCII characters before `LF`, so it fits the existing C3 input buffer. Incoming `CR` may be ignored. Spaces are single separators; leading/trailing spaces, tabs, extra fields, signs, quoting, and embedded whitespace are invalid.
+
+### Allowlist and Staging
+
+| Stage | Command | Argument | Effect | Initial state |
+| --- | --- | --- | --- | --- |
+| A | `STATUS` | exactly `0` | Execute a safe command round-trip and request a fresh ordinary telemetry publication. It changes no C3 state. | First and only command enabled in the initial implementation. |
+| B | `OTA_ON` | `300..900` seconds | Enable the existing C3 Wi-Fi/OTA service for a bounded window, hold C3 awake for that window, then automatically disable Wi-Fi and return authority to the normal sleep plan. | Specified, disabled until STATUS acceptance passes. |
+| C | `WIFI_OFF` | exactly `0` | End an active OTA window, report the result over UART, flush it, disable C3 Wi-Fi, and return to the normal autonomous plan. | Specified, disabled until OTA_ON acceptance passes. |
+| D | `RESTART` | exactly `0` | Report `RESTARTING`, flush UART, wait the existing safe post-frame interval, then perform a software restart. | Specified, disabled until separately approved and tested. |
+
+Any command not enabled for the current implementation stage is rejected. Charge/mode/GPIO3/GPS/sleep-setting commands are deliberately absent from this protocol version.
+
+### Receipt and Result Frames
+
+C3 durable receipt acknowledgement:
+
+```text
+CACK 1 <wroom_session> <command_sequence> NEW
+CACK 1 <wroom_session> <command_sequence> DUP
+```
+
+Terminal result:
+
+```text
+CRES 1 <wroom_session> <command_sequence> <result> <actual>
+```
+
+Allowed result tokens:
+
+| Result | Meaning |
+| --- | --- |
+| `OK` | Command executed and `actual` describes the real resulting state. |
+| `EXPIRED` | TTL ended before a not-yet-started side effect; no side effect was executed. |
+| `REJECTED` | Envelope was valid enough to identify the request, but version, command stage, argument, session, or sequence policy rejected it. |
+| `BUSY` | A different accepted command is still pending; the new request was not stored or executed. |
+| `FAILED` | Execution was attempted but the requested state could not be confirmed. |
+| `STALE` | Sequence/session is older than the persisted accepted command epoch/high-water mark. |
+
+`actual` is one printable token without spaces, maximum 48 characters. Initial canonical values are `STATUS`, `OTA_ON=<seconds>`, `WIFI_OFF`, `RESTARTING`, and `NONE`. A result must report observed state, not merely repeat requested state.
+
+### Persistence and Exactly-Once Rules
+
+- WROOM persists its command epoch, next sequence, and the complete single pending request before the first UART transmission.
+- WROOM keeps the same `(wroom_session, command_sequence)`, TTL value, command, and argument for every retry.
+- C3 validates the entire envelope before persistence or side effects.
+- Before executing a new allowed command, C3 persists the command identity and `PENDING` state, then sends `CACK ... NEW`.
+- A duplicate of the pending identity receives `CACK ... DUP` and does not repeat the side effect.
+- A duplicate of the last terminal identity receives `CACK ... DUP` followed by the identical cached `CRES`; an already executed command never becomes `EXPIRED` merely because its result was lost.
+- C3 persists the active WROOM command epoch, sequence high-water mark, pending/terminal state, and last terminal result. Lower sequences are `STALE` and never execute.
+- A new WROOM command epoch is accepted only with sequence `1`, no command pending, and a different non-zero session. The immediately retired session remains rejected so a delayed old frame cannot reopen it.
+- WROOM removes its persisted pending request only after a matching terminal `CRES` or a locally proven pre-transmission TTL expiry.
+- A WROOM restart restores and retries the identical pending request. A C3 restart restores its pending/terminal record before accepting another command.
+
+### TTL, Sleep, Retry, and Timing
+
+- Queue age advances while C3 is `SLP`, `WAIT`, or `OFF`. WROOM never transmits a command whose TTL is already exhausted.
+- The TTL placed in the first frame is the remaining queue lifetime at that moment. Every retry is byte-for-byte identical.
+- No command frame is sent while WROOM has a valid declared C3 `SLP`; transmission starts only after valid wake activity restores the link.
+- `CACK` timeout is 2 seconds. WROOM may make at most three identical retransmissions after the first send.
+- After `CACK`, WROOM waits at most 15 seconds for `CRES`; recovery requests are identical command retransmissions, no faster than every 5 seconds and no more than three times.
+- If a not-yet-started command expires on C3, C3 stores and returns `CRES ... EXPIRED NONE`.
+- Commands that intentionally hold C3 awake, such as a future `OTA_ON`, must publish a terminal result immediately after the bounded window is established; they do not keep the command transaction pending for the whole window.
+
+### Strict Rejection Rules
+
+The following inputs are discarded without ACK and without side effects: non-printable bytes, overflow/truncation, missing or extra fields, bad separators, numeric overflow, zero session/sequence, TTL outside `1..7200`, non-canonical decimal arguments, and lines that do not begin with an exact known frame prefix.
+
+A structurally complete `CMD` with a recognizable identity but an unsupported version, disabled/unknown command, invalid command-specific argument, stale session, or stale sequence receives one bounded `CRES ... REJECTED|STALE NONE`. Raw rejected input is never copied to Telegram or cloud logs.
+
+### WROOM Lifecycle and Diagnostics
+
+The user-visible command lifecycle is truthful and monotonic:
+
+```text
+Queued -> Waiting for C3 -> Accepted -> Executed
+                              |             |
+                              +-> Failed <--+
+Queued/Waiting -> Expired
+```
+
+WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`, `CMD_DUP`, `CMD_RESULT`, `CMD_RETRY`, `CMD_EXPIRE`, and `CMD_REJECT`, with session, sequence, command, attempt, age, and result. Tokens, chat identifiers, raw Telegram bodies, and arbitrary UART input are not logged.
+
+### Implementation and Acceptance Order
+
+1. Implement the persistent single-command sender/queue on WROOM, but expose no user command yet.
+2. In the separately managed C3 project, implement only strict parsing, persistence, duplicate handling, and `STATUS 0`.
+3. Pass parser/contract tests and both local firmware builds; do not upload automatically.
+4. Manually upload each controller in its own VS Code project and prove STATUS success, duplicate replay, TTL expiry, malformed rejection, and both-controller restart recovery.
+5. Only after STATUS acceptance, expose the authorized Telegram command with `Queued/Waiting/Accepted/Executed/Failed/Expired` states.
+6. Add `OTA_ON`, then `WIFI_OFF`, then `RESTART` as separate approved stages. Do not add Charge/mode control in this protocol version.

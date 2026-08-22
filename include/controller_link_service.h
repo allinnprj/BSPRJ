@@ -1,6 +1,8 @@
 #pragma once
 
 #include <Arduino.h>
+#include <Preferences.h>
+#include <time.h>
 
 struct ControllerTelemetrySnapshot {
   uint32_t session = 0;
@@ -18,11 +20,43 @@ struct ControllerTelemetrySnapshot {
   uint32_t receivedAtMs = 0;
 };
 
+enum class ControllerCommandState : uint8_t {
+  Idle = 0,
+  Queued = 1,
+  Sent = 2,
+  Accepted = 3,
+  Executed = 4,
+  Failed = 5,
+  Expired = 6,
+};
+
+struct ControllerCommandSnapshot {
+  ControllerCommandState state = ControllerCommandState::Idle;
+  uint32_t session = 0;
+  uint32_t sequence = 0;
+  uint32_t ttlSeconds = 0;
+  uint32_t argument = 0;
+  char command[9] = {};
+  char result[12] = {};
+  char actual[49] = {};
+};
+
 class ControllerLinkService {
  public:
+  using CommandEventHandler = void (*)(const char* eventText, const String& details);
+
   void begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin);
+  void setCommandEventHandler(CommandEventHandler handler);
   bool restoreExpectedSleep(uint32_t remainingSeconds, uint32_t build, uint32_t nowMs);
   void update(uint32_t nowMs);
+
+  bool queueStatusCommand(uint32_t ttlSeconds = 120);
+  bool clearTerminalCommand();
+  bool commandPersistenceReady() const;
+  bool hasCommand() const;
+  bool commandTerminal() const;
+  const char* commandStateText() const;
+  ControllerCommandSnapshot commandSnapshot() const;
 
   const char* stateText() const;
   bool isOnline() const;
@@ -48,9 +82,41 @@ class ControllerLinkService {
 
   void sendPing(uint32_t nowMs);
   void sendTelemetryAck(uint32_t session, uint32_t sequence);
+  void updateCommand(uint32_t nowMs);
+  void sendCommandFrame(uint32_t nowMs, bool resultRecovery);
+  bool processCommandAck(uint32_t nowMs, const char* line);
+  bool processCommandResult(uint32_t nowMs, const char* line);
+  bool loadCommandRecord();
+  bool saveCommandRecord();
+  void initializeCommandRecord();
+  void setCommandTerminal(ControllerCommandState state,
+                          const char* result,
+                          const char* actual,
+                          uint32_t nowMs);
+  void emitCommandEvent(const char* eventText, const String& details) const;
   bool recordValidActivity(uint32_t nowMs);
   void processInput(uint32_t nowMs);
   void processLine(uint32_t nowMs);
+
+  enum class CommandKind : uint8_t {
+    None = 0,
+    Status = 1,
+  };
+
+  struct PersistedCommandRecord {
+    uint32_t magic = 0;
+    uint16_t schema = 0;
+    uint8_t state = 0;
+    uint8_t command = 0;
+    uint32_t session = 0;
+    uint32_t sequence = 0;
+    uint32_t nextSequence = 1;
+    uint64_t expiresAtEpoch = 0;
+    uint32_t ttlSeconds = 0;
+    uint32_t argument = 0;
+    char result[12] = {};
+    char actual[49] = {};
+  };
 
   static constexpr uint32_t BAUD_RATE = 115200;
   static constexpr uint32_t PING_INTERVAL_MS = 5000;
@@ -60,6 +126,19 @@ class ControllerLinkService {
   static constexpr uint32_t OFFLINE_SILENCE_TIMEOUT_MS = 240000;
   static constexpr uint32_t MAX_EXPECTED_SLEEP_SECONDS = 86400;
   static constexpr size_t RX_LINE_CAPACITY = 160;
+  static constexpr size_t COMMAND_FRAME_CAPACITY = 48;
+  static constexpr uint32_t COMMAND_RECORD_MAGIC = 0x4333434DU;
+  static constexpr uint16_t COMMAND_RECORD_SCHEMA = 1;
+  static constexpr uint32_t COMMAND_PROTOCOL_VERSION = 1;
+  static constexpr uint32_t COMMAND_MIN_TTL_SECONDS = 1;
+  static constexpr uint32_t COMMAND_MAX_TTL_SECONDS = 7200;
+  static constexpr uint32_t STATUS_MAX_TTL_SECONDS = 120;
+  static constexpr uint32_t COMMAND_ACK_TIMEOUT_MS = 2000;
+  static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4;
+  static constexpr uint32_t COMMAND_RESULT_RETRY_MS = 5000;
+  static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 15000;
+  static constexpr uint8_t COMMAND_MAX_RESULT_RECOVERY_RETRIES = 2;
+  static constexpr time_t MIN_VALID_COMMAND_EPOCH = 1700000000;
 
   HardwareSerial* serial_ = nullptr;
   State state_ = State::Waiting;
@@ -85,4 +164,14 @@ class ControllerLinkService {
   uint32_t telemetryDuplicateCount_ = 0;
   uint32_t telemetrySequenceGapCount_ = 0;
   uint32_t offlineTransitionCount_ = 0;
+
+  Preferences commandPreferences_;
+  PersistedCommandRecord commandRecord_ = {};
+  bool commandPreferencesReady_ = false;
+  uint8_t commandSendAttempts_ = 0;
+  uint8_t commandResultRecoveryRetries_ = 0;
+  uint32_t lastCommandTxAtMs_ = 0;
+  uint32_t commandAcceptedAtMs_ = 0;
+  uint32_t lastCommandResultRetryAtMs_ = 0;
+  CommandEventHandler commandEventHandler_ = nullptr;
 };

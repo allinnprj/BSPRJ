@@ -1,6 +1,9 @@
 #include "controller_link_service.h"
 
+#include <esp_system.h>
+#include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 namespace {
 
@@ -59,6 +62,53 @@ bool parseNextSigned(const char*& cursor, int32_t& value) {
   return parseSigned(cursor, value);
 }
 
+bool parseCanonicalUnsigned(const char*& cursor, uint32_t& value) {
+  const char* const start = cursor;
+  if (!parseUnsigned(cursor, value)) {
+    return false;
+  }
+  return cursor - start == 1 || *start != '0';
+}
+
+bool parseNextCanonicalUnsigned(const char*& cursor, uint32_t& value) {
+  if (*cursor != ' ') {
+    return false;
+  }
+  ++cursor;
+  return parseCanonicalUnsigned(cursor, value);
+}
+
+bool parseNextToken(const char*& cursor, char* output, size_t capacity) {
+  if (*cursor != ' ' || capacity < 2) {
+    return false;
+  }
+  ++cursor;
+  size_t length = 0;
+  while (*cursor != '\0' && *cursor != ' ') {
+    if (length + 1 >= capacity) {
+      return false;
+    }
+    output[length++] = *cursor++;
+  }
+  if (length == 0) {
+    return false;
+  }
+  output[length] = '\0';
+  return true;
+}
+
+bool isTerminalCommandState(ControllerCommandState state) {
+  return state == ControllerCommandState::Executed ||
+         state == ControllerCommandState::Failed ||
+         state == ControllerCommandState::Expired;
+}
+
+bool isAllowedCommandResult(const char* result) {
+  return strcmp(result, "OK") == 0 || strcmp(result, "EXPIRED") == 0 ||
+         strcmp(result, "REJECTED") == 0 || strcmp(result, "BUSY") == 0 ||
+         strcmp(result, "FAILED") == 0 || strcmp(result, "STALE") == 0;
+}
+
 }  // namespace
 
 void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin) {
@@ -71,6 +121,21 @@ void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t
   Serial.print(txPin);
   Serial.print(F(" baud="));
   Serial.println(BAUD_RATE);
+
+  commandPreferencesReady_ = commandPreferences_.begin("c3_command", false);
+  if (commandPreferencesReady_ && loadCommandRecord()) {
+    Serial.print(F("[UART] CMD persistence ready -> session="));
+    Serial.print(commandRecord_.session);
+    Serial.print(F(" state="));
+    Serial.println(commandStateText());
+  } else {
+    commandPreferencesReady_ = false;
+    Serial.println(F("[UART] CMD OFF -> persistence unavailable"));
+  }
+}
+
+void ControllerLinkService::setCommandEventHandler(CommandEventHandler handler) {
+  commandEventHandler_ = handler;
 }
 
 bool ControllerLinkService::restoreExpectedSleep(uint32_t remainingSeconds,
@@ -102,6 +167,7 @@ void ControllerLinkService::update(uint32_t nowMs) {
   }
 
   processInput(nowMs);
+  updateCommand(nowMs);
 
   if (state_ == State::Sleeping) {
     if (static_cast<int32_t>(nowMs - sleepUntilMs_) < 0) {
@@ -205,6 +271,439 @@ uint32_t ControllerLinkService::offlineTransitionCount() const {
   return offlineTransitionCount_;
 }
 
+bool ControllerLinkService::queueStatusCommand(uint32_t ttlSeconds) {
+  if (!commandPreferencesReady_ || hasCommand() ||
+      ttlSeconds < COMMAND_MIN_TTL_SECONDS || ttlSeconds > STATUS_MAX_TTL_SECONDS) {
+    return false;
+  }
+
+  const time_t nowEpoch = time(nullptr);
+  if (nowEpoch < MIN_VALID_COMMAND_EPOCH) {
+    emitCommandEvent("CMD_REJECT", F("command=STATUS reason=TIME_UNSYNCED"));
+    return false;
+  }
+
+  const PersistedCommandRecord previous = commandRecord_;
+  if (commandRecord_.nextSequence == UINT32_MAX) {
+    commandRecord_.session = esp_random();
+    if (commandRecord_.session == 0) {
+      commandRecord_.session = 1;
+    }
+    commandRecord_.nextSequence = 1;
+  }
+
+  commandRecord_.magic = COMMAND_RECORD_MAGIC;
+  commandRecord_.schema = COMMAND_RECORD_SCHEMA;
+  commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Queued);
+  commandRecord_.command = static_cast<uint8_t>(CommandKind::Status);
+  commandRecord_.sequence = commandRecord_.nextSequence++;
+  commandRecord_.expiresAtEpoch = static_cast<uint64_t>(nowEpoch) + ttlSeconds;
+  commandRecord_.ttlSeconds = 0;
+  commandRecord_.argument = 0;
+  commandRecord_.result[0] = '\0';
+  commandRecord_.actual[0] = '\0';
+
+  if (!saveCommandRecord()) {
+    commandRecord_ = previous;
+    commandPreferencesReady_ = false;
+    emitCommandEvent("CMD_REJECT", F("command=STATUS reason=PERSISTENCE"));
+    return false;
+  }
+
+  commandSendAttempts_ = 0;
+  commandResultRecoveryRetries_ = 0;
+  lastCommandTxAtMs_ = 0;
+  commandAcceptedAtMs_ = 0;
+  lastCommandResultRetryAtMs_ = 0;
+
+  String details = F("session=");
+  details += commandRecord_.session;
+  details += F(" sequence=");
+  details += commandRecord_.sequence;
+  details += F(" command=STATUS ttl_s=");
+  details += ttlSeconds;
+  emitCommandEvent("CMD_QUEUE", details);
+  return true;
+}
+
+bool ControllerLinkService::clearTerminalCommand() {
+  if (!commandPreferencesReady_ || !commandTerminal()) {
+    return false;
+  }
+
+  const PersistedCommandRecord previous = commandRecord_;
+  commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Idle);
+  commandRecord_.command = static_cast<uint8_t>(CommandKind::None);
+  commandRecord_.sequence = 0;
+  commandRecord_.expiresAtEpoch = 0;
+  commandRecord_.ttlSeconds = 0;
+  commandRecord_.argument = 0;
+  commandRecord_.result[0] = '\0';
+  commandRecord_.actual[0] = '\0';
+  if (!saveCommandRecord()) {
+    commandRecord_ = previous;
+    commandPreferencesReady_ = false;
+    return false;
+  }
+  return true;
+}
+
+bool ControllerLinkService::commandPersistenceReady() const {
+  return commandPreferencesReady_;
+}
+
+bool ControllerLinkService::hasCommand() const {
+  return static_cast<ControllerCommandState>(commandRecord_.state) !=
+         ControllerCommandState::Idle;
+}
+
+bool ControllerLinkService::commandTerminal() const {
+  return isTerminalCommandState(
+      static_cast<ControllerCommandState>(commandRecord_.state));
+}
+
+const char* ControllerLinkService::commandStateText() const {
+  switch (static_cast<ControllerCommandState>(commandRecord_.state)) {
+    case ControllerCommandState::Queued:
+      return state_ == State::Online ? "QUEUED" : "WAITING";
+    case ControllerCommandState::Sent:
+      return "SENT";
+    case ControllerCommandState::Accepted:
+      return "ACCEPTED";
+    case ControllerCommandState::Executed:
+      return "EXECUTED";
+    case ControllerCommandState::Failed:
+      return "FAILED";
+    case ControllerCommandState::Expired:
+      return "EXPIRED";
+    case ControllerCommandState::Idle:
+    default:
+      return "IDLE";
+  }
+}
+
+ControllerCommandSnapshot ControllerLinkService::commandSnapshot() const {
+  ControllerCommandSnapshot snapshot;
+  snapshot.state = static_cast<ControllerCommandState>(commandRecord_.state);
+  snapshot.session = commandRecord_.session;
+  snapshot.sequence = commandRecord_.sequence;
+  snapshot.ttlSeconds = commandRecord_.ttlSeconds;
+  snapshot.argument = commandRecord_.argument;
+  if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::Status) {
+    strncpy(snapshot.command, "STATUS", sizeof(snapshot.command) - 1);
+  }
+  strncpy(snapshot.result, commandRecord_.result, sizeof(snapshot.result) - 1);
+  strncpy(snapshot.actual, commandRecord_.actual, sizeof(snapshot.actual) - 1);
+  return snapshot;
+}
+
+bool ControllerLinkService::loadCommandRecord() {
+  const size_t storedSize = commandPreferences_.getBytesLength("record");
+  if (storedSize != sizeof(commandRecord_) ||
+      commandPreferences_.getBytes("record", &commandRecord_, sizeof(commandRecord_)) !=
+          sizeof(commandRecord_)) {
+    initializeCommandRecord();
+    return saveCommandRecord();
+  }
+
+  const ControllerCommandState state =
+      static_cast<ControllerCommandState>(commandRecord_.state);
+  const CommandKind command = static_cast<CommandKind>(commandRecord_.command);
+  const bool stateValid = commandRecord_.state <=
+                          static_cast<uint8_t>(ControllerCommandState::Expired);
+  const bool idleValid = state == ControllerCommandState::Idle &&
+                         command == CommandKind::None && commandRecord_.sequence == 0;
+  const bool activeValid = state != ControllerCommandState::Idle &&
+                           command == CommandKind::Status && commandRecord_.sequence != 0 &&
+                           commandRecord_.expiresAtEpoch >=
+                               static_cast<uint64_t>(MIN_VALID_COMMAND_EPOCH) &&
+                           commandRecord_.argument == 0;
+  if (commandRecord_.magic != COMMAND_RECORD_MAGIC ||
+      commandRecord_.schema != COMMAND_RECORD_SCHEMA ||
+      commandRecord_.session == 0 || commandRecord_.nextSequence == 0 ||
+      !stateValid || (!idleValid && !activeValid)) {
+    initializeCommandRecord();
+    return saveCommandRecord();
+  }
+
+  commandSendAttempts_ = 0;
+  commandResultRecoveryRetries_ = 0;
+  lastCommandTxAtMs_ = 0;
+  commandAcceptedAtMs_ = state == ControllerCommandState::Accepted ? millis() : 0;
+  lastCommandResultRetryAtMs_ = commandAcceptedAtMs_;
+  return true;
+}
+
+bool ControllerLinkService::saveCommandRecord() {
+  return commandPreferencesReady_ &&
+         commandPreferences_.putBytes("record", &commandRecord_, sizeof(commandRecord_)) ==
+             sizeof(commandRecord_);
+}
+
+void ControllerLinkService::initializeCommandRecord() {
+  memset(&commandRecord_, 0, sizeof(commandRecord_));
+  commandRecord_.magic = COMMAND_RECORD_MAGIC;
+  commandRecord_.schema = COMMAND_RECORD_SCHEMA;
+  commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Idle);
+  commandRecord_.command = static_cast<uint8_t>(CommandKind::None);
+  commandRecord_.session = esp_random();
+  if (commandRecord_.session == 0) {
+    commandRecord_.session = 1;
+  }
+  commandRecord_.nextSequence = 1;
+}
+
+void ControllerLinkService::emitCommandEvent(const char* eventText,
+                                             const String& details) const {
+  if (commandEventHandler_ != nullptr) {
+    commandEventHandler_(eventText, details);
+  }
+  Serial.print(F("[UART] "));
+  Serial.print(eventText);
+  Serial.print(F(" -> "));
+  Serial.println(details);
+}
+
+void ControllerLinkService::updateCommand(uint32_t nowMs) {
+  if (!commandPreferencesReady_ || !hasCommand() || commandTerminal()) {
+    return;
+  }
+
+  const time_t nowEpoch = time(nullptr);
+  if (nowEpoch < MIN_VALID_COMMAND_EPOCH) {
+    return;
+  }
+
+  const ControllerCommandState commandState =
+      static_cast<ControllerCommandState>(commandRecord_.state);
+  if ((commandState == ControllerCommandState::Queued ||
+       commandState == ControllerCommandState::Sent) &&
+      static_cast<uint64_t>(nowEpoch) >= commandRecord_.expiresAtEpoch) {
+    setCommandTerminal(ControllerCommandState::Expired, "EXPIRED", "NONE", nowMs);
+    return;
+  }
+
+  if (commandState == ControllerCommandState::Queued) {
+    if (state_ == State::Online) {
+      sendCommandFrame(nowMs, false);
+    }
+    return;
+  }
+
+  if (commandState == ControllerCommandState::Sent) {
+    if (state_ != State::Online) {
+      return;
+    }
+    if (lastCommandTxAtMs_ == 0) {
+      sendCommandFrame(nowMs, false);
+      return;
+    }
+    if (nowMs - lastCommandTxAtMs_ < COMMAND_ACK_TIMEOUT_MS) {
+      return;
+    }
+    if (commandSendAttempts_ < COMMAND_MAX_SEND_ATTEMPTS) {
+      sendCommandFrame(nowMs, false);
+    } else {
+      setCommandTerminal(ControllerCommandState::Failed, "FAILED", "ACK_TIMEOUT", nowMs);
+    }
+    return;
+  }
+
+  if (commandState != ControllerCommandState::Accepted) {
+    return;
+  }
+  if (commandAcceptedAtMs_ == 0) {
+    commandAcceptedAtMs_ = nowMs;
+    lastCommandResultRetryAtMs_ = nowMs;
+  }
+  if (nowMs - commandAcceptedAtMs_ >= COMMAND_RESULT_TIMEOUT_MS) {
+    setCommandTerminal(ControllerCommandState::Failed, "FAILED", "RESULT_TIMEOUT", nowMs);
+    return;
+  }
+  if (state_ == State::Online &&
+      commandResultRecoveryRetries_ < COMMAND_MAX_RESULT_RECOVERY_RETRIES &&
+      nowMs - lastCommandResultRetryAtMs_ >= COMMAND_RESULT_RETRY_MS) {
+    sendCommandFrame(nowMs, true);
+  }
+}
+
+void ControllerLinkService::sendCommandFrame(uint32_t nowMs, bool resultRecovery) {
+  if (serial_ == nullptr || !commandPreferencesReady_) {
+    return;
+  }
+
+  if (!resultRecovery &&
+      static_cast<ControllerCommandState>(commandRecord_.state) ==
+          ControllerCommandState::Queued) {
+    const time_t nowEpoch = time(nullptr);
+    if (nowEpoch < MIN_VALID_COMMAND_EPOCH ||
+        static_cast<uint64_t>(nowEpoch) >= commandRecord_.expiresAtEpoch) {
+      setCommandTerminal(ControllerCommandState::Expired, "EXPIRED", "NONE", nowMs);
+      return;
+    }
+    const uint64_t remainingSeconds =
+        commandRecord_.expiresAtEpoch - static_cast<uint64_t>(nowEpoch);
+    commandRecord_.ttlSeconds = static_cast<uint32_t>(remainingSeconds);
+    commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Sent);
+    if (!saveCommandRecord()) {
+      commandPreferencesReady_ = false;
+      commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Failed);
+      emitCommandEvent("CMD_REJECT", F("command=STATUS reason=PERSISTENCE"));
+      return;
+    }
+  }
+
+  if (commandRecord_.ttlSeconds < COMMAND_MIN_TTL_SECONDS ||
+      commandRecord_.ttlSeconds > COMMAND_MAX_TTL_SECONDS ||
+      static_cast<CommandKind>(commandRecord_.command) != CommandKind::Status) {
+    setCommandTerminal(ControllerCommandState::Failed, "FAILED", "FRAME_INVALID", nowMs);
+    return;
+  }
+
+  char frame[COMMAND_FRAME_CAPACITY] = {};
+  const int written = snprintf(frame, sizeof(frame), "CMD %lu %lu %lu %lu STATUS 0",
+                               static_cast<unsigned long>(COMMAND_PROTOCOL_VERSION),
+                               static_cast<unsigned long>(commandRecord_.session),
+                               static_cast<unsigned long>(commandRecord_.sequence),
+                               static_cast<unsigned long>(commandRecord_.ttlSeconds));
+  if (written <= 0 || static_cast<size_t>(written) >= sizeof(frame)) {
+    setCommandTerminal(ControllerCommandState::Failed, "FAILED", "FRAME_OVERFLOW", nowMs);
+    return;
+  }
+
+  serial_->println(frame);
+  lastCommandTxAtMs_ = nowMs;
+  String details = F("session=");
+  details += commandRecord_.session;
+  details += F(" sequence=");
+  details += commandRecord_.sequence;
+  details += F(" command=STATUS attempt=");
+  if (resultRecovery) {
+    ++commandResultRecoveryRetries_;
+    lastCommandResultRetryAtMs_ = nowMs;
+    details += commandResultRecoveryRetries_;
+    details += F(" phase=RESULT");
+    emitCommandEvent("CMD_RETRY", details);
+  } else {
+    ++commandSendAttempts_;
+    details += commandSendAttempts_;
+    details += F(" phase=ACK");
+    emitCommandEvent(commandSendAttempts_ == 1 ? "CMD_TX" : "CMD_RETRY", details);
+  }
+}
+
+bool ControllerLinkService::processCommandAck(uint32_t nowMs, const char* line) {
+  const char* cursor = line + 5;
+  uint32_t version = 0;
+  uint32_t session = 0;
+  uint32_t sequence = 0;
+  char ackKind[4] = {};
+  if (!parseCanonicalUnsigned(cursor, version) ||
+      !parseNextCanonicalUnsigned(cursor, session) ||
+      !parseNextCanonicalUnsigned(cursor, sequence) ||
+      !parseNextToken(cursor, ackKind, sizeof(ackKind)) || *cursor != '\0' ||
+      version != COMMAND_PROTOCOL_VERSION || session == 0 || sequence == 0 ||
+      (strcmp(ackKind, "NEW") != 0 && strcmp(ackKind, "DUP") != 0)) {
+    return false;
+  }
+
+  const ControllerCommandState state =
+      static_cast<ControllerCommandState>(commandRecord_.state);
+  if (!hasCommand() || commandTerminal() ||
+      (state != ControllerCommandState::Sent &&
+       state != ControllerCommandState::Accepted) ||
+      session != commandRecord_.session || sequence != commandRecord_.sequence) {
+    return false;
+  }
+
+  recordValidActivity(nowMs);
+  if (state == ControllerCommandState::Sent) {
+    commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Accepted);
+    if (!saveCommandRecord()) {
+      commandPreferencesReady_ = false;
+      commandRecord_.state = static_cast<uint8_t>(ControllerCommandState::Failed);
+      emitCommandEvent("CMD_REJECT", F("command=STATUS reason=PERSISTENCE"));
+      return false;
+    }
+    commandAcceptedAtMs_ = nowMs;
+    lastCommandResultRetryAtMs_ = nowMs;
+    commandResultRecoveryRetries_ = 0;
+  }
+
+  String details = F("session=");
+  details += session;
+  details += F(" sequence=");
+  details += sequence;
+  details += F(" kind=");
+  details += ackKind;
+  emitCommandEvent(strcmp(ackKind, "DUP") == 0 ? "CMD_DUP" : "CMD_ACK", details);
+  return true;
+}
+
+bool ControllerLinkService::processCommandResult(uint32_t nowMs, const char* line) {
+  const char* cursor = line + 5;
+  uint32_t version = 0;
+  uint32_t session = 0;
+  uint32_t sequence = 0;
+  char result[12] = {};
+  char actual[49] = {};
+  if (!parseCanonicalUnsigned(cursor, version) ||
+      !parseNextCanonicalUnsigned(cursor, session) ||
+      !parseNextCanonicalUnsigned(cursor, sequence) ||
+      !parseNextToken(cursor, result, sizeof(result)) ||
+      !parseNextToken(cursor, actual, sizeof(actual)) || *cursor != '\0' ||
+      version != COMMAND_PROTOCOL_VERSION || session == 0 || sequence == 0 ||
+      !isAllowedCommandResult(result)) {
+    return false;
+  }
+
+  if (!hasCommand() || session != commandRecord_.session ||
+      sequence != commandRecord_.sequence) {
+    return false;
+  }
+
+  recordValidActivity(nowMs);
+  if (commandTerminal()) {
+    return true;
+  }
+  if (strcmp(result, "OK") == 0) {
+    setCommandTerminal(ControllerCommandState::Executed, result, actual, nowMs);
+  } else if (strcmp(result, "EXPIRED") == 0) {
+    setCommandTerminal(ControllerCommandState::Expired, result, actual, nowMs);
+  } else {
+    setCommandTerminal(ControllerCommandState::Failed, result, actual, nowMs);
+  }
+  return true;
+}
+
+void ControllerLinkService::setCommandTerminal(ControllerCommandState state,
+                                               const char* result,
+                                               const char* actual,
+                                               uint32_t nowMs) {
+  commandRecord_.state = static_cast<uint8_t>(state);
+  strncpy(commandRecord_.result, result, sizeof(commandRecord_.result) - 1);
+  commandRecord_.result[sizeof(commandRecord_.result) - 1] = '\0';
+  strncpy(commandRecord_.actual, actual, sizeof(commandRecord_.actual) - 1);
+  commandRecord_.actual[sizeof(commandRecord_.actual) - 1] = '\0';
+  if (!saveCommandRecord()) {
+    commandPreferencesReady_ = false;
+  }
+
+  String details = F("session=");
+  details += commandRecord_.session;
+  details += F(" sequence=");
+  details += commandRecord_.sequence;
+  details += F(" result=");
+  details += commandRecord_.result;
+  details += F(" actual=");
+  details += commandRecord_.actual;
+  details += F(" elapsed_ms=");
+  details += commandAcceptedAtMs_ == 0 ? 0 : nowMs - commandAcceptedAtMs_;
+  emitCommandEvent(state == ControllerCommandState::Expired ? "CMD_EXPIRE"
+                                                            : "CMD_RESULT",
+                   details);
+}
+
 void ControllerLinkService::sendPing(uint32_t nowMs) {
   pendingSequence_ = nextSequence_++;
   pendingSinceMs_ = nowMs;
@@ -263,6 +762,14 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
   const char* cursor = rxLine_;
   uint32_t sequence = 0;
   uint32_t build = 0;
+  if (strncmp(cursor, "CACK ", 5) == 0) {
+    processCommandAck(nowMs, cursor);
+    return;
+  }
+  if (strncmp(cursor, "CRES ", 5) == 0) {
+    processCommandResult(nowMs, cursor);
+    return;
+  }
   if (strncmp(cursor, "TEL ", 4) == 0) {
     cursor += 4;
     ControllerTelemetrySnapshot incoming = {};
