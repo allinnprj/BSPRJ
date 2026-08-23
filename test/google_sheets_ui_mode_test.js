@@ -244,7 +244,7 @@ assert.strictEqual(state.rangeReadCount, 0, 'User onOpen must not scan sheet ran
 assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh BS menu/status', 'Refresh latest data', '● Interface mode: USER', 'Switch to Technical mode']
+  ['Refresh latest data', '● Interface mode: USER', 'Switch to Technical mode']
 );
 
 state.userProperties.BS_USER_INTERFACE_MODE = 'TECHNICAL';
@@ -258,11 +258,14 @@ assert.strictEqual(state.rangeReadCount, 0, 'Technical onOpen must use cached di
 assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh BS menu/status', 'Refresh latest data', '● Interface mode: TECH', 'Switch to User mode']
+  ['Refresh latest data', '● Interface mode: TECH', 'Switch to User mode']
 );
 const maintenanceMenu = state.renderedMenu.entries
   .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Maintenance').menu;
-assert.ok(maintenanceMenu.entries.some((entry) => entry.label === 'Repair all table layout/order'));
+assert.deepStrictEqual(
+  maintenanceMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
+  ['Rebuild charts only', 'Repair table layout/order']
+);
 
 let diagnosticsMenu = state.renderedMenu.entries
   .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Diagnostics').menu;
@@ -274,7 +277,8 @@ assert.deepStrictEqual(
     '● Archive sheets: HIDDEN',
     'Show archive sheets',
     '● Analytics sheets: SHOWN',
-    'Hide analytics sheets'
+    'Hide analytics sheets',
+    'Refresh status indicators'
   ]
 );
 
@@ -328,7 +332,8 @@ assert.deepStrictEqual(
     'Show archive sheets',
     '● Analytics sheets: MIXED',
     'Hide analytics sheets',
-    'Show analytics sheets'
+    'Show analytics sheets',
+    'Refresh status indicators'
   ]
 );
 
@@ -353,7 +358,7 @@ sandbox.__onOpen();
 assert.strictEqual(state.renderedMenu.name, '⚙️ BS');
 assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
-  ['Refresh BS menu/status', 'Refresh latest data']
+  ['Refresh latest data']
 );
 state.throwScriptProperties = false;
 assert.deepStrictEqual(Array.from(new Set(state.renderedMenuNames)), ['⚙️ BS']);

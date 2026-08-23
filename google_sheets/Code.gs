@@ -1156,7 +1156,6 @@ function addBsMenuToUi_() {
   const interfaceMode = getUserInterfaceMode_();
   const isTechnicalMode = interfaceMode === USER_INTERFACE_MODE_TECHNICAL;
   const menu = ui.createMenu('⚙️ BS')
-    .addItem('Refresh BS menu/status', 'refreshBsMenuStatus_')
     .addItem('Refresh latest data', 'rebuildAnalytics_');
 
   if (isTechnicalMode) {
@@ -1207,7 +1206,8 @@ function addBsMenuToUi_() {
       'hideAnalyticsSheetsFromMenu_',
       'Show analytics sheets',
       'showAnalyticsSheetsFromMenu_'
-    );
+    ).addSeparator();
+    diagnosticsMenu.addItem('Refresh status indicators', 'refreshBsMenuStatus_');
 
     addAutomationToggle_(
       automationMenu,
@@ -1233,9 +1233,8 @@ function addBsMenuToUi_() {
 
     menu
       .addSubMenu(ui.createMenu('Maintenance')
-        .addItem('Rebuild analytics', 'rebuildAnalytics_')
         .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
-        .addItem('Repair all table layout/order', 'refreshAllSheetFormatting_'))
+        .addItem('Repair table layout/order', 'refreshAllSheetFormatting_'))
       .addSubMenu(diagnosticsMenu)
       .addSubMenu(automationMenu);
   }
@@ -1249,7 +1248,6 @@ function addBsMenuToUi_() {
 function addFallbackBsMenuToUi_() {
   SpreadsheetApp.getUi()
     .createMenu('⚙️ BS')
-    .addItem('Refresh BS menu/status', 'refreshBsMenuStatus_')
     .addItem('Refresh latest data', 'rebuildAnalytics_')
     .addToUi();
 }
@@ -1267,7 +1265,7 @@ function refreshBsMenuStatus_() {
   const diagnosticsState = refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast(
-    `BS menu refreshed: technical columns ${diagnosticsState.technicalColumns}, ` +
+    `Status indicators refreshed: technical columns ${diagnosticsState.technicalColumns}, ` +
       `archive sheets ${diagnosticsState.archiveSheets}, analytics sheets ${diagnosticsState.analyticsSheets}.`,
     'BS Noise',
     8
@@ -2243,7 +2241,7 @@ function buildDayPartTelegramBlock_(targetDate, partText) {
 function buildLatestTelegramStatus_() {
   const record = getLatestValidCleanRecord_();
   if (!record) {
-    return buildTelegramNoDataMessage_('BS Noise Latest', 'No clean summary data yet. Run Rebuild analytics first.');
+    return buildTelegramNoDataMessage_('BS Noise Latest', 'No clean summary data yet. Run Refresh latest data first.');
   }
 
   const qualityLabel = record.isValid ? 'valid' : String(record.qualityText || 'raw');
@@ -2275,7 +2273,7 @@ function buildLatestTelegramStatus_() {
 function buildDailyTelegramSummary_(dateText) {
   const targetDate = dateText || getLatestSummaryDateText_();
   if (!targetDate) {
-    return buildTelegramNoDataMessage_('BS Noise Summary', 'No summary data yet. Run Rebuild analytics first.');
+    return buildTelegramNoDataMessage_('BS Noise Summary', 'No summary data yet. Run Refresh latest data first.');
   }
 
   const uptimeText = getLatestCleanUptimeForDate_(targetDate);

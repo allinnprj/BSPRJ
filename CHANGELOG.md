@@ -7,6 +7,7 @@
 3. Hardened date rollover: a new active `log` receives the complete header/body layout and current column mode immediately, merged or renamed archives are fully formatted and newest-first, and the completed archive is hidden after the replacement `log` exists.
 4. Analytics rebuilds now restore the current User/Technical column visibility after their formatting pass. The former `Refresh all table layout/order` command remains only as a recovery tool and is renamed `Repair all table layout/order`.
 5. Firmware, controller UART behavior, the 36-column ingestion schema, stored rows, analytics calculations, triggers, and charts are unchanged. No Apps Script deployment was performed.
+6. Removed the duplicate Technical-mode `Rebuild analytics` item because the top-level `Refresh latest data` calls the same function. Moved the rare live-state rescan from the top level to `Diagnostics -> Refresh status indicators`, retained the layout recovery under `Maintenance`, and shortened its label to `Repair table layout/order`.
 
 ## Confirmed C3 sleep announcement handshake - 2026-08-23
 
