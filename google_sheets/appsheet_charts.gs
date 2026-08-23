@@ -1,3 +1,17 @@
+const CHARTS_LAYOUT = {
+  summaryStartRow: 7,
+  summaryLastColumn: 3,
+  verdictStartRow: 7,
+  verdictStartColumn: 5,
+  verdictColumnCount: 4,
+  chartStartColumn: 5,
+  chartRowGap: 1,
+  visibleLastColumn: 14,
+  helperStartRow: 1,
+  helperStartColumn: 17,
+  helperColumnCount: 4
+};
+
 function buildChartSourceBlocks_(records) {
   const byDatePart = {};
   const levelMix = {
@@ -127,14 +141,14 @@ function buildDailyVerdictChartRows_(verdictRows) {
 function rebuildAnalyticsCharts_(options) {
   const opts = typeof options === 'object' && options !== null
     ? options
-    : { applyFormatting: options === true };
+    : { applyFormatting: options !== false };
   const shouldFormat = opts.applyFormatting === true;
   const silent = opts.silent === true;
   const cleanSheet = getOrCreateSheet_(CLEAN_SUMMARY_SHEET_NAME);
   const lastRow = cleanSheet.getLastRow();
   if (lastRow < 2) {
     if (!silent) {
-      SpreadsheetApp.getActiveSpreadsheet().toast('No clean summary data yet. Run rebuildAnalytics_ first.', 'BS Noise', 6);
+      SpreadsheetApp.getActiveSpreadsheet().toast('No clean summary data yet. Run Refresh latest data first.', 'BS Noise', 6);
     }
     return;
   }
@@ -153,25 +167,44 @@ function rebuildAnalyticsCharts_(options) {
   const verdictChartRows = buildDailyVerdictChartRows_(chartBlocks.verdictRows);
   const verdictDisplayRows = verdictChartRows.slice().reverse();
   const sheet = getOrCreateSheet_(CHARTS_SHEET_NAME);
-  ensureMinColumnCount_(sheet, 10);
+  ensureMinColumnCount_(
+    sheet,
+    CHARTS_LAYOUT.helperStartColumn + CHARTS_LAYOUT.helperColumnCount - 1
+  );
+  const previousLastRow = Math.max(sheet.getLastRow(), 1);
+  const verdictHeaderRow = CHARTS_LAYOUT.verdictStartRow + 2;
+  const verdictDataStartRow = verdictHeaderRow + 1;
+  const chartStartRow = verdictDataStartRow +
+    Math.max(verdictDisplayRows.length, 1) +
+    CHARTS_LAYOUT.chartRowGap;
+  const dashboardLastRow = Math.max(
+    25,
+    verdictDataStartRow + Math.max(verdictDisplayRows.length, 1) - 1,
+    chartStartRow + 13
+  );
   sheet.clearContents();
   if (shouldFormat) {
     sheet.clearFormats();
     sheet.getCharts().forEach((chart) => sheet.removeChart(chart));
     sheet.showColumns(1, sheet.getMaxColumns());
+    sheet.getRange(
+      1,
+      1,
+      Math.min(sheet.getMaxRows(), Math.max(previousLastRow, dashboardLastRow)),
+      CHARTS_LAYOUT.helperStartColumn + CHARTS_LAYOUT.helperColumnCount - 1
+    ).breakApart();
     sheet.setFrozenRows(0);
     sheet.setFrozenColumns(0);
     sheet.setHiddenGridlines(true);
+    sheet.setRowHeights(1, dashboardLastRow, 24);
+    sheet.setRowHeight(1, 32);
     sheet.setColumnWidth(1, 180);
     sheet.setColumnWidth(2, 110);
     sheet.setColumnWidth(3, 300);
-    sheet.setColumnWidth(4, 150);
-    sheet.setColumnWidth(5, 110);
-    sheet.setColumnWidth(6, 110);
-    sheet.setColumnWidth(7, 90);
-    sheet.setColumnWidth(8, 90);
-    sheet.setColumnWidth(9, 90);
-    sheet.setColumnWidth(10, 90);
+    sheet.setColumnWidth(4, 28);
+    sheet.setColumnWidth(5, 220);
+    sheet.setColumnWidths(6, 3, 140);
+    sheet.setColumnWidths(9, 6, 90);
   }
 
   sheet.getRange(1, 1, 1, 6).merge();
@@ -213,7 +246,7 @@ function rebuildAnalyticsCharts_(options) {
   }
 
   sheet.getRange(7, 1, 1, 3).merge().setValue('DAYPART LEVELS')
-    .setHorizontalAlignment('left');
+    .setHorizontalAlignment('center');
   if (shouldFormat) {
     sheet.getRange(7, 1, 1, 3).setBackground('#eaf4e3').setFontWeight('bold');
     sheet.getRange(8, 1, 1, 3).setBackground('#eff7ea').setFontWeight('bold');
@@ -264,39 +297,93 @@ function rebuildAnalyticsCharts_(options) {
     sheet.getRange(7, 1, 18, 3).setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
   }
 
-  sheet.getRange(28, 1, 1, 4).merge().setValue('DAILY VERDICT · LEVEL BY DATE')
-    .setHorizontalAlignment('left');
-  sheet.getRange(29, 1, 1, 4).merge().setValue('Scale: 1 = SILENT, 2 = NORMAL, 3 = LOUD, 4 = PEAK')
-    .setHorizontalAlignment('left');
-  sheet.getRange(30, 1, 1, 4).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
+  sheet.getRange(
+    CHARTS_LAYOUT.verdictStartRow,
+    CHARTS_LAYOUT.verdictStartColumn,
+    1,
+    CHARTS_LAYOUT.verdictColumnCount
+  ).merge().setValue('DAILY VERDICT · LEVEL BY DATE')
+    .setHorizontalAlignment('center');
+  sheet.getRange(
+    CHARTS_LAYOUT.verdictStartRow + 1,
+    CHARTS_LAYOUT.verdictStartColumn,
+    1,
+    CHARTS_LAYOUT.verdictColumnCount
+  ).merge().setValue('Scale: 1 = SILENT, 2 = NORMAL, 3 = LOUD, 4 = PEAK')
+    .setHorizontalAlignment('center');
+  sheet.getRange(
+    verdictHeaderRow,
+    CHARTS_LAYOUT.verdictStartColumn,
+    1,
+    CHARTS_LAYOUT.verdictColumnCount
+  ).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
   if (verdictDisplayRows.length > 0) {
-    sheet.getRange(31, 1, verdictDisplayRows.length, 4).setValues(verdictDisplayRows);
+    sheet.getRange(
+      verdictDataStartRow,
+      CHARTS_LAYOUT.verdictStartColumn,
+      verdictDisplayRows.length,
+      CHARTS_LAYOUT.verdictColumnCount
+    ).setValues(verdictDisplayRows);
+  } else {
+    sheet.getRange(
+      verdictDataStartRow,
+      CHARTS_LAYOUT.verdictStartColumn,
+      1,
+      CHARTS_LAYOUT.verdictColumnCount
+    ).merge().setValue('No data yet').setHorizontalAlignment('center');
   }
 
   if (shouldFormat) {
-    sheet.getRange(28, 1, 1, 4).setBackground('#fce5cd').setFontWeight('bold');
-    sheet.getRange(29, 1, 1, 4).setBackground('#fff5e8').setFontColor('#7f6000');
-    sheet.getRange(30, 1, 1, 4).setBackground('#fff0d9').setFontWeight('bold');
+    sheet.getRange(CHARTS_LAYOUT.verdictStartRow, CHARTS_LAYOUT.verdictStartColumn, 1, 4)
+      .setBackground('#fce5cd').setFontWeight('bold');
+    sheet.getRange(CHARTS_LAYOUT.verdictStartRow + 1, CHARTS_LAYOUT.verdictStartColumn, 1, 4)
+      .setBackground('#fff5e8').setFontColor('#7f6000');
+    sheet.getRange(verdictHeaderRow, CHARTS_LAYOUT.verdictStartColumn, 1, 4)
+      .setBackground('#fff0d9').setFontWeight('bold');
+    sheet.getRange(
+      CHARTS_LAYOUT.verdictStartRow,
+      CHARTS_LAYOUT.verdictStartColumn,
+      Math.max(verdictDisplayRows.length, 1) + 3,
+      CHARTS_LAYOUT.verdictColumnCount
+    ).setHorizontalAlignment('center');
     if (verdictChartRows.length > 0) {
-      sheet.getRange(31, 1, verdictChartRows.length, 4)
+      sheet.getRange(verdictDataStartRow, CHARTS_LAYOUT.verdictStartColumn, verdictChartRows.length, 4)
         .setBackgrounds(buildSolidBackgrounds_(verdictChartRows.length, 4, '#fffdf8'));
-      sheet.getRange(30, 1, verdictChartRows.length + 1, 4)
+      sheet.getRange(verdictHeaderRow, CHARTS_LAYOUT.verdictStartColumn, verdictChartRows.length + 1, 4)
+        .setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
+    } else {
+      sheet.getRange(verdictDataStartRow, CHARTS_LAYOUT.verdictStartColumn, 1, 4)
+        .setBackground('#fffdf8')
+        .setFontColor('#777777')
         .setBorder(true, true, true, true, true, true, '#d7dde5', SpreadsheetApp.BorderStyle.SOLID);
     }
 
-    const helperStartRow = 30;
-    const helperCol = 7;
-    sheet.getRange(helperStartRow, helperCol, 1, 4).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
+    sheet.getRange(
+      CHARTS_LAYOUT.helperStartRow,
+      CHARTS_LAYOUT.helperStartColumn,
+      1,
+      CHARTS_LAYOUT.helperColumnCount
+    ).setValues([['DATE', 'DAY', 'EVE', 'NGT']]);
     if (verdictChartRows.length > 0) {
-      sheet.getRange(helperStartRow + 1, helperCol, verdictChartRows.length, 4).setValues(verdictChartRows);
+      sheet.getRange(
+        CHARTS_LAYOUT.helperStartRow + 1,
+        CHARTS_LAYOUT.helperStartColumn,
+        verdictChartRows.length,
+        CHARTS_LAYOUT.helperColumnCount
+      ).setValues(verdictChartRows);
     }
-    sheet.hideColumns(helperCol, 4);
+    sheet.hideColumns(CHARTS_LAYOUT.helperStartColumn, CHARTS_LAYOUT.helperColumnCount);
 
     if (verdictChartRows.length > 0) {
       const chart = sheet.newChart()
         .setChartType(Charts.ChartType.COLUMN)
-        .addRange(sheet.getRange(helperStartRow, helperCol, verdictChartRows.length + 1, 4))
-        .setPosition(28, 5, 0, 0)
+        .addRange(sheet.getRange(
+          CHARTS_LAYOUT.helperStartRow,
+          CHARTS_LAYOUT.helperStartColumn,
+          verdictChartRows.length + 1,
+          CHARTS_LAYOUT.helperColumnCount
+        ))
+        .setPosition(chartStartRow, CHARTS_LAYOUT.chartStartColumn, 0, 0)
         .setOption('title', 'Daily Verdict by Date')
         .setOption('legend', { position: 'top' })
         .setOption('height', 320)
@@ -320,7 +407,7 @@ function rebuildAnalyticsCharts_(options) {
       sheet.insertChart(chart);
     }
 
-    sheet.getRange(1, 1, Math.max(31 + verdictChartRows.length, 31), 10).setVerticalAlignment('middle');
-    sheet.getRange(1, 1, Math.max(31 + verdictChartRows.length, 31), 10).setWrap(false);
+    sheet.getRange(1, 1, dashboardLastRow, CHARTS_LAYOUT.visibleLastColumn).setVerticalAlignment('middle');
+    sheet.getRange(1, 1, dashboardLastRow, CHARTS_LAYOUT.visibleLastColumn).setWrap(false);
   }
 }

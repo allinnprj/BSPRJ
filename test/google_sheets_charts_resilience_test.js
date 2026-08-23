@@ -18,6 +18,7 @@ const sandbox = {
 const hooks = `
   buildDailyVerdictRows_ = () => [];
   this.__buildChartSourceBlocks = buildChartSourceBlocks_;
+  this.__chartsLayout = CHARTS_LAYOUT;
 `;
 vm.runInNewContext(`${codeSource}\n${chartsSource}\n${hooks}`, sandbox, {
   filename: chartsPath
@@ -60,6 +61,13 @@ assert.strictEqual(chartBlocks.coverageRows[0][1], 2);
 assert.strictEqual(chartBlocks.coveragePct, 1.4);
 assert.deepStrictEqual(warnings, ['Chart row skipped: unsupported PART "DAWN".']);
 
+const layout = JSON.parse(JSON.stringify(sandbox.__chartsLayout));
+assert.strictEqual(layout.verdictStartRow, layout.summaryStartRow);
+assert.ok(layout.verdictStartColumn > layout.summaryLastColumn);
+assert.strictEqual(layout.chartStartColumn, layout.verdictStartColumn);
+assert.ok(layout.chartRowGap > 0);
+assert.ok(layout.helperStartColumn > layout.visibleLastColumn);
+
 function getFunctionSource(source, functionName) {
   const start = source.indexOf(`function ${functionName}(`);
   assert.notStrictEqual(start, -1, `Missing function ${functionName}`);
@@ -74,9 +82,16 @@ function getFunctionSource(source, functionName) {
 }
 
 const layoutRefreshSource = getFunctionSource(codeSource, 'refreshAllSheetFormatting_');
+const chartRebuildSource = getFunctionSource(chartsSource, 'rebuildAnalyticsCharts_');
 assert.doesNotMatch(layoutRefreshSource, /rebuildAnalyticsCharts_/);
 assert.match(layoutRefreshSource, /refreshRawSheetsFormatting_/);
 assert.match(layoutRefreshSource, /refreshExistingTableSheetFormatting_/);
+assert.match(chartRebuildSource, /const chartStartRow = verdictDataStartRow/);
+assert.match(chartRebuildSource, /setPosition\(chartStartRow, CHARTS_LAYOUT\.chartStartColumn/);
+assert.match(chartRebuildSource, /sheet\.setRowHeights\(1, dashboardLastRow, 24\)/);
+assert.match(chartRebuildSource, /setValue\('No data yet'\)/);
+assert.match(chartRebuildSource, /sheet\.setColumnWidth\(5, 220\)/);
+assert.match(chartRebuildSource, /sheet\.setColumnWidths\(6, 3, 140\)/);
 
 assert.doesNotMatch(codeSource, /[А-Яа-яЁё]/);
 assert.doesNotMatch(chartsSource, /[А-Яа-яЁё]/);

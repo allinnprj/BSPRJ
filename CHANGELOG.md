@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Google Sheets compact charts dashboard layout - 2026-08-23
+
+1. Reorganized the `charts` sheet into two clean panels: `DAYPART LEVELS`, `NOISE MIX`, and `DATA COVERAGE` remain in `A:C`; the centered newest-first `DAILY VERDICT` table starts in `E:H`; and its chronological chart is aligned to the same left edge directly below the last visible verdict row.
+2. Moved hidden chronological chart-source data to `Q:T`, outside the visible dashboard, and added a layout contract proving that the summary, verdict table, chart, and helper ranges do not overlap.
+3. Centered the `DAYPART LEVELS` and `DAILY VERDICT` headings, widened the four verdict columns to the chart's `640 px` width, calculated the chart row dynamically with a one-row visual gap, normalized dashboard row heights, removed legacy merged ranges, and added a compact `No data yet` state.
+4. A direct `Rebuild charts only` menu call now performs the complete formatting pass by default. Analytics calculations, source tables, newest-first visible verdict order, chronological chart order, firmware, and controller operation are unchanged. No Apps Script deployment was performed.
+
 ## Google Sheets compact user view and automatic rollover layout - 2026-08-23
 
 1. Audited all 36 raw Google Sheets columns. No field was deleted: the non-user fields still support signal, SHT31, memory, restart, acoustic-revision, exported-log, and future dB-calibration analysis.
