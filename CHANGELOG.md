@@ -8,6 +8,9 @@
 4. Documented the target `Direct / Gateway / Service` state model. Direct remains the safe C3 default; Gateway cannot become normal until C3 time fallback, telemetry, Smart Auto, sleep/wake, service timeout, OTA, and recovery are physically proven.
 5. This is BS-only local preparation. C3 source, C3 firmware, device settings, Wi-Fi state, autonomous control, and sleep behavior were not changed; no upload was performed.
 6. Validation: `node test/controller_command_contract_test.js` and `git diff --check` pass. `pio run -e esp32dev` succeeds with RAM `65,636 / 327,680` (`20.0%`), linked Flash `1,366,051 / 1,572,864` (`86.9%`), OTA-slot reserve `206,813` bytes, firmware image `1,366,448` bytes, and SHA-256 `D1A787CE015677B060B62039A18B5F5DBC432E050257B907763C7DEDD059B3D5`.
+7. Physical deployment: the user uploaded BS build `136`. Telegram `/bssts` confirmed BS Online, Wi-Fi `100% (-42 dBm) NKAANNE`, synchronized time, WQTT `OK`, and Sheets queue `0`; ordinary C3 telemetry then identified the unchanged C3 build `197` with INA3221/GPS data intact.
+8. The post-OTA diagnostic segment physically passed backward compatibility: C3 announced `SLEEP 600`, BS recorded `SLP -> WAIT -> OK`, wake recovery took `7 s`, `C3_GAP` stayed `0`, `GS_DROP` stayed `0`, WQTT remained `OK`, and completed Sheets windows uploaded. A second valid `SLEEP 600` announcement followed.
+9. One transient `UART_OFF` occurred after the OTA restart while C3 was already asleep, and STATUS sequence `25` ended in the known bounded `ACK_TIMEOUT` with truthful cached Telegram fallback. These stay in the parallel scheduled-restart/STATUS evidence ledger and do not block the next C3 Gateway implementation stage. `TREQ/TIME` and `WIFI_OFF` remain unexercised as expected because C3 build `197` does not use them.
 
 ## BS 135 / C3 197 controller-link field acceptance - 2026-08-23
 

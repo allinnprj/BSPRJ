@@ -18,7 +18,7 @@ Canonical controller names in user-facing discussion and project status are:
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
 - The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
 - The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass `STATUS 0`. The C3 project's own Telegram OTA path is primary; the BS-triggered OTA path is retained only as a reserve.
-- Uploaded BS build `135` and C3 build `197` are the current physical baseline. Their bounded sleep acknowledgement is physically accepted. Local BS build `136` adds only backward-compatible Gateway/Service preparation; current C3 build `197` remains in Direct Wi-Fi mode and is not changed by that preparation.
+- Uploaded BS build `136` and C3 build `197` are the current physical baseline. Their bounded sleep acknowledgement and build-136 backward compatibility are physically accepted. C3 build `197` remains in Direct Wi-Fi mode and does not yet request the new Gateway time bootstrap.
 
 ## Heartbeat
 
@@ -112,7 +112,7 @@ Reliability rules:
 - WQTT cloud forwarding through WROOM: passed physically on WROOM build 120 and C3 build 185 (`q=2` and `q=9` published successfully).
 - C3 build 191 sleep framing: two live `SLEEP` announcements (`600 s` and `5400 s`) were recorded on 2026-08-22. The `600 s` cycle completed through `SLP -> WAIT -> OK`; the `5400 s` sleep was still active at the captured boundary. The journal snapshot had `UART_SLP=2`, `UART_WAIT=2`, `UART_OK=2`, `C3_GAP=0`, and `UART_OFF=0`. Longer evidence and the scheduled-WROOM-restart-during-`SLP` case continue in parallel and do not block command-contract design.
 - Saved GPS relay: uploaded BS build `134` and C3 build `195+` physically pass `/c3sts`, Google Maps, and bounded diagnostics; retained WQTT payload inspection remains optional.
-- Build `196` proved that blind sleep-frame repetition was intermittent (`UART_OFF 10 -> 14`). Local BS `135` / C3 `197` therefore add bounded exact `SLEEP/SACK`; physical proof remains three consecutive cycles with no new OFF.
+- Build `196` proved that blind sleep-frame repetition was intermittent (`UART_OFF 10 -> 14`). Uploaded BS `135` / C3 `197` replaced it with bounded exact `SLEEP/SACK` and physically passed eight consecutive cycles; uploaded BS `136` then preserved the accepted `600 s` `SLP -> WAIT -> OK` behavior with `7 s` wake recovery and `C3_GAP=0`.
 - The evidence status and remaining physical gates are maintained in `CONTROLLER_LINK_ACCEPTANCE.md`.
 - Commands, command ACK/result, authorization, and safe command failure are later implementation/acceptance stages.
 
@@ -270,7 +270,7 @@ TIME 1 <nonce> <utc_epoch>
 - `nonce` is a non-zero canonical unsigned 32-bit value chosen by C3 for matching one request and response.
 - `utc_epoch` is the BS Unix UTC epoch. A value of `0` truthfully means BS time is not synchronized yet; C3 must keep its retained/GPS time rules and retry later without treating `0` as valid time.
 - BS accepts only the exact request shape, sends and flushes exactly one response, and treats a valid request as live C3 activity.
-- C3 build `197` does not emit `TREQ`, so local BS build `136` changes no current device behavior.
+- C3 build `197` does not emit `TREQ`, so uploaded BS build `136` changes no current device behavior.
 - Future C3 firmware must validate the matching nonce and minimum valid epoch before updating retained trusted time. Time-zone conversion remains C3-owned.
 
 ## Target Gateway and Service Modes
@@ -321,8 +321,8 @@ The complete line must contain no more than 47 printable ASCII characters before
 | Stage | Command | Argument | Effect | Initial state |
 | --- | --- | --- | --- | --- |
 | A | `STATUS` | exactly `0` | Execute a safe command round-trip and request a fresh ordinary telemetry publication. It changes no C3 state. | Uploaded and physically accepted on builds `131/192`. |
-| B | `OTA_ON` | `300..900` seconds | Open the bounded C3 OTA window and hold C3 awake. Current Direct mode keeps its existing OTA behavior; future Gateway mode also connects Wi-Fi and exposes ArduinoOTA. | Implemented on both controllers. Local BS build `136` presents it only as `/c3ota` with a `600 s` window. |
-| C | `WIFI_OFF` | exactly `0` | End an active Service window, report the result over UART, flush it, disable C3 Wi-Fi, and return to the saved Gateway plan. | BS sender support is dormant in local build `136` with no Telegram caller. C3 support and physical acceptance remain absent; never send it to build `197`. |
+| B | `OTA_ON` | `300..900` seconds | Open the bounded C3 OTA window and hold C3 awake. Current Direct mode keeps its existing OTA behavior; future Gateway mode also connects Wi-Fi and exposes ArduinoOTA. | Implemented on both controllers. Uploaded BS build `136` presents it only as `/c3ota` with a `600 s` window. |
+| C | `WIFI_OFF` | exactly `0` | End an active Service window, report the result over UART, flush it, disable C3 Wi-Fi, and return to the saved Gateway plan. | BS sender support is dormant in uploaded build `136` with no Telegram caller. C3 support and physical acceptance remain absent; never send it to build `197`. |
 | D | `RESTART` | exactly `0` | Report `RESTARTING`, flush UART, wait the existing safe post-frame interval, then perform a software restart. | Specified, disabled until separately approved and tested. |
 
 Any command not enabled for the current implementation stage is rejected. Charge/mode/GPIO3/GPS/sleep-setting commands are deliberately absent from this protocol version.
@@ -401,7 +401,7 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 
 1. `[done]` Implement the persistent single-command sender/queue on BS and the strict C3 `STATUS 0` executor.
 2. `[done]` Route `/c3sts` through the existing authorized BS bot and physically prove a fresh status lifecycle plus duplicate-command coalescing on builds `131/192`.
-3. `[done on BS; C3 unchanged]` Local BS build `136` prepares `TREQ/TIME`, dormant `WIFI_OFF`, and `/c3ota -> OTA_ON 600`. Current C3 build `197` remains in Direct mode and ignores unsupported time-bootstrap input because it never requests it.
+3. `[done and deployed on BS; C3 unchanged]` Uploaded BS build `136` prepares `TREQ/TIME`, dormant `WIFI_OFF`, and `/c3ota -> OTA_ON 600`. Backward compatibility with Direct-mode C3 build `197` physically passed one complete `600 s` `SLP -> WAIT -> OK` cycle with `7 s` recovery, `C3_GAP=0`, WQTT `OK`, and `GS_DROP=0`.
 4. `[next C3 stage]` Implement Direct/Gateway/Service states with Direct as the default, accept `TREQ/TIME`, preserve retained/GPS time fallback, and make `OTA_ON` temporarily restore Wi-Fi, the C3 bot, and ArduinoOTA.
 5. `[physical gate]` Prove time, telemetry, Smart Auto, sleep/wake, the 10-minute C3 OTA window, OTA upload from the C3 project, automatic Wi-Fi shutdown, and USB recovery before saving Gateway as the normal mode.
 6. `[later]` Keep `RESTART` separately approved. Do not add Charge/mode/GPIO3/GPS/sleep-setting control to protocol v1.
