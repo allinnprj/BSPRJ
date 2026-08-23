@@ -373,8 +373,10 @@ Allowed result tokens:
 - Queue age advances while C3 is `SLP`, `WAIT`, or `OFF`. WROOM never transmits a command whose TTL is already exhausted.
 - The TTL placed in the first frame is the remaining queue lifetime at that moment. Every retry is byte-for-byte identical.
 - No command frame is sent while WROOM has a valid declared C3 `SLP`; transmission starts only after valid wake activity restores the link.
-- `CACK` timeout is 2 seconds. WROOM may make at most three identical retransmissions after the first send.
-- After `CACK`, WROOM waits at most 15 seconds for `CRES`; recovery requests are identical command retransmissions, no faster than every 5 seconds and no more than three times.
+- `CACK` cadence is 2 seconds. WROOM makes at most four identical transmissions total: the first send plus no more than three retries.
+- After the fourth transmission WROOM sends no additional frame and waits passively for a matching late `CACK` or `CRES` for 40 seconds before a bounded `ACK_TIMEOUT`.
+- After a matching `CACK`, WROOM waits at least 40 seconds for matching `CRES`. Result-recovery requests remain byte-identical, run no faster than every 5 seconds, and may use only transmissions still available inside the same four-transmission total.
+- A strict matching `CRES OK <expected_actual>` is sufficient terminal proof even if the separate `CACK` was lost. It completes the command as `EXECUTED` while the passive response window is open.
 - If a not-yet-started command expires on C3, C3 stores and returns `CRES ... EXPIRED NONE`.
 - `OTA_ON` publishes a terminal result immediately after the bounded listener is established; it does not keep the command transaction pending for the whole window. The listener timeout returns authority to the existing sleep plan.
 
@@ -395,7 +397,7 @@ Queued -> Waiting for C3 -> Accepted -> Executed
 Queued/Waiting -> Expired
 ```
 
-WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`, `CMD_DUP`, `CMD_RESULT`, `CMD_RETRY`, `CMD_EXPIRE`, and `CMD_REJECT`, with session, sequence, command, attempt, age, and result. Tokens, chat identifiers, raw Telegram bodies, and arbitrary UART input are not logged.
+WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`, `CMD_DUP`, `CMD_RESULT`, `CMD_RETRY`, `CMD_EXPIRE`, and `CMD_REJECT`, with session, sequence, command, attempt, age, and result. Telegram-originated OTA queues also record the numeric `source_update_id` so separate user requests can be distinguished from same-sequence UART retries. Tokens, chat identifiers, raw Telegram bodies, and arbitrary UART input are not logged.
 
 ### Implementation and Acceptance Order
 

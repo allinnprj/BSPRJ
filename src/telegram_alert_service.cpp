@@ -725,6 +725,7 @@ void TelegramAlertService::processCommandUpdates_(
   uint8_t c3StatusRequestCount = 0;
   uint8_t bsStatusRequestCount = 0;
   uint8_t c3OtaRequestCount = 0;
+  uint32_t newestC3OtaUpdateId = 0;
   int searchAt = 0;
   while (true) {
     const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
@@ -796,6 +797,9 @@ void TelegramAlertService::processCommandUpdates_(
       if (c3OtaRequestCount < UINT8_MAX) {
         ++c3OtaRequestCount;
       }
+      if (updateId > newestC3OtaUpdateId) {
+        newestC3OtaUpdateId = updateId;
+      }
     }
   }
 
@@ -845,7 +849,8 @@ void TelegramAlertService::processCommandUpdates_(
             controllerLink.sleepRemainingSeconds(millis());
         ttlSeconds = remainingSleep >= 7020 ? 7200 : remainingSleep + 180;
       }
-      c3OtaReplyStage_ = controllerLink.queueOtaOnCommand(600, ttlSeconds)
+      c3OtaReplyStage_ = controllerLink.queueOtaOnCommand(
+                             600, ttlSeconds, newestC3OtaUpdateId)
                              ? C3OtaReplyStage::QueuedNotice
                              : C3OtaReplyStage::Unavailable;
     }

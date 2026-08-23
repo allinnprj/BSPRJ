@@ -32,6 +32,8 @@ assert.match(header, /static constexpr uint32_t OTA_ON_MIN_SECONDS = 300/);
 assert.match(header, /static constexpr uint32_t OTA_ON_MAX_SECONDS = 900/);
 assert.match(header, /static constexpr uint32_t WIFI_OFF_MAX_TTL_SECONDS = 120/);
 assert.match(header, /static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4/);
+assert.match(header, /static constexpr uint32_t COMMAND_LATE_RESPONSE_WAIT_MS = 40000/);
+assert.match(header, /static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 40000/);
 assert.match(header, /static constexpr uint8_t COMMAND_MAX_RESULT_RECOVERY_RETRIES = 2/);
 assert.match(header, /PersistedCommandRecord commandRecord_/);
 assert.match(header, /bool gpsFixed = false/);
@@ -82,7 +84,17 @@ const updateBody = functionBody(
 assert.match(updateBody, /state_ == State::Online/);
 assert.match(updateBody, /ControllerCommandState::Expired/);
 assert.match(updateBody, /COMMAND_ACK_TIMEOUT_MS/);
+assert.match(
+  updateBody,
+  /commandSendAttempts_ < COMMAND_MAX_SEND_ATTEMPTS[\s\S]*sendCommandFrame\(nowMs, false\)[\s\S]*COMMAND_LATE_RESPONSE_WAIT_MS[\s\S]*ACK_TIMEOUT/,
+  'After the fourth identical CMD transmission, BS must wait passively for a late matching CACK/CRES before ACK_TIMEOUT.'
+);
 assert.match(updateBody, /COMMAND_RESULT_TIMEOUT_MS/);
+assert.match(
+  updateBody,
+  /commandResultRecoveryRetries_ < COMMAND_MAX_RESULT_RECOVERY_RETRIES &&[\s\S]*commandSendAttempts_ < COMMAND_MAX_SEND_ATTEMPTS/,
+  'CRES recovery must never increase total CMD transmissions beyond four.'
+);
 
 const sendBody = functionBody(
   source,
@@ -104,6 +116,25 @@ assert.match(source, /CRES.*processCommandResult/s);
 assert.match(source, /strcmp\(ackKind, "NEW"\)/);
 assert.match(source, /strcmp\(ackKind, "DUP"\)/);
 assert.match(source, /isAllowedCommandResult/);
+const commandResultBody = functionBody(
+  source,
+  'bool ControllerLinkService::processCommandResult(',
+  'void ControllerLinkService::setCommandTerminal('
+);
+assert.match(
+  commandResultBody,
+  /hasCommand\(\)[\s\S]*session != commandRecord_\.session[\s\S]*sequence != commandRecord_\.sequence/
+);
+assert.doesNotMatch(
+  commandResultBody,
+  /ControllerCommandState::Accepted/,
+  'A matching CRES must remain sufficient even when the separate CACK was lost.'
+);
+assert.match(
+  commandResultBody,
+  /strcmp\(result, "OK"\) == 0[\s\S]*ControllerCommandState::Executed/,
+  'A late matching CRES OK must terminate as EXECUTED during the passive response window.'
+);
 assert.match(source, /putBytes\("record"/);
 assert.match(source, /getBytes\("record"/);
 assert.match(source, /if \(\*cursor != '\\0'\)/);
@@ -129,7 +160,9 @@ assert.match(telegram, /isBsStatusCommand\(command\)/);
 assert.match(telegram, /isC3OtaCommand\(command\)/);
 assert.match(telegram, /controllerLink\.isOnline\(\)/);
 assert.match(telegram, /controllerLink\.queueStatusCommand\(\)/);
-assert.match(telegram, /controllerLink\.queueOtaOnCommand\(600, ttlSeconds\)/);
+assert.match(telegram, /controllerLink\.queueOtaOnCommand\(/);
+assert.match(telegram, /newestC3OtaUpdateId/);
+assert.match(telegram, /queueOtaOnCommand\([\s\S]*newestC3OtaUpdateId/);
 assert.match(telegram, /c3RefreshCommandPending_/);
 assert.match(telegram, /controllerLink\.commandTerminal\(\)/);
 assert.match(telegram, /c3TelemetryReceivedAtRequestMs_/);
@@ -161,8 +194,8 @@ assert.match(source, /CommandKind::WifiOff/);
 assert.match(source, /"WIFI_OFF"/);
 assert.doesNotMatch(source, /CommandKind::Restart/,
   'RESTART remains outside this implementation stage.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.82-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 136\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.83-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 137\b/);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',

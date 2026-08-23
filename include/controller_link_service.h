@@ -58,7 +58,8 @@ class ControllerLinkService {
 
   bool queueStatusCommand(uint32_t ttlSeconds = 120);
   bool queueOtaOnCommand(uint32_t windowSeconds = 600,
-                         uint32_t ttlSeconds = 180);
+                         uint32_t ttlSeconds = 180,
+                         uint32_t sourceUpdateId = 0);
   bool queueWifiOffCommand(uint32_t ttlSeconds = 120);
   bool clearTerminalCommand();
   bool commandPersistenceReady() const;
@@ -120,7 +121,8 @@ class ControllerLinkService {
   bool queueCommand(CommandKind command,
                     uint32_t argument,
                     uint32_t ttlSeconds,
-                    uint32_t maxTtlSeconds);
+                    uint32_t maxTtlSeconds,
+                    uint32_t sourceUpdateId = 0);
   const char* commandName(CommandKind command) const;
   const char* commandName() const;
 
@@ -161,8 +163,9 @@ class ControllerLinkService {
   static constexpr uint32_t WIFI_OFF_MAX_TTL_SECONDS = 120;
   static constexpr uint32_t COMMAND_ACK_TIMEOUT_MS = 2000;
   static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4;
+  static constexpr uint32_t COMMAND_LATE_RESPONSE_WAIT_MS = 40000;
   static constexpr uint32_t COMMAND_RESULT_RETRY_MS = 5000;
-  static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 15000;
+  static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 40000;
   static constexpr uint8_t COMMAND_MAX_RESULT_RECOVERY_RETRIES = 2;
   static constexpr time_t MIN_VALID_COMMAND_EPOCH = 1700000000;
 

@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## BS late C3 command-response tolerance - 0.1.83-EXP build 137 - 2026-08-23
+
+1. Corrected the confirmed false `/c3ota` failure on BS build `136`: OTA_ON sequences `40`, `41`, and `42` each exhausted four identical `CMD` transmissions without a timely `CACK`, while C3 could still process the command later and physically open `Connectivity: Service` with OTA enabled.
+2. Preserved the exact maximum of four identical command transmissions and the existing `2 s` ACK cadence. After the fourth transmission, BS now sends nothing further and waits passively for a matching late `CACK` or `CRES` for `40 s` before declaring bounded `ACK_TIMEOUT`.
+3. A matching `CACK` now opens a `40 s` result window. Existing result-recovery sends may use only the transmissions still remaining inside the same four-transmission total; they can no longer increase UART traffic beyond that cap.
+4. A strict matching `CRES OK OTA_ON=600` remains sufficient terminal proof and completes the request as `EXECUTED` even when the separate `CACK` was lost. Telegram therefore cannot publish `Not enabled / FAILED` until the final passive window really expires.
+5. Investigation of sequence `42` confirmed that UART retries keep the original sequence. A new sequence is allocated only by a separately queued authorized Telegram `/c3ota`; therefore `42` was a third queue event, not a retry of `41`. Because the old journal did not retain Telegram `update_id`, it cannot distinguish a third unseen update from replay after a Telegram cursor reset. New OTA `CMD_QUEUE` diagnostics include bounded `source_update_id` metadata for future proof.
+6. C3 source/firmware, `TREQ/TIME`, `SLEEP/SACK`, telemetry frames, command payloads, retry cadence, and the maximum number of `CMD` transmissions are unchanged.
+7. Validation: `node test/controller_command_contract_test.js` and `git diff --check` pass. `pio run -e esp32dev` succeeds with RAM `65,636 / 327,680` (`20.0%`), linked Flash `1,366,159 / 1,572,864` (`86.9%`), OTA-slot reserve `206,705` bytes, firmware image `1,366,560` bytes, and SHA-256 `31B1563EE853DFBDEE24DBE911B24A225877DF2A133AEAF87F8626CAB464E2A6`.
+8. Physical BS upload and one `/c3ota` late-response acceptance check remain manual.
+
 ## BS Gateway/Service preparation - 0.1.82-EXP build 136 - 2026-08-23
 
 1. Added a demand-driven, backward-compatible Gateway time bootstrap on BS: future C3 firmware may send strict `TREQ 1 <nonce>` and receives a flushed `TIME 1 <nonce> <utc_epoch>` response. Unsynchronized BS time is reported truthfully as epoch `0`; current C3 build `197` never requests the frame and is unaffected.

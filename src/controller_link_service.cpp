@@ -277,13 +277,14 @@ bool ControllerLinkService::queueStatusCommand(uint32_t ttlSeconds) {
 }
 
 bool ControllerLinkService::queueOtaOnCommand(uint32_t windowSeconds,
-                                              uint32_t ttlSeconds) {
+                                              uint32_t ttlSeconds,
+                                              uint32_t sourceUpdateId) {
   if (windowSeconds < OTA_ON_MIN_SECONDS ||
       windowSeconds > OTA_ON_MAX_SECONDS) {
     return false;
   }
   return queueCommand(CommandKind::OtaOn, windowSeconds, ttlSeconds,
-                      COMMAND_MAX_TTL_SECONDS);
+                      COMMAND_MAX_TTL_SECONDS, sourceUpdateId);
 }
 
 bool ControllerLinkService::queueWifiOffCommand(uint32_t ttlSeconds) {
@@ -294,7 +295,8 @@ bool ControllerLinkService::queueWifiOffCommand(uint32_t ttlSeconds) {
 bool ControllerLinkService::queueCommand(CommandKind command,
                                          uint32_t argument,
                                          uint32_t ttlSeconds,
-                                         uint32_t maxTtlSeconds) {
+                                         uint32_t maxTtlSeconds,
+                                         uint32_t sourceUpdateId) {
   if (!commandPreferencesReady_ || hasCommand() ||
       command == CommandKind::None ||
       ttlSeconds < COMMAND_MIN_TTL_SECONDS || ttlSeconds > maxTtlSeconds) {
@@ -356,6 +358,10 @@ bool ControllerLinkService::queueCommand(CommandKind command,
   details += ttlSeconds;
   details += F(" argument=");
   details += argument;
+  if (sourceUpdateId != 0) {
+    details += F(" source_update_id=");
+    details += sourceUpdateId;
+  }
   emitCommandEvent("CMD_QUEUE", details);
   return true;
 }
@@ -564,9 +570,12 @@ void ControllerLinkService::updateCommand(uint32_t nowMs) {
     }
     if (commandSendAttempts_ < COMMAND_MAX_SEND_ATTEMPTS) {
       sendCommandFrame(nowMs, false);
-    } else {
-      setCommandTerminal(ControllerCommandState::Failed, "FAILED", "ACK_TIMEOUT", nowMs);
+      return;
     }
+    if (nowMs - lastCommandTxAtMs_ < COMMAND_LATE_RESPONSE_WAIT_MS) {
+      return;
+    }
+    setCommandTerminal(ControllerCommandState::Failed, "FAILED", "ACK_TIMEOUT", nowMs);
     return;
   }
 
@@ -583,6 +592,7 @@ void ControllerLinkService::updateCommand(uint32_t nowMs) {
   }
   if (state_ == State::Online &&
       commandResultRecoveryRetries_ < COMMAND_MAX_RESULT_RECOVERY_RETRIES &&
+      commandSendAttempts_ < COMMAND_MAX_SEND_ATTEMPTS &&
       nowMs - lastCommandResultRetryAtMs_ >= COMMAND_RESULT_RETRY_MS) {
     sendCommandFrame(nowMs, true);
   }
@@ -654,6 +664,7 @@ void ControllerLinkService::sendCommandFrame(uint32_t nowMs, bool resultRecovery
   details += F(" attempt=");
   if (resultRecovery) {
     ++commandResultRecoveryRetries_;
+    ++commandSendAttempts_;
     lastCommandResultRetryAtMs_ = nowMs;
     details += commandResultRecoveryRetries_;
     details += F(" phase=RESULT");
