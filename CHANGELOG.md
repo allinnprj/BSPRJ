@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## BS Gateway/Service preparation - 0.1.82-EXP build 136 - 2026-08-23
+
+1. Added a demand-driven, backward-compatible Gateway time bootstrap on BS: future C3 firmware may send strict `TREQ 1 <nonce>` and receives a flushed `TIME 1 <nonce> <utc_epoch>` response. Unsynchronized BS time is reported truthfully as epoch `0`; current C3 build `197` never requests the frame and is unaffected.
+2. Added dormant BS sender support for the already specified `WIFI_OFF 0` command. There is deliberately no Telegram caller, so build `197` cannot receive the unsupported command. The persistent command record layout remains compatible with existing STATUS/OTA records.
+3. Kept one clear user-facing OTA command: `/c3ota` queues `OTA_ON 600` and reports a 10-minute OTA window. The redundant alternate command name and alias behavior were removed; actual firmware upload remains in the C3 project.
+4. Documented the target `Direct / Gateway / Service` state model. Direct remains the safe C3 default; Gateway cannot become normal until C3 time fallback, telemetry, Smart Auto, sleep/wake, service timeout, OTA, and recovery are physically proven.
+5. This is BS-only local preparation. C3 source, C3 firmware, device settings, Wi-Fi state, autonomous control, and sleep behavior were not changed; no upload was performed.
+6. Validation: `node test/controller_command_contract_test.js` and `git diff --check` pass. `pio run -e esp32dev` succeeds with RAM `65,636 / 327,680` (`20.0%`), linked Flash `1,366,051 / 1,572,864` (`86.9%`), OTA-slot reserve `206,813` bytes, firmware image `1,366,448` bytes, and SHA-256 `D1A787CE015677B060B62039A18B5F5DBC432E050257B907763C7DEDD059B3D5`.
+
 ## BS 135 / C3 197 controller-link field acceptance - 2026-08-23
 
 1. Accepted the paired sleep-handshake fix on physical BS `0.1.81-EXP` build `135` and C3 `1.2.0-c3` build `197`: eight consecutive `UART_SLP -> UART_WAIT -> UART_OK` cycles recovered in `9..17 s`; after the first newly accepted sleep announcement, `UART_OFF` stayed at `1` and `C3_GAP` stayed at `0`.

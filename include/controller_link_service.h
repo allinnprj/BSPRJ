@@ -59,6 +59,7 @@ class ControllerLinkService {
   bool queueStatusCommand(uint32_t ttlSeconds = 120);
   bool queueOtaOnCommand(uint32_t windowSeconds = 600,
                          uint32_t ttlSeconds = 180);
+  bool queueWifiOffCommand(uint32_t ttlSeconds = 120);
   bool clearTerminalCommand();
   bool commandPersistenceReady() const;
   bool hasCommand() const;
@@ -91,6 +92,8 @@ class ControllerLinkService {
   void sendPing(uint32_t nowMs);
   void sendTelemetryAck(uint32_t session, uint32_t sequence);
   void sendSleepAck(uint32_t sleepSeconds, uint32_t build);
+  bool processTimeRequest(uint32_t nowMs, const char* line);
+  void sendTimeResponse(uint32_t requestNonce, time_t epoch);
   void updateCommand(uint32_t nowMs);
   void sendCommandFrame(uint32_t nowMs, bool resultRecovery);
   bool processCommandAck(uint32_t nowMs, const char* line);
@@ -111,12 +114,14 @@ class ControllerLinkService {
     None = 0,
     Status = 1,
     OtaOn = 2,
+    WifiOff = 3,
   };
 
   bool queueCommand(CommandKind command,
                     uint32_t argument,
                     uint32_t ttlSeconds,
                     uint32_t maxTtlSeconds);
+  const char* commandName(CommandKind command) const;
   const char* commandName() const;
 
   struct PersistedCommandRecord {
@@ -144,6 +149,7 @@ class ControllerLinkService {
   static constexpr size_t RX_LINE_CAPACITY = 160;
   static constexpr size_t COMMAND_FRAME_CAPACITY = 48;
   static constexpr size_t SLEEP_ACK_FRAME_CAPACITY = 40;
+  static constexpr size_t TIME_RESPONSE_FRAME_CAPACITY = 40;
   static constexpr uint32_t COMMAND_RECORD_MAGIC = 0x4333434DU;
   static constexpr uint16_t COMMAND_RECORD_SCHEMA = 1;
   static constexpr uint32_t COMMAND_PROTOCOL_VERSION = 1;
@@ -152,6 +158,7 @@ class ControllerLinkService {
   static constexpr uint32_t STATUS_MAX_TTL_SECONDS = 120;
   static constexpr uint32_t OTA_ON_MIN_SECONDS = 300;
   static constexpr uint32_t OTA_ON_MAX_SECONDS = 900;
+  static constexpr uint32_t WIFI_OFF_MAX_TTL_SECONDS = 120;
   static constexpr uint32_t COMMAND_ACK_TIMEOUT_MS = 2000;
   static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4;
   static constexpr uint32_t COMMAND_RESULT_RETRY_MS = 5000;

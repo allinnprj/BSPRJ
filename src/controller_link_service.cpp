@@ -286,6 +286,11 @@ bool ControllerLinkService::queueOtaOnCommand(uint32_t windowSeconds,
                       COMMAND_MAX_TTL_SECONDS);
 }
 
+bool ControllerLinkService::queueWifiOffCommand(uint32_t ttlSeconds) {
+  return queueCommand(CommandKind::WifiOff, 0, ttlSeconds,
+                      WIFI_OFF_MAX_TTL_SECONDS);
+}
+
 bool ControllerLinkService::queueCommand(CommandKind command,
                                          uint32_t argument,
                                          uint32_t ttlSeconds,
@@ -299,7 +304,7 @@ bool ControllerLinkService::queueCommand(CommandKind command,
   const time_t nowEpoch = time(nullptr);
   if (nowEpoch < MIN_VALID_COMMAND_EPOCH) {
     String details = F("command=");
-    details += command == CommandKind::Status ? F("STATUS") : F("OTA_ON");
+    details += commandName(command);
     details += F(" reason=TIME_UNSYNCED");
     emitCommandEvent("CMD_REJECT", details);
     return false;
@@ -329,7 +334,7 @@ bool ControllerLinkService::queueCommand(CommandKind command,
     commandRecord_ = previous;
     commandPreferencesReady_ = false;
     String details = F("command=");
-    details += command == CommandKind::Status ? F("STATUS") : F("OTA_ON");
+    details += commandName(command);
     details += F(" reason=PERSISTENCE");
     emitCommandEvent("CMD_REJECT", details);
     return false;
@@ -346,7 +351,7 @@ bool ControllerLinkService::queueCommand(CommandKind command,
   details += F(" sequence=");
   details += commandRecord_.sequence;
   details += F(" command=");
-  details += command == CommandKind::Status ? F("STATUS") : F("OTA_ON");
+  details += commandName(command);
   details += F(" ttl_s=");
   details += ttlSeconds;
   details += F(" argument=");
@@ -422,6 +427,8 @@ ControllerCommandSnapshot ControllerLinkService::commandSnapshot() const {
     strncpy(snapshot.command, "STATUS", sizeof(snapshot.command) - 1);
   } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::OtaOn) {
     strncpy(snapshot.command, "OTA_ON", sizeof(snapshot.command) - 1);
+  } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::WifiOff) {
+    strncpy(snapshot.command, "WIFI_OFF", sizeof(snapshot.command) - 1);
   }
   strncpy(snapshot.result, commandRecord_.result, sizeof(snapshot.result) - 1);
   strncpy(snapshot.actual, commandRecord_.actual, sizeof(snapshot.actual) - 1);
@@ -448,7 +455,8 @@ bool ControllerLinkService::loadCommandRecord() {
       (command == CommandKind::Status && commandRecord_.argument == 0) ||
       (command == CommandKind::OtaOn &&
        commandRecord_.argument >= OTA_ON_MIN_SECONDS &&
-       commandRecord_.argument <= OTA_ON_MAX_SECONDS);
+       commandRecord_.argument <= OTA_ON_MAX_SECONDS) ||
+      (command == CommandKind::WifiOff && commandRecord_.argument == 0);
   const bool activeValid = state != ControllerCommandState::Idle &&
                            activeCommandValid && commandRecord_.sequence != 0 &&
                            commandRecord_.expiresAtEpoch >=
@@ -488,16 +496,22 @@ void ControllerLinkService::initializeCommandRecord() {
   commandRecord_.nextSequence = 1;
 }
 
-const char* ControllerLinkService::commandName() const {
-  switch (static_cast<CommandKind>(commandRecord_.command)) {
+const char* ControllerLinkService::commandName(CommandKind command) const {
+  switch (command) {
     case CommandKind::Status:
       return "STATUS";
     case CommandKind::OtaOn:
       return "OTA_ON";
+    case CommandKind::WifiOff:
+      return "WIFI_OFF";
     case CommandKind::None:
     default:
       return "NONE";
   }
+}
+
+const char* ControllerLinkService::commandName() const {
+  return commandName(static_cast<CommandKind>(commandRecord_.command));
 }
 
 void ControllerLinkService::emitCommandEvent(const char* eventText,
@@ -608,7 +622,8 @@ void ControllerLinkService::sendCommandFrame(uint32_t nowMs, bool resultRecovery
       (command == CommandKind::Status && commandRecord_.argument == 0) ||
       (command == CommandKind::OtaOn &&
        commandRecord_.argument >= OTA_ON_MIN_SECONDS &&
-       commandRecord_.argument <= OTA_ON_MAX_SECONDS);
+       commandRecord_.argument <= OTA_ON_MAX_SECONDS) ||
+      (command == CommandKind::WifiOff && commandRecord_.argument == 0);
   if (commandRecord_.ttlSeconds < COMMAND_MIN_TTL_SECONDS ||
       commandRecord_.ttlSeconds > COMMAND_MAX_TTL_SECONDS || !argumentValid) {
     setCommandTerminal(ControllerCommandState::Failed, "FAILED", "FRAME_INVALID", nowMs);
@@ -730,6 +745,8 @@ bool ControllerLinkService::processCommandResult(uint32_t nowMs, const char* lin
   } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::OtaOn) {
     snprintf(expectedActual, sizeof(expectedActual), "OTA_ON=%lu",
              static_cast<unsigned long>(commandRecord_.argument));
+  } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::WifiOff) {
+    strncpy(expectedActual, "WIFI_OFF", sizeof(expectedActual) - 1);
   } else {
     return false;
   }
@@ -812,6 +829,47 @@ void ControllerLinkService::sendSleepAck(uint32_t sleepSeconds, uint32_t build) 
   serial_->flush();
 }
 
+bool ControllerLinkService::processTimeRequest(uint32_t nowMs,
+                                               const char* line) {
+  const char* cursor = line + 5;
+  uint32_t version = 0;
+  uint32_t requestNonce = 0;
+  if (!parseCanonicalUnsigned(cursor, version) ||
+      !parseNextCanonicalUnsigned(cursor, requestNonce) || *cursor != '\0' ||
+      version != 1 || requestNonce == 0) {
+    return false;
+  }
+
+  const time_t nowEpoch = time(nullptr);
+  sendTimeResponse(requestNonce,
+                   nowEpoch >= MIN_VALID_COMMAND_EPOCH ? nowEpoch : 0);
+  recordValidActivity(nowMs);
+  Serial.print(F("[UART] TIME -> nonce="));
+  Serial.print(requestNonce);
+  Serial.print(F(" state="));
+  Serial.println(nowEpoch >= MIN_VALID_COMMAND_EPOCH ? F("SYNC") : F("WAIT"));
+  return true;
+}
+
+void ControllerLinkService::sendTimeResponse(uint32_t requestNonce,
+                                             time_t epoch) {
+  if (serial_ == nullptr) {
+    return;
+  }
+  char frame[TIME_RESPONSE_FRAME_CAPACITY] = {};
+  const int written = snprintf(frame,
+                               sizeof(frame),
+                               "TIME 1 %lu %lld\n",
+                               static_cast<unsigned long>(requestNonce),
+                               static_cast<long long>(epoch));
+  if (written <= 0 || static_cast<size_t>(written) >= sizeof(frame)) {
+    return;
+  }
+  serial_->write(reinterpret_cast<const uint8_t*>(frame),
+                 static_cast<size_t>(written));
+  serial_->flush();
+}
+
 bool ControllerLinkService::recordValidActivity(uint32_t nowMs) {
   const bool restoredOnline = state_ != State::Online;
   lastValidActivityAtMs_ = nowMs;
@@ -859,6 +917,10 @@ void ControllerLinkService::processLine(uint32_t nowMs) {
   }
   if (strncmp(cursor, "CRES ", 5) == 0) {
     processCommandResult(nowMs, cursor);
+    return;
+  }
+  if (strncmp(cursor, "TREQ ", 5) == 0) {
+    processTimeRequest(nowMs, cursor);
     return;
   }
   if (strncmp(cursor, "TEL ", 4) == 0) {

@@ -206,10 +206,8 @@ bool isC3OtaCommand(String command) {
   if (command == F("/c3ota")) {
     return true;
   }
-  if (!command.startsWith(F("/c3ota@"))) {
-    return false;
-  }
-  return command.indexOf(' ') < 0 && command.length() > strlen("/c3ota@");
+  return command.startsWith(F("/c3ota@")) && command.indexOf(' ') < 0 &&
+         command.length() > strlen("/c3ota@");
 }
 
 }  // namespace
@@ -915,7 +913,7 @@ String TelegramAlertService::buildC3OtaMessage_(
   } else if (stage == C3OtaReplyStage::Terminal) {
     const ControllerCommandSnapshot command = controllerLink.commandSnapshot();
     if (command.state == ControllerCommandState::Executed) {
-      message += F("State: <b>Enabled</b>\nWindow: <b>10 min</b>\nResult: <b>EXECUTED</b>\nUpload from the C3 project");
+      message += F("State: <b>Enabled</b>\nWindow: <b>10 min</b>\nResult: <b>EXECUTED</b>\nC3 OTA is available\nUpload from the C3 project");
     } else {
       message += F("State: <b>Not enabled</b>\nResult: <b>");
       message += controllerLink.commandStateText();
