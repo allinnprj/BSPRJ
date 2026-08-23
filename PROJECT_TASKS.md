@@ -135,3 +135,7 @@
 95. [x] Synchronize the acceptance ledger, tasks, `progress.md`, `memory.md`, and append-only history with the accepted BS `135` / C3 `197` physical results. Protocol, data dictionaries, and architecture require no change because the accepted wire formats and data schema did not change.
 96. [ ] Commit and push each accepted stage to `devlop`; move to `main` only after command, Wi-Fi-off/OTA, GPS relay, shared-power, and recovery gates pass.
 97. [ ] Feed the verified final controller wiring and protocol into task `76`; create the final as-built `NETLIST` only after GPS, SIM800, power, sensors, and all interconnections are physically finalized.
+
+## H. Later Portability and Productization
+
+98. [ ] LATER: add a resource-conscious Wi-Fi setup page to the BS web server so the finished portable device can be connected manually to a new network without recompiling firmware. Support SSID/password entry, protected persistent storage, connection validation, safe rollback or recovery when credentials fail, and never display or write the Wi-Fi password to diagnostics or logs. Preserve the current configured network as the recovery/default path until this feature is separately implemented and physically accepted.
