@@ -12,6 +12,7 @@ function createSheet(name, headers) {
     headers: headers || [],
     hidden: false,
     hiddenColumns: new Set(),
+    hideColumnCalls: 0,
     getName() {
       return this.name;
     },
@@ -38,8 +39,12 @@ function createSheet(name, headers) {
         getValues: () => [this.headers.slice(column - 1, column - 1 + columnCount)]
       };
     },
-    hideColumns(column) {
-      this.hiddenColumns.add(column);
+    hideColumns(column, count) {
+      this.hideColumnCalls++;
+      const columnCount = count || 1;
+      for (let index = column; index < column + columnCount; index++) {
+        this.hiddenColumns.add(index);
+      }
     },
     showColumns(column, count) {
       for (let index = column; index < column + count; index++) {
@@ -53,9 +58,9 @@ function createSheet(name, headers) {
 }
 
 const sheetDefinitions = [
-  ['log', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %', 'FREE HEAP']],
-  ['08-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %', 'FREE HEAP']],
-  ['09-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %', 'FREE HEAP']],
+  ['log', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP']],
+  ['08-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP']],
+  ['09-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP']],
   ['clean_summary_10m', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %']],
   ['summary_health', ['DEV ID', 'DATE', 'HAS LOG ROWS']],
   ['daily_verdict_table', ['DEV ID', 'DATE', 'VERDICT']],
@@ -177,6 +182,9 @@ const hooks = `
   this.__onOpen = onOpen;
   this.__showAutomationStatus = showAutomationStatus_;
   this.__showDiagnosticsStatus = showDiagnosticsStatus_;
+  this.__headers = HEADERS;
+  this.__rawLogUserHeaders = RAW_LOG_USER_HEADERS;
+  this.__rawLogTechnicalHeaders = RAW_LOG_TECHNICAL_HEADERS;
 `;
 vm.runInNewContext(`${source}\n${hooks}`, sandbox, { filename: codePath });
 
@@ -190,6 +198,17 @@ assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('notes').hidden, false);
+const logSheet = spreadsheet.getSheetByName('log');
+['DEV ID', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %']
+  .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), false, `${header} must stay visible in User mode.`));
+['VER', 'BUILD', 'RAW MIN', 'RAW MAX', 'WIN MIN', 'UPTIME', 'FREE HEAP']
+  .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), true, `${header} must be hidden in User mode.`));
+assert.strictEqual(logSheet.hideColumnCalls, 3, 'Contiguous raw technical columns must be hidden in three batched calls.');
+assert.deepStrictEqual(
+  Array.from(sandbox.__rawLogUserHeaders).concat(Array.from(sandbox.__rawLogTechnicalHeaders)).sort(),
+  Array.from(sandbox.__headers).sort()
+);
+assert.strictEqual(new Set(Array.from(sandbox.__rawLogUserHeaders).concat(Array.from(sandbox.__rawLogTechnicalHeaders))).size, sandbox.__headers.length);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(sandbox.__getDiagnosticsState(spreadsheet))),
   {
@@ -204,6 +223,7 @@ assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('09-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('log').hiddenColumns.size, 0);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(sandbox.__getDiagnosticsState(spreadsheet))),
   {
@@ -240,6 +260,9 @@ assert.deepStrictEqual(
   state.renderedMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
   ['Refresh BS menu/status', 'Refresh latest data', '● Interface mode: TECH', 'Switch to User mode']
 );
+const maintenanceMenu = state.renderedMenu.entries
+  .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Maintenance').menu;
+assert.ok(maintenanceMenu.entries.some((entry) => entry.label === 'Repair all table layout/order'));
 
 let diagnosticsMenu = state.renderedMenu.entries
   .find((entry) => entry.type === 'submenu' && entry.menu.name === 'Diagnostics').menu;
@@ -347,6 +370,11 @@ function getFunctionSource(functionName) {
   }
   throw new Error(`Unclosed function ${functionName}`);
 }
+
+assert.match(getFunctionSource('ensureHeaderFormatting_'), /applyTechnicalColumnVisibilityForSheet_/);
+assert.match(getFunctionSource('writeTableToSheet_'), /applyTechnicalColumnVisibilityForSheet_/);
+assert.match(getFunctionSource('ensureWritableLogSheet_'), /archivedSheet\.hideSheet\(\)/);
+assert.match(getFunctionSource('hideColumnsByHeaderNames_'), /sheet\.hideColumns\(startColumn, columnCount\)/);
 
 [
   'enableAutomaticAnalyticsRefresh_',

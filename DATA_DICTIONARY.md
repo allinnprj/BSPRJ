@@ -16,6 +16,12 @@ The main question is not "how many decibels?" yet. The main question is:
 
 After the `INMP441` migration, the most important raw sound clue is usually `AVG P2P`, while `NOW %`, `H %`, and `M %` are the human-readable scaled values.
 
+## Raw Table Views
+
+`User mode` keeps the everyday reading set visible: `DEV ID`, date/time, `PART`, `LEVEL`, `NOW %`, `H %`, `M %`, `AVG P2P`, `SIG IN`, `TEMP C`, and `HUM %`.
+
+`Technical mode` shows the complete 36-column raw schema. The additional columns are not discarded: they remain available for exported-log analysis, signal and sensor diagnostics, restart and memory checks, acoustic-revision separation, and later dB calibration.
+
 ## Remote Diagnostic Journal
 
 `/diagnostics.log` is the current tab-separated WROOM service journal; `/diagnostics-prev.log` is the single rotated previous file. Each file is limited to about `128 KB` and is downloadable from the WROOM log web page. This journal is for fault and timing analysis, while `/log.csv` remains the analytical 10-minute sound dataset.

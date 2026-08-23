@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets compact user view and automatic rollover layout - 2026-08-23
+
+1. Audited all 36 raw Google Sheets columns. No field was deleted: the non-user fields still support signal, SHT31, memory, restart, acoustic-revision, exported-log, and future dB-calibration analysis.
+2. Centralized the raw-table presentation contract. User mode now keeps only `DEV ID`, date/time, day part, relative level, `NOW/H/M`, `AVG P2P`, `SIG IN`, temperature, and humidity visible; every other raw field is derived automatically as a technical column. Technical mode still shows the complete schema, and contiguous technical columns are hidden in batches to reduce Sheets API calls.
+3. Hardened date rollover: a new active `log` receives the complete header/body layout and current column mode immediately, merged or renamed archives are fully formatted and newest-first, and the completed archive is hidden after the replacement `log` exists.
+4. Analytics rebuilds now restore the current User/Technical column visibility after their formatting pass. The former `Refresh all table layout/order` command remains only as a recovery tool and is renamed `Repair all table layout/order`.
+5. Firmware, controller UART behavior, the 36-column ingestion schema, stored rows, analytics calculations, triggers, and charts are unchanged. No Apps Script deployment was performed.
+
 ## Confirmed C3 sleep announcement handshake - 2026-08-23
 
 1. Physical C3 build `196` evidence rejected blind repetition as insufficient: four accepted `UART_SLP` cycles coexisted with four false `UART_OFF` transitions, and the counter grew from `10` to `14` while C3 continued normal wake recovery. No reset, WDT, brownout, WQTT, Datacake, Sheets-drop, or sequence-gap evidence explained the misses.

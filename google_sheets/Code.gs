@@ -53,6 +53,25 @@ const HEADERS = [
   'ACOUSTIC REV'
 ];
 
+const RAW_LOG_USER_HEADERS = [
+  'DEV ID',
+  'DATE',
+  'T FROM',
+  'T TO',
+  'PART',
+  'LEVEL',
+  'NOW %',
+  'H %',
+  'M %',
+  'AVG P2P',
+  'SIG IN',
+  'TEMP C',
+  'HUM %'
+];
+const RAW_LOG_TECHNICAL_HEADERS = HEADERS.filter((header) =>
+  !RAW_LOG_USER_HEADERS.includes(header)
+);
+
 const ACTIVE_LOG_SHEET_NAME = 'log';
 const DAILY_SHEET_NAME_FORMAT = 'DD-MM-YYYY'; // 'DD-MM-YYYY' or 'YYYY-MM-DD'
 const CLEAN_SUMMARY_SHEET_NAME = 'clean_summary_10m';
@@ -668,6 +687,8 @@ function ensureHeaderFormatting_(sheet) {
     sheet.getRange(1, col, lastRow, 1)
       .setBorder(null, null, null, true, null, null, '#8a8a8a', SpreadsheetApp.BorderStyle.SOLID_MEDIUM);
   });
+
+  applyTechnicalColumnVisibilityForSheet_(sheet);
 }
 
 function applyLogRowFormatting_(sheet, startRow, rowCount) {
@@ -903,13 +924,13 @@ function appendLogRowsToArchive_(sourceSheet, targetSheet) {
   const values = sourceRange.getValues();
   const filteredValues = values.filter((row) => !sheetHasRecordKey_(targetSheet, buildRecordKeyFromRow_(row)));
   if (filteredValues.length === 0) {
-    ensureHeaderRowValues_(targetSheet);
+    ensureHeaderFormatting_(targetSheet);
     return;
   }
 
   const targetStartRow = Math.max(targetSheet.getLastRow(), 1) + 1;
   targetSheet.getRange(targetStartRow, 1, filteredValues.length, HEADERS.length).setValues(filteredValues);
-  ensureHeaderRowValues_(targetSheet);
+  ensureHeaderFormatting_(targetSheet);
   if (sortRawSheetNewestFirst_(targetSheet) === 0) {
     applyLogRowFormatting_(targetSheet, targetStartRow, filteredValues.length);
   }
@@ -918,6 +939,7 @@ function appendLogRowsToArchive_(sourceSheet, targetSheet) {
 function ensureWritableLogSheet_(incomingDateText) {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   let sheet = spreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
+  let archivedSheet = null;
   const normalizedIncomingDateText = normalizeDateText_(incomingDateText);
   if (!sheet) {
     sheet = spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
@@ -934,16 +956,21 @@ function ensureWritableLogSheet_(incomingDateText) {
       const existingArchive = spreadsheet.getSheetByName(archivedSheetName);
       if (!existingArchive) {
         sheet.setName(archivedSheetName);
-        ensureHeaderRowValues_(sheet);
+        ensureHeaderFormatting_(sheet);
         sortRawSheetNewestFirst_(sheet);
+        archivedSheet = sheet;
       } else {
         appendLogRowsToArchive_(sheet, existingArchive);
         spreadsheet.deleteSheet(sheet);
+        archivedSheet = existingArchive;
       }
     }
 
     sheet = spreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME) || spreadsheet.insertSheet(ACTIVE_LOG_SHEET_NAME);
     ensureHeaderFormatting_(sheet);
+    if (archivedSheet && !archivedSheet.isSheetHidden()) {
+      archivedSheet.hideSheet();
+    }
   }
 
   ensureRawSheetNewestFirst_(sheet);
@@ -1208,7 +1235,7 @@ function addBsMenuToUi_() {
       .addSubMenu(ui.createMenu('Maintenance')
         .addItem('Rebuild analytics', 'rebuildAnalytics_')
         .addItem('Rebuild charts only', 'rebuildAnalyticsCharts_')
-        .addItem('Refresh all table layout/order', 'refreshAllSheetFormatting_'))
+        .addItem('Repair all table layout/order', 'refreshAllSheetFormatting_'))
       .addSubMenu(diagnosticsMenu)
       .addSubMenu(automationMenu);
   }
@@ -1504,9 +1531,15 @@ function refreshAllSheetFormatting_() {
   refreshExistingTableSheetFormatting_(DAILY_VERDICT_SHEET_NAME, DAILY_VERDICT_HEADERS);
   refreshExistingTableSheetFormatting_(DAILY_VERDICT_TABLE_SHEET_NAME, DAILY_VERDICT_TABLE_HEADERS);
 
+  if (getUserInterfaceMode_() === USER_INTERFACE_MODE_TECHNICAL) {
+    applyTechnicalMode_(spreadsheet, { preserveActiveSheet: true });
+  } else {
+    applyUserMode_(spreadsheet, { preserveActiveSheet: true });
+  }
+
   refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
-  spreadsheet.toast('All table formatting and newest-first row order refreshed.', 'BS Noise', 6);
+  spreadsheet.toast('All table layout and newest-first order repaired.', 'BS Noise', 6);
 }
 
 function hideArchiveSheets_() {
@@ -1575,8 +1608,9 @@ function showAnalyticsSheetsFromMenu_() {
   SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets shown.', 'BS Noise', 5);
 }
 
-function applyUserMode_(spreadsheet) {
+function applyUserMode_(spreadsheet, options) {
   const targetSpreadsheet = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
+  const opts = options || {};
   let shownSheets = 0;
   let hiddenSheets = 0;
 
@@ -1593,7 +1627,7 @@ function applyUserMode_(spreadsheet) {
   const preferredSheet = targetSpreadsheet.getSheetByName(CHARTS_SHEET_NAME) ||
     targetSpreadsheet.getSheetByName(DAILY_VERDICT_TABLE_SHEET_NAME) ||
     targetSpreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
-  if (preferredSheet) {
+  if (preferredSheet && !opts.preserveActiveSheet) {
     targetSpreadsheet.setActiveSheet(preferredSheet);
   }
 
@@ -1612,8 +1646,9 @@ function applyUserMode_(spreadsheet) {
   return { shownSheets, hiddenSheets, hiddenColumns };
 }
 
-function applyTechnicalMode_(spreadsheet) {
+function applyTechnicalMode_(spreadsheet, options) {
   const targetSpreadsheet = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
+  const opts = options || {};
   let shownAnalyticsSheets = 0;
   let hiddenArchiveSheets = 0;
 
@@ -1629,7 +1664,7 @@ function applyTechnicalMode_(spreadsheet) {
   const preferredSheet = targetSpreadsheet.getSheetByName(CHARTS_SHEET_NAME) ||
     targetSpreadsheet.getSheetByName(DAILY_VERDICT_TABLE_SHEET_NAME) ||
     targetSpreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
-  if (preferredSheet) {
+  if (preferredSheet && !opts.preserveActiveSheet) {
     targetSpreadsheet.setActiveSheet(preferredSheet);
   }
 
@@ -1673,13 +1708,7 @@ function enableTechnicalMode_() {
 }
 
 const TECHNICAL_COLUMNS_BY_SHEET_NAME = {};
-TECHNICAL_COLUMNS_BY_SHEET_NAME[ACTIVE_LOG_SHEET_NAME] = [
-  'VER', 'BUILD', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX',
-  'QUIET', 'LOUD', 'SAMPLES', 'P2P P95', 'P2P MIN', 'P2P MAX', 'P2P STB MAX',
-  'SESSION P2P MIN', 'SESSION P2P MAX', 'SESSION P2P STB MAX',
-  'ENV OK', 'ENV FAIL', 'FREE HEAP', 'MIN FREE HEAP',
-  'BOOT SEQ', 'RESET REASON', 'ACOUSTIC REV'
-];
+TECHNICAL_COLUMNS_BY_SHEET_NAME[ACTIVE_LOG_SHEET_NAME] = RAW_LOG_TECHNICAL_HEADERS;
 TECHNICAL_COLUMNS_BY_SHEET_NAME[CLEAN_SUMMARY_SHEET_NAME] = [
   'VER', 'BUILD', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX',
   'WIN MIN', 'QUIET', 'LOUD', 'SAMPLES', 'SOURCE SHEET', 'DAY STATE',
@@ -1719,14 +1748,30 @@ function hideColumnsByHeaderNames_(sheet, headerNames) {
   }
 
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
-  let hiddenCount = 0;
-  headerNames.forEach((headerName) => {
-    const colIndex = headers.indexOf(headerName) + 1;
-    if (colIndex > 0 && !sheet.isColumnHiddenByUser(colIndex)) {
-      sheet.hideColumns(colIndex);
-      hiddenCount++;
+  const targetColumns = headerNames
+    .map((headerName) => headers.indexOf(headerName) + 1)
+    .filter((columnIndex) => columnIndex > 0)
+    .sort((left, right) => left - right);
+  const hiddenCount = targetColumns.filter((columnIndex) =>
+    !sheet.isColumnHiddenByUser(columnIndex)
+  ).length;
+
+  for (let index = 0; index < targetColumns.length;) {
+    const startColumn = targetColumns[index];
+    let endColumn = startColumn;
+    while (index + 1 < targetColumns.length && targetColumns[index + 1] === endColumn + 1) {
+      index++;
+      endColumn = targetColumns[index];
     }
-  });
+    const columnCount = endColumn - startColumn + 1;
+    const needsHide = targetColumns
+      .slice(index - columnCount + 1, index + 1)
+      .some((columnIndex) => !sheet.isColumnHiddenByUser(columnIndex));
+    if (needsHide) {
+      sheet.hideColumns(startColumn, columnCount);
+    }
+    index++;
+  }
   return hiddenCount;
 }
 
@@ -1736,6 +1781,13 @@ function hideTechnicalColumnsCore_(spreadsheet) {
     hiddenCount += hideColumnsByHeaderNames_(sheet, getTechnicalColumnsForSheet_(sheet.getName()));
   });
   return hiddenCount;
+}
+
+function applyTechnicalColumnVisibilityForSheet_(sheet) {
+  if (!sheet || getUserInterfaceMode_() !== USER_INTERFACE_MODE_USER) {
+    return 0;
+  }
+  return hideColumnsByHeaderNames_(sheet, getTechnicalColumnsForSheet_(sheet.getName()));
 }
 
 function hideTechnicalColumns_() {
@@ -3347,6 +3399,7 @@ function writeTableToSheet_(sheetName, headers, rows, options) {
     }
 
     applySheetRoleFormatting_(sheet, headers, output.length, getSheetStyleProfile_(sheetName));
+    applyTechnicalColumnVisibilityForSheet_(sheet);
   }
 }
 
