@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## BS 135 / C3 197 controller-link field acceptance - 2026-08-23
+
+1. Accepted the paired sleep-handshake fix on physical BS `0.1.81-EXP` build `135` and C3 `1.2.0-c3` build `197`: eight consecutive `UART_SLP -> UART_WAIT -> UART_OK` cycles recovered in `9..17 s`; after the first newly accepted sleep announcement, `UART_OFF` stayed at `1` and `C3_GAP` stayed at `0`.
+2. Accepted the routine automatic C3-to-BS telemetry gateway for continued integration. Power data, saved GPS context, WQTT/Telegram delivery, duplicate re-ACK, sequence continuity, and repeated sleep/wake recovery are sufficient to move to shared-power validation.
+3. Kept STATUS command reliability as explicit non-blocking evidence debt. In sequences `18..24`, four commands completed with fresh `OK STATUS` and three ended in bounded `ACK_TIMEOUT` while automatic telemetry remained active; Telegram correctly reported cached data with refresh failure instead of pretending it was fresh.
+4. Deferred scheduled BS restart during declared C3 sleep, true missing-link proof, STATUS/CACK reliability, TTL expiry, and controller-restart exact-once cases to periodic long-run evidence. These remain required for final link or remote-control acceptance but no longer delay the shared-power stage.
+5. Documentation only: no firmware, wire protocol, data schema, build, or device upload changed in this step.
+
 ## Google Sheets compact charts dashboard layout - 2026-08-23
 
 1. Reorganized the `charts` sheet into two clean panels: `DAYPART LEVELS`, `NOISE MIX`, and `DATA COVERAGE` remain in `A:C`; the centered newest-first `DAILY VERDICT` table starts in `E:H`; and its chronological chart is aligned to the same left edge directly below the last visible verdict row.
