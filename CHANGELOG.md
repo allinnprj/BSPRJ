@@ -9,7 +9,7 @@
 5. Investigation of sequence `42` confirmed that UART retries keep the original sequence. A new sequence is allocated only by a separately queued authorized Telegram `/c3ota`; therefore `42` was a third queue event, not a retry of `41`. Because the old journal did not retain Telegram `update_id`, it cannot distinguish a third unseen update from replay after a Telegram cursor reset. New OTA `CMD_QUEUE` diagnostics include bounded `source_update_id` metadata for future proof.
 6. C3 source/firmware, `TREQ/TIME`, `SLEEP/SACK`, telemetry frames, command payloads, retry cadence, and the maximum number of `CMD` transmissions are unchanged.
 7. Validation: `node test/controller_command_contract_test.js` and `git diff --check` pass. `pio run -e esp32dev` succeeds with RAM `65,636 / 327,680` (`20.0%`), linked Flash `1,366,159 / 1,572,864` (`86.9%`), OTA-slot reserve `206,705` bytes, firmware image `1,366,560` bytes, and SHA-256 `31B1563EE853DFBDEE24DBE911B24A225877DF2A133AEAF87F8626CAB464E2A6`.
-8. Physical BS upload and one `/c3ota` late-response acceptance check remain manual.
+8. BS OTA upload to `192.168.1.134` completed successfully. The live web endpoint identifies `WROOM 0.1.83-EXP build 137`; one `/c3ota` late-response acceptance check remains as the focused physical gate.
 
 ## BS Gateway/Service preparation - 0.1.82-EXP build 136 - 2026-08-23
 
