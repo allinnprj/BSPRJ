@@ -17,8 +17,8 @@ Canonical controller names in user-facing discussion and project status are:
 - Maximum accepted C3 input line length remains 47 printable characters plus terminator.
 - Every frame is parsed strictly. Unknown, malformed, out-of-range, boot-ROM, or truncated lines are ignored.
 - The receive-only telemetry/gateway baseline is accepted for continued development. WQTT forwarding and the read-only Telegram C3 card are physically proven.
-- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass `STATUS 0`. The C3 project's own Telegram OTA path is primary; the BS-triggered OTA path is retained only as a reserve.
-- Uploaded BS build `137` and C3 build `205` are the current device baseline. C3 again owns its Wi-Fi and Internet services; BS keeps the accepted diagnostic/status UART path. Local BS build `138` removes only BS-mediated OTA_ON and awaits manual upload.
+- The bounded BS-to-C3 command envelope is specified below. Uploaded BS build `131` and C3 build `192` physically pass `STATUS 0`. C3 owns its Wi-Fi, bot, MQTT, Sheets, and manual OTA.
+- Uploaded BS build `137` and C3 build `205` are the current device baseline. Local BS build `139` is a STATUS-only command sender: it keeps the accepted diagnostic/status UART path and removes the retired `OTA_ON`, `WIFI_OFF`, and `TREQ/TIME` runtime paths. It awaits manual upload.
 
 ## Heartbeat
 
@@ -250,9 +250,9 @@ Wi-Fi: 92% (-54 dBm) NKAANNE_plus
 
 This section freezes the BS-to-C3 command contract. The existing PING/PONG, TEL/ACK, command, and C3 `SLEEP` announcement formats remain unchanged; uploaded paired builds `135/197` add the accepted bounded `SACK` response described above. Uploaded builds `131/192` physically prove `STATUS 0`; uploaded `132/193` prove the OTA side effect/upload/restart. C3 build `194` adds flushed command ACK/result delivery; later stages remain specification-only.
 
-## Gateway Time Bootstrap
+## Historical Gateway Time Bootstrap
 
-Gateway mode cannot depend on C3 Wi-Fi for NTP because Smart Auto and scheduled charge decisions require trustworthy time. Time bootstrap is therefore demand-driven and backward-compatible: BS never sends a time frame unless C3 first requests it.
+The following frames document the retired build-136 Gateway experiment. They are not implemented by local BS build `139` and must not be used by the current C3 build `205`.
 
 C3 request:
 
@@ -269,13 +269,13 @@ TIME 1 <nonce> <utc_epoch>
 - `1` is the exact time-bootstrap protocol version.
 - `nonce` is a non-zero canonical unsigned 32-bit value chosen by C3 for matching one request and response.
 - `utc_epoch` is the BS Unix UTC epoch. A value of `0` truthfully means BS time is not synchronized yet; C3 must keep its retained/GPS time rules and retry later without treating `0` as valid time.
-- BS accepts only the exact request shape, sends and flushes exactly one response, and treats a valid request as live C3 activity.
-- C3 build `197` does not emit `TREQ`, so uploaded BS build `136` changes no current device behavior.
-- Future C3 firmware must validate the matching nonce and minimum valid epoch before updating retained trusted time. Time-zone conversion remains C3-owned.
+- Historical BS build `136` accepted only the exact request shape and sent one flushed response.
+- C3 build `197` did not emit `TREQ`; builds `198..204` were experimental and superseded.
+- Local BS build `139` contains no `TREQ/TIME` parser or sender.
 
 ## Historical Gateway and Service Modes
 
-The following model records the build-198..204 experiment and is no longer the current direction. C3 build `205` restores C3-owned Wi-Fi, bot, MQTT, Sheets, and manual OTA; BS build `138` retires `/c3ota` and `OTA_ON` while retaining STATUS and diagnostic UART traffic.
+The following model records the build-198..204 experiment and is no longer the current direction. C3 build `205` restores C3-owned Wi-Fi, bot, MQTT, Sheets, and manual OTA; local BS build `139` retains STATUS and diagnostic UART traffic while removing the experiment's `OTA_ON`, `WIFI_OFF`, and `TREQ/TIME` runtime paths.
 
 - `Direct`: the current safe/default C3 mode. C3 owns Wi-Fi, NTP, Telegram, MQTT, Sheets, and OTA exactly as build `197` does today.
 - `Gateway`: the future normal mode. C3 Wi-Fi stays off, autonomous INA3221/Charge/Smart Auto/GPS/Deep-Sleep logic remains local, routine telemetry uses UART/BS, and time is bootstrapped through `TREQ/TIME`.
@@ -323,8 +323,8 @@ The complete line must contain no more than 47 printable ASCII characters before
 | Stage | Command | Argument | Effect | Initial state |
 | --- | --- | --- | --- | --- |
 | A | `STATUS` | exactly `0` | Execute a safe command round-trip and request a fresh ordinary telemetry publication. It changes no C3 state. | Uploaded and physically accepted on builds `131/192`. |
-| B | `OTA_ON` | `300..900` seconds | Historical bounded C3 OTA experiment. | Retired by C3 build `205` and local BS build `138`; no current sender or receiver path. |
-| C | `WIFI_OFF` | exactly `0` | End an active Service window, report the result over UART, flush it, disable C3 Wi-Fi, and return to the saved Gateway plan. | BS sender support is dormant in uploaded build `136` with no Telegram caller. C3 support and physical acceptance remain absent; never send it to build `197`. |
+| B | `OTA_ON` | `300..900` seconds | Historical bounded C3 OTA experiment. | Retired by C3 build `205`; removed from local BS builds `138+`. |
+| C | `WIFI_OFF` | exactly `0` | Historical Gateway/Service exit command. | Never enabled on C3; removed from local BS build `139`. |
 | D | `RESTART` | exactly `0` | Report `RESTARTING`, flush UART, wait the existing safe post-frame interval, then perform a software restart. | Specified, disabled until separately approved and tested. |
 
 Any command not enabled for the current implementation stage is rejected. Charge/mode/GPIO3/GPS/sleep-setting commands are deliberately absent from this protocol version.
@@ -407,8 +407,9 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 2. `[done]` Route `/c3sts` through the existing authorized BS bot and physically prove a fresh status lifecycle plus duplicate-command coalescing on builds `131/192`.
 3. `[done and deployed on BS; C3 unchanged]` Uploaded BS build `136` prepares `TREQ/TIME`, dormant `WIFI_OFF`, and `/c3ota -> OTA_ON 600`. Backward compatibility with Direct-mode C3 build `197` physically passed one complete `600 s` `SLP -> WAIT -> OK` cycle with `7 s` recovery, `C3_GAP=0`, WQTT `OK`, and `GS_DROP=0`.
 4. `[historical, superseded]` The Direct/Gateway/Service and maintenance-Wi-Fi experiments ended with unflashed C3 build `204` and are not the current architecture.
-5. `[current]` C3 build `205` owns Wi-Fi, its bot, MQTT, Sheets, and manual OTA. BS build `138` keeps `/c3sts`/STATUS and the diagnostic transport, but removes `/c3ota` and OTA_ON transmission.
-6. `[later]` Keep `RESTART` separately approved. Do not add Charge/mode/GPIO3/GPS/sleep-setting control to protocol v1.
+5. `[current local]` C3 build `205` owns Wi-Fi, its bot, MQTT, Sheets, and manual OTA. BS build `139` keeps `/c3sts`/STATUS and the diagnostic transport, removes `/c3ota`, `OTA_ON`, `WIFI_OFF`, and `TREQ/TIME`, and safely clears persisted legacy command codes `2/3`.
+6. `[next separate hardware stage]` Add no further UART command. GPIO23 active-LOW open-drain wake remains deferred until the C3 wake input is physically ready and separately approved.
+7. `[later]` Keep `RESTART` separately approved. Do not add Charge/mode/GPIO3/GPS/sleep-setting control to protocol v1.
 
 ### Telegram Status Bridge
 
@@ -417,5 +418,5 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 - If C3 is `SLP`, `WAIT`, or `OFF`, BS does not enqueue `STATUS` because UART cannot wake C3. It replies with `Data: Cached` and preserves the telemetry age.
 - `/bssts` is BS-local. It reports already available BS runtime values and a short C3 link summary without sending UART traffic or taking a new sensor measurement.
 - Both commands accept the normal bot-name suffix and coalesce duplicate requests found in one Telegram poll.
-- BS build `138` no longer recognizes `/c3ota`; C3 OTA is enabled manually through the separate C3 bot. `/c3sts` and `/bssts` retain their existing suffix, authorization, coalescing, and truthful status behavior.
+- BS builds `138+` no longer recognize `/c3ota`; C3 OTA is enabled manually through the separate C3 bot. `/c3sts` and `/bssts` retain their existing suffix, authorization, coalescing, and truthful status behavior.
 - Starting with local BS build `134`, the C3 card adds a Google Maps link, satellites, HDOP, and saved-fix age only when the accepted telemetry contains a valid saved FIX. An absent FIX is not treated as an error and does not trigger GPS acquisition.

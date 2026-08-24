@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Narrow C3 diagnostic UART cleanup - 0.1.85-EXP build 139 - 2026-08-25
+
+1. Reduced the active BS-to-C3 command allowlist to `STATUS 0` only. `/c3sts`, PING/PONG, TEL/ACK, SLEEP/SACK, strict STATUS parsing, retries, persistence, and truthful fresh/cached Telegram reporting are unchanged.
+2. Removed the unused BS `TREQ/TIME` responder and dormant `WIFI_OFF` sender left by the retired Gateway/Service experiment. No new library, task, queue, NVS namespace, UART frame, or control mode was added.
+3. Extended the existing command-store migration: persisted legacy command codes `2` (`OTA_ON`) and `3` (`WIFI_OFF`) are both reset and saved as `Idle`, so neither can block STATUS after the update.
+4. GPIO23 wake is deliberately not part of this build. C3 source/firmware, BS tokens/chat identifiers, normal notifications, INA3221 telemetry, Wi-Fi behavior, and device state are unchanged. No upload or publication was performed.
+5. Validation: `node test/controller_command_contract_test.js`, `git diff --check`, and one `pio run -e esp32dev` pass. RAM is unchanged at `65,636 / 327,680` (`20.0%`); linked Flash is `1,363,487 / 1,572,864` (`86.7%`), `528` bytes less than build `138`; OTA-slot reserve is `209,377` bytes. `firmware.bin` is `1,363,888` bytes with SHA-256 `92DC29384D5DA7E14C77EEDCD94F5358E14EA177F43BC9DB2968AE7B1C34D166`. No upload or publication was performed.
+
 ## Retire BS-mediated C3 OTA - 0.1.84-EXP build 138 - 2026-08-25
 
 1. Removed the BS Telegram `/c3ota` command, its reply state/cards, and the specific `queueOtaOnCommand()` / `OTA_ON` sender path. The command poll now advertises and recognizes only `/c3sts` and `/bssts`.

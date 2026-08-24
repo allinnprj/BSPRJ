@@ -21,15 +21,13 @@ function functionBody(text, signature, nextSignature) {
 
 assert.match(header, /#include <Preferences\.h>/);
 assert.match(header, /bool queueStatusCommand\(uint32_t ttlSeconds = 120\)/);
-assert.match(header, /bool queueWifiOffCommand\(uint32_t ttlSeconds = 120\)/);
-assert.doesNotMatch(header, /queueOtaOnCommand|CommandKind::OtaOn/);
+assert.doesNotMatch(header, /queueOtaOnCommand|queueWifiOffCommand|CommandKind::OtaOn|CommandKind::WifiOff/);
 assert.match(header, /static constexpr size_t COMMAND_FRAME_CAPACITY = 48/);
 assert.match(header, /static constexpr size_t SLEEP_ACK_FRAME_CAPACITY = 40/);
-assert.match(header, /static constexpr size_t TIME_RESPONSE_FRAME_CAPACITY = 40/);
 assert.match(header, /static constexpr uint32_t COMMAND_MAX_TTL_SECONDS = 7200/);
 assert.match(header, /static constexpr uint32_t STATUS_MAX_TTL_SECONDS = 120/);
-assert.match(header, /static constexpr uint32_t WIFI_OFF_MAX_TTL_SECONDS = 120/);
 assert.match(header, /static constexpr uint8_t RETIRED_OTA_ON_COMMAND_CODE = 2/);
+assert.match(header, /static constexpr uint8_t RETIRED_WIFI_OFF_COMMAND_CODE = 3/);
 assert.match(header, /static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4/);
 assert.match(header, /static constexpr uint32_t COMMAND_LATE_RESPONSE_WAIT_MS = 40000/);
 assert.match(header, /static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 40000/);
@@ -57,15 +55,7 @@ assert.match(queueBody, /ControllerCommandState::Queued/);
 assert.match(queueBody, /CommandKind::Status/);
 assert.match(queueBody, /saveCommandRecord\(\)/);
 assert.match(queueBody, /CMD_QUEUE/);
-assert.doesNotMatch(queueBody, /OtaOn|OTA_ON|sourceUpdateId/);
-
-const wifiOffQueueBody = functionBody(
-  source,
-  'bool ControllerLinkService::queueWifiOffCommand(',
-  'bool ControllerLinkService::queueCommand('
-);
-assert.match(wifiOffQueueBody, /CommandKind::WifiOff/);
-assert.match(wifiOffQueueBody, /WIFI_OFF_MAX_TTL_SECONDS/);
+assert.doesNotMatch(queueBody, /OtaOn|OTA_ON|WifiOff|WIFI_OFF|sourceUpdateId/);
 
 const loadCommandBody = functionBody(
   source,
@@ -74,11 +64,11 @@ const loadCommandBody = functionBody(
 );
 assert.match(
   loadCommandBody,
-  /retiredOtaOn[\s\S]*RETIRED_OTA_ON_COMMAND_CODE[\s\S]*retiredOtaOn[\s\S]*initializeCommandRecord\(\)[\s\S]*saveCommandRecord\(\)/,
-  'A persisted queued, sent, accepted, or terminal OTA_ON record must be reset and saved as Idle on build 138.'
+  /retiredControlCommand[\s\S]*RETIRED_OTA_ON_COMMAND_CODE[\s\S]*RETIRED_WIFI_OFF_COMMAND_CODE[\s\S]*retiredControlCommand[\s\S]*initializeCommandRecord\(\)[\s\S]*saveCommandRecord\(\)/,
+  'Persisted OTA_ON and WIFI_OFF records must be reset and saved as Idle on build 139.'
 );
 assert.match(loadCommandBody, /CommandKind::Status[\s\S]*commandRecord_\.argument == 0/);
-assert.doesNotMatch(loadCommandBody, /CommandKind::OtaOn/);
+assert.doesNotMatch(loadCommandBody, /CommandKind::OtaOn|CommandKind::WifiOff/);
 
 const updateBody = functionBody(
   source,
@@ -145,12 +135,7 @@ assert.match(source, /if \(\*cursor != '\\0'\)/);
 assert.match(source, /"SACK %lu C3 %lu\\n"/);
 assert.match(source, /sendSleepAck\(sleepSeconds, build\)/);
 assert.match(source, /ControllerLinkService::sendSleepAck[\s\S]*serial_->write\([\s\S]*serial_->flush\(\)/);
-assert.match(source, /strncmp\(cursor, "TREQ ", 5\)/);
-assert.match(source, /ControllerLinkService::processTimeRequest/);
-assert.match(source, /"TIME 1 %lu %lld\\n"/);
-assert.match(source, /requestNonce == 0/);
-assert.match(source, /nowEpoch >= MIN_VALID_COMMAND_EPOCH \? nowEpoch : 0/);
-assert.match(source, /ControllerLinkService::sendTimeResponse[\s\S]*serial_->write\([\s\S]*serial_->flush\(\)/);
+assert.doesNotMatch(source, /processTimeRequest|sendTimeResponse|TREQ |TIME 1/);
 assert.match(source, /parseNextUnsigned\(cursor, gpsFixed\)/);
 assert.match(source, /gpsLatitudeMicrodegrees < -90000000/);
 assert.match(source, /gpsLongitudeMicrodegrees > 180000000/);
@@ -183,20 +168,17 @@ assert.match(telegram, /Google Maps/);
 assert.match(telegram, /gpsFixAgeText\(telemetry\.gpsFixEpoch\)/);
 assert.match(mqtt, /telemetry\.gpsFixed/);
 assert.match(mqtt, /telemetry\.gpsLatitudeMicrodegrees/);
-assert.match(source, /CommandKind::WifiOff/);
-assert.match(source, /"WIFI_OFF"/);
+assert.doesNotMatch(source, /queueWifiOffCommand|CommandKind::WifiOff|"WIFI_OFF"/);
 assert.doesNotMatch(source, /CommandKind::Restart/,
   'RESTART remains outside this implementation stage.');
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
-assert.strictEqual((source.match(/OTA_ON/g) || []).length, 2,
-  'OTA_ON may remain only in the retired-code constant and its one-time cleanup diagnostic.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.84-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 138\b/);
+assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
+  'OTA_ON may remain only as the retired-code migration reference.');
+assert.match(version, /#define PROJECT_VERSION "0\.1\.85-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 139\b/);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',
-  'CMD 1 4294967295 4294967295 7200 WIFI_OFF 0',
-  'CMD 1 4294967295 4294967295 7200 RESTART 0',
 ];
 for (const frame of maxFrames) {
   assert.ok(frame.length <= 47, `Frame exceeds C3 input contract: ${frame}`);
@@ -205,11 +187,7 @@ for (const frame of maxFrames) {
 assert.match(protocol, /Staged Implementation/);
 assert.match(protocol, /One command may be outstanding at a time/);
 assert.match(protocol, /No command frame is sent while WROOM has a valid declared C3 `SLP`/);
-assert.match(protocol, /`STATUS`.*`OTA_ON`.*`WIFI_OFF`.*`RESTART`/s);
-assert.match(protocol, /TREQ 1 <nonce>/);
-assert.match(protocol, /TIME 1 <nonce> <utc_epoch>/);
-assert.match(protocol, /`Direct`.*`Gateway`.*`Service`/s);
-assert.match(protocol, /BS build `138`[\s\S]*retires `\/c3ota` and `OTA_ON`/);
+assert.match(protocol, /BS build `139`[\s\S]*STATUS-only command sender/);
 assert.doesNotMatch(protocol, new RegExp(['c3', 'svc'].join('')));
 
 console.log('controller command contract tests passed');
