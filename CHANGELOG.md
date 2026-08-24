@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Retire BS-mediated C3 OTA - 0.1.84-EXP build 138 - 2026-08-25
+
+1. Removed the BS Telegram `/c3ota` command, its reply state/cards, and the specific `queueOtaOnCommand()` / `OTA_ON` sender path. The command poll now advertises and recognizes only `/c3sts` and `/bssts`.
+2. Preserved the shared persisted command engine and the existing STATUS lifecycle without changing `/c3sts`, PING/PONG, telemetry/ACK, SLEEP/SACK, C3 status rendering, tokens, or the configured group `chat_id`.
+3. Added a bounded build-138 migration for legacy command code `2`: any saved queued, sent, accepted, terminal, or otherwise stale OTA_ON record is reset to persisted `Idle` during command-store loading, so it cannot block a new STATUS request.
+4. C3 build `205` owns its Wi-Fi, bot, MQTT, Sheets, and manual OTA again. No proxy, wakeup command, backup Wi-Fi, connectivity mode, C3 source change, upload, or publication is part of this BS-only step.
+5. Validation: `node test/controller_command_contract_test.js`, `git diff --check`, and one `pio run -e esp32dev` pass. RAM is `65,636 / 327,680` (`20.0%`), linked Flash is `1,364,015 / 1,572,864` (`86.7%`), OTA-slot reserve is `208,849` bytes, and `firmware.bin` is `1,364,416` bytes with SHA-256 `90A52405641F447B93EA8D2FEC6E6CB475B1B68BD3FCAFA9C67889628B6231E1`. No upload or publication was performed.
+
 ## BS late C3 command-response tolerance - 0.1.83-EXP build 137 - 2026-08-23
 
 1. Corrected the confirmed false `/c3ota` failure on BS build `136`: OTA_ON sequences `40`, `41`, and `42` each exhausted four identical `CMD` transmissions without a timely `CACK`, while C3 could still process the command later and physically open `Connectivity: Service` with OTA enabled.

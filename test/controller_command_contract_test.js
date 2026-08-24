@@ -21,16 +21,15 @@ function functionBody(text, signature, nextSignature) {
 
 assert.match(header, /#include <Preferences\.h>/);
 assert.match(header, /bool queueStatusCommand\(uint32_t ttlSeconds = 120\)/);
-assert.match(header, /bool queueOtaOnCommand\(uint32_t windowSeconds = 600,/);
 assert.match(header, /bool queueWifiOffCommand\(uint32_t ttlSeconds = 120\)/);
+assert.doesNotMatch(header, /queueOtaOnCommand|CommandKind::OtaOn/);
 assert.match(header, /static constexpr size_t COMMAND_FRAME_CAPACITY = 48/);
 assert.match(header, /static constexpr size_t SLEEP_ACK_FRAME_CAPACITY = 40/);
 assert.match(header, /static constexpr size_t TIME_RESPONSE_FRAME_CAPACITY = 40/);
 assert.match(header, /static constexpr uint32_t COMMAND_MAX_TTL_SECONDS = 7200/);
 assert.match(header, /static constexpr uint32_t STATUS_MAX_TTL_SECONDS = 120/);
-assert.match(header, /static constexpr uint32_t OTA_ON_MIN_SECONDS = 300/);
-assert.match(header, /static constexpr uint32_t OTA_ON_MAX_SECONDS = 900/);
 assert.match(header, /static constexpr uint32_t WIFI_OFF_MAX_TTL_SECONDS = 120/);
+assert.match(header, /static constexpr uint8_t RETIRED_OTA_ON_COMMAND_CODE = 2/);
 assert.match(header, /static constexpr uint8_t COMMAND_MAX_SEND_ATTEMPTS = 4/);
 assert.match(header, /static constexpr uint32_t COMMAND_LATE_RESPONSE_WAIT_MS = 40000/);
 assert.match(header, /static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 40000/);
@@ -58,15 +57,7 @@ assert.match(queueBody, /ControllerCommandState::Queued/);
 assert.match(queueBody, /CommandKind::Status/);
 assert.match(queueBody, /saveCommandRecord\(\)/);
 assert.match(queueBody, /CMD_QUEUE/);
-
-const otaQueueBody = functionBody(
-  source,
-  'bool ControllerLinkService::queueOtaOnCommand(',
-  'bool ControllerLinkService::queueCommand('
-);
-assert.match(otaQueueBody, /OTA_ON_MIN_SECONDS/);
-assert.match(otaQueueBody, /OTA_ON_MAX_SECONDS/);
-assert.match(otaQueueBody, /CommandKind::OtaOn/);
+assert.doesNotMatch(queueBody, /OtaOn|OTA_ON|sourceUpdateId/);
 
 const wifiOffQueueBody = functionBody(
   source,
@@ -75,6 +66,19 @@ const wifiOffQueueBody = functionBody(
 );
 assert.match(wifiOffQueueBody, /CommandKind::WifiOff/);
 assert.match(wifiOffQueueBody, /WIFI_OFF_MAX_TTL_SECONDS/);
+
+const loadCommandBody = functionBody(
+  source,
+  'bool ControllerLinkService::loadCommandRecord(',
+  'bool ControllerLinkService::saveCommandRecord('
+);
+assert.match(
+  loadCommandBody,
+  /retiredOtaOn[\s\S]*RETIRED_OTA_ON_COMMAND_CODE[\s\S]*retiredOtaOn[\s\S]*initializeCommandRecord\(\)[\s\S]*saveCommandRecord\(\)/,
+  'A persisted queued, sent, accepted, or terminal OTA_ON record must be reset and saved as Idle on build 138.'
+);
+assert.match(loadCommandBody, /CommandKind::Status[\s\S]*commandRecord_\.argument == 0/);
+assert.doesNotMatch(loadCommandBody, /CommandKind::OtaOn/);
 
 const updateBody = functionBody(
   source,
@@ -157,12 +161,9 @@ assert.doesNotMatch(main, /queueStatusCommand\s*\(/,
   'STATUS must only be triggered by the authorized Telegram command path.');
 assert.match(telegram, /isC3StatusCommand\(command\)/);
 assert.match(telegram, /isBsStatusCommand\(command\)/);
-assert.match(telegram, /isC3OtaCommand\(command\)/);
 assert.match(telegram, /controllerLink\.isOnline\(\)/);
 assert.match(telegram, /controllerLink\.queueStatusCommand\(\)/);
-assert.match(telegram, /controllerLink\.queueOtaOnCommand\(/);
-assert.match(telegram, /newestC3OtaUpdateId/);
-assert.match(telegram, /queueOtaOnCommand\([\s\S]*newestC3OtaUpdateId/);
+assert.doesNotMatch(telegram, /c3ota|C3Ota|queueOtaOnCommand|OTA_ON/);
 assert.match(telegram, /c3RefreshCommandPending_/);
 assert.match(telegram, /controllerLink\.commandTerminal\(\)/);
 assert.match(telegram, /c3TelemetryReceivedAtRequestMs_/);
@@ -171,15 +172,7 @@ assert.match(telegram, /"CACHED"/);
 assert.match(telegram, /Data: <b>Fresh<\/b>/);
 assert.match(telegram, /command coalesced -> \/c3sts x/);
 assert.match(telegram, /command coalesced -> \/bssts x/);
-assert.match(telegram, /command coalesced -> \/c3ota x/);
 assert.match(telegram, /BS Controller/);
-assert.match(telegram, /C3OtaReplyStage::QueuedNotice/);
-assert.match(telegram, /C3OtaReplyStage::AwaitResult/);
-assert.match(telegram, /controllerLink\.isSleeping\(\)/);
-assert.match(telegram, /sleepRemainingSeconds\(millis\(\)\)/);
-assert.match(telegram, /Upload from the C3 project/);
-assert.match(telegram, /C3 OTA is available/);
-assert.match(telegram, /command == F\("\/c3ota"\)/);
 assert.doesNotMatch(telegram, new RegExp(['c3', 'svc'].join('')),
   'The user-facing OTA flow must have one command name only.');
 assert.match(telegram, /controllerLink\.remoteBuild\(\) == observedControllerBuild_/);
@@ -194,12 +187,14 @@ assert.match(source, /CommandKind::WifiOff/);
 assert.match(source, /"WIFI_OFF"/);
 assert.doesNotMatch(source, /CommandKind::Restart/,
   'RESTART remains outside this implementation stage.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.83-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 137\b/);
+assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
+assert.strictEqual((source.match(/OTA_ON/g) || []).length, 2,
+  'OTA_ON may remain only in the retired-code constant and its one-time cleanup diagnostic.');
+assert.match(version, /#define PROJECT_VERSION "0\.1\.84-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 138\b/);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',
-  'CMD 1 4294967295 4294967295 7200 OTA_ON 600',
   'CMD 1 4294967295 4294967295 7200 WIFI_OFF 0',
   'CMD 1 4294967295 4294967295 7200 RESTART 0',
 ];
@@ -214,7 +209,7 @@ assert.match(protocol, /`STATUS`.*`OTA_ON`.*`WIFI_OFF`.*`RESTART`/s);
 assert.match(protocol, /TREQ 1 <nonce>/);
 assert.match(protocol, /TIME 1 <nonce> <utc_epoch>/);
 assert.match(protocol, /`Direct`.*`Gateway`.*`Service`/s);
-assert.match(protocol, /\/c3ota -> OTA_ON 600/);
+assert.match(protocol, /BS build `138`[\s\S]*retires `\/c3ota` and `OTA_ON`/);
 assert.doesNotMatch(protocol, new RegExp(['c3', 'svc'].join('')));
 
 console.log('controller command contract tests passed');

@@ -276,17 +276,6 @@ bool ControllerLinkService::queueStatusCommand(uint32_t ttlSeconds) {
                       STATUS_MAX_TTL_SECONDS);
 }
 
-bool ControllerLinkService::queueOtaOnCommand(uint32_t windowSeconds,
-                                              uint32_t ttlSeconds,
-                                              uint32_t sourceUpdateId) {
-  if (windowSeconds < OTA_ON_MIN_SECONDS ||
-      windowSeconds > OTA_ON_MAX_SECONDS) {
-    return false;
-  }
-  return queueCommand(CommandKind::OtaOn, windowSeconds, ttlSeconds,
-                      COMMAND_MAX_TTL_SECONDS, sourceUpdateId);
-}
-
 bool ControllerLinkService::queueWifiOffCommand(uint32_t ttlSeconds) {
   return queueCommand(CommandKind::WifiOff, 0, ttlSeconds,
                       WIFI_OFF_MAX_TTL_SECONDS);
@@ -295,8 +284,7 @@ bool ControllerLinkService::queueWifiOffCommand(uint32_t ttlSeconds) {
 bool ControllerLinkService::queueCommand(CommandKind command,
                                          uint32_t argument,
                                          uint32_t ttlSeconds,
-                                         uint32_t maxTtlSeconds,
-                                         uint32_t sourceUpdateId) {
+                                         uint32_t maxTtlSeconds) {
   if (!commandPreferencesReady_ || hasCommand() ||
       command == CommandKind::None ||
       ttlSeconds < COMMAND_MIN_TTL_SECONDS || ttlSeconds > maxTtlSeconds) {
@@ -358,10 +346,6 @@ bool ControllerLinkService::queueCommand(CommandKind command,
   details += ttlSeconds;
   details += F(" argument=");
   details += argument;
-  if (sourceUpdateId != 0) {
-    details += F(" source_update_id=");
-    details += sourceUpdateId;
-  }
   emitCommandEvent("CMD_QUEUE", details);
   return true;
 }
@@ -431,8 +415,6 @@ ControllerCommandSnapshot ControllerLinkService::commandSnapshot() const {
   snapshot.argument = commandRecord_.argument;
   if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::Status) {
     strncpy(snapshot.command, "STATUS", sizeof(snapshot.command) - 1);
-  } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::OtaOn) {
-    strncpy(snapshot.command, "OTA_ON", sizeof(snapshot.command) - 1);
   } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::WifiOff) {
     strncpy(snapshot.command, "WIFI_OFF", sizeof(snapshot.command) - 1);
   }
@@ -457,11 +439,10 @@ bool ControllerLinkService::loadCommandRecord() {
                           static_cast<uint8_t>(ControllerCommandState::Expired);
   const bool idleValid = state == ControllerCommandState::Idle &&
                          command == CommandKind::None && commandRecord_.sequence == 0;
+  const bool retiredOtaOn =
+      commandRecord_.command == RETIRED_OTA_ON_COMMAND_CODE;
   const bool activeCommandValid =
       (command == CommandKind::Status && commandRecord_.argument == 0) ||
-      (command == CommandKind::OtaOn &&
-       commandRecord_.argument >= OTA_ON_MIN_SECONDS &&
-       commandRecord_.argument <= OTA_ON_MAX_SECONDS) ||
       (command == CommandKind::WifiOff && commandRecord_.argument == 0);
   const bool activeValid = state != ControllerCommandState::Idle &&
                            activeCommandValid && commandRecord_.sequence != 0 &&
@@ -470,7 +451,10 @@ bool ControllerLinkService::loadCommandRecord() {
   if (commandRecord_.magic != COMMAND_RECORD_MAGIC ||
       commandRecord_.schema != COMMAND_RECORD_SCHEMA ||
       commandRecord_.session == 0 || commandRecord_.nextSequence == 0 ||
-      !stateValid || (!idleValid && !activeValid)) {
+      !stateValid || retiredOtaOn || (!idleValid && !activeValid)) {
+    if (retiredOtaOn) {
+      Serial.println(F("[UART] CMD retired OTA_ON record cleared"));
+    }
     initializeCommandRecord();
     return saveCommandRecord();
   }
@@ -506,8 +490,6 @@ const char* ControllerLinkService::commandName(CommandKind command) const {
   switch (command) {
     case CommandKind::Status:
       return "STATUS";
-    case CommandKind::OtaOn:
-      return "OTA_ON";
     case CommandKind::WifiOff:
       return "WIFI_OFF";
     case CommandKind::None:
@@ -630,9 +612,6 @@ void ControllerLinkService::sendCommandFrame(uint32_t nowMs, bool resultRecovery
   const CommandKind command = static_cast<CommandKind>(commandRecord_.command);
   const bool argumentValid =
       (command == CommandKind::Status && commandRecord_.argument == 0) ||
-      (command == CommandKind::OtaOn &&
-       commandRecord_.argument >= OTA_ON_MIN_SECONDS &&
-       commandRecord_.argument <= OTA_ON_MAX_SECONDS) ||
       (command == CommandKind::WifiOff && commandRecord_.argument == 0);
   if (commandRecord_.ttlSeconds < COMMAND_MIN_TTL_SECONDS ||
       commandRecord_.ttlSeconds > COMMAND_MAX_TTL_SECONDS || !argumentValid) {
@@ -753,9 +732,6 @@ bool ControllerLinkService::processCommandResult(uint32_t nowMs, const char* lin
   char expectedActual[24] = {};
   if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::Status) {
     strncpy(expectedActual, "STATUS", sizeof(expectedActual) - 1);
-  } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::OtaOn) {
-    snprintf(expectedActual, sizeof(expectedActual), "OTA_ON=%lu",
-             static_cast<unsigned long>(commandRecord_.argument));
   } else if (static_cast<CommandKind>(commandRecord_.command) == CommandKind::WifiOff) {
     strncpy(expectedActual, "WIFI_OFF", sizeof(expectedActual) - 1);
   } else {
