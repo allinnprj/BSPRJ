@@ -221,8 +221,6 @@ AudioSnapshot AudioSampler::sample() {
   snapshot.currentPercent = percentFromLevel(snapshot.currentLevel);
   snapshot.hourPercent = percentFromLevel(snapshot.hourAverage);
   snapshot.totalPercent = percentFromLevel(snapshot.totalAverage);
-  snapshot.lowSignalHoldSeconds = lowSignalHoldSeconds_;
-  snapshot.clipSignalHoldSeconds = clipSignalHoldSeconds_;
   snapshot.lowSignalWarning = lowSignalHoldSeconds_ >= kLowSignalWarnThresholdSeconds;
   snapshot.clipSignalWarning = clipSignalHoldSeconds_ >= kClipSignalWarnThresholdSeconds;
   snapshot.signalState = detectedSignalState;

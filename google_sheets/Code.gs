@@ -1917,10 +1917,6 @@ function resetForCleanRun_() {
   );
 }
 
-function timestampKey_(dateText, timeText) {
-  return `${normalizeDateText_(dateText)}T${normalizeTimeText_(timeText)}`;
-}
-
 function timeToMinutes_(timeText) {
   const normalized = normalizeTimeText_(timeText);
   const match = normalized.match(/^(\d{2}):(\d{2}):\d{2}$/);

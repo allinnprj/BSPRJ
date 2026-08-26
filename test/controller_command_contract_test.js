@@ -10,6 +10,25 @@ const telegram = fs.readFileSync(path.join(root, 'src', 'telegram_alert_service.
 const mqtt = fs.readFileSync(path.join(root, 'src', 'mqtt_service.cpp'), 'utf8');
 const protocol = fs.readFileSync(path.join(root, 'CONTROLLER_UART_PROTOCOL.md'), 'utf8');
 const version = fs.readFileSync(path.join(root, 'include', 'project_version.h'), 'utf8');
+const cleanupSurface = [
+  fs.readFileSync(path.join(root, 'include', 'audio_sampler.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'button_service.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'display_view.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'log_service.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'mqtt_service.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'telegram_alert_service.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'time_service.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'include', 'wifi_service.h'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'audio_sampler.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'button_service.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'display_view.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'log_service.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'mqtt_service.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'telegram_alert_service.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'time_service.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'src', 'wifi_service.cpp'), 'utf8'),
+  fs.readFileSync(path.join(root, 'google_sheets', 'Code.gs'), 'utf8'),
+].join('\n');
 
 function functionBody(text, signature, nextSignature) {
   const start = text.indexOf(signature);
@@ -174,8 +193,13 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.85-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 139\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.86-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 140\b/);
+assert.doesNotMatch(
+  cleanupSurface,
+  /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,
+  'Build 140 must not restore source-only APIs and fields removed by the safe cleanup.'
+);
 
 const maxFrames = [
   'CMD 1 4294967295 4294967295 7200 STATUS 0',

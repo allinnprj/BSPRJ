@@ -7,16 +7,12 @@ class WifiService {
   void begin();
   void update();
 
-  bool isConfigured() const;
   bool isConnected() const;
-  const __FlashStringHelper *statusText() const;
   const char *statusTextCStr() const;
   String ipAddressString() const;
   String ssidString() const;
   int rssiDbm() const;
   uint8_t signalPercent() const;
-  int statusCode() const;
-
  private:
   static constexpr unsigned long kReconnectIntervalMs = 15000UL;
   static constexpr unsigned long kSignalRefreshIntervalMs = 120000UL;

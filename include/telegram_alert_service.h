@@ -43,8 +43,6 @@ class TelegramAlertService {
                       ControllerLinkService &controllerLink,
                       const BsStatusView &bsStatus);
 
-  bool isConfigured() const;
-
  private:
   static constexpr unsigned long kOnlineWarmupMs = 20000UL;
   static constexpr unsigned long kRetryIntervalMs = 30000UL;

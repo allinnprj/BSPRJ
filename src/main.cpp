@@ -44,7 +44,6 @@ static constexpr unsigned long UPTIME_RTC_SAVE_INTERVAL_MS = 60000UL;
 static constexpr uint16_t MAX_WINDOW_LEVEL_SAMPLES = 620;
 static constexpr uint16_t SHT31_LOST_WARN_SECONDS = 120;
 static constexpr unsigned long SHT31_RECOVER_INTERVAL_MS = 60000UL;
-static constexpr bool STARTUP_I2C_SCAN_ENABLED = false;
 static constexpr uint32_t POWER_SESSION_MAGIC = 0xB510B510UL;
 static constexpr uint32_t CONTROLLER_SLEEP_RTC_MAGIC = 0xC35E3A91UL;
 static constexpr uint32_t CONTROLLER_SLEEP_RTC_MAX_SECONDS = 86400UL;
@@ -676,11 +675,9 @@ void updateMqttState(const AudioSnapshot &snapshot) {
   MqttRuntimeState state{};
   state.snapshot = snapshot;
   state.signalText = noiseLevelText(snapshot.currentLevel);
-  state.mqttSignalText = noiseLevelText(snapshot.currentLevel);
   state.timeSynced = timeService.isSynced();
   state.wifiStatus = wifiService.statusTextCStr();
   state.wifiSignalPercent = wifiService.signalPercent();
-  state.wifiRssiDbm = wifiService.rssiDbm();
   state.ipAddress = wifiService.ipAddressString();
   state.environmentAvailable = latestSht31Reading.available;
   state.temperatureC = latestSht31Reading.temperatureC;
@@ -688,7 +685,6 @@ void updateMqttState(const AudioSnapshot &snapshot) {
 
   if (state.timeSynced) {
     DayPart currentDayPart = dayPartFromHour(timeService.hour());
-    state.timestamp = timeService.dateTimeString();
     state.currentPeriod = dayPartMqttText(currentDayPart);
     state.currentPeriodPercent =
         dayPartAveragePercent(dayPartStats[dayPartIndex(currentDayPart)]);
@@ -975,26 +971,6 @@ void appendDiagnosticHealth(uint32_t nowMs) {
   logService.appendDiagnosticRecord(record);
 }
 
-void scanI2cBus(TwoWire *wire) {
-  Serial.println(F("[I2C] scan start"));
-  uint8_t foundCount = 0;
-  for (uint8_t address = 1; address < 127; ++address) {
-    wire->beginTransmission(address);
-    uint8_t error = wire->endTransmission();
-    if (error == 0) {
-      Serial.print(F("[I2C] found 0x"));
-      if (address < 16) {
-        Serial.print('0');
-      }
-      Serial.println(address, HEX);
-      foundCount++;
-    }
-  }
-  if (foundCount == 0) {
-    Serial.println(F("[I2C] no devices found"));
-  }
-}
-
 void updateSht31Health(const AudioSnapshot &snapshot) {
   if (!snapshot.statsUpdated) {
     return;
@@ -1195,11 +1171,7 @@ void setup() {
     audioSampler.restoreLongMean(restoredMeanSum, restoredMeanCount);
   }
   Wire.begin(SDA_PIN, SCL_PIN);
-  if (STARTUP_I2C_SCAN_ENABLED) {
-    scanI2cBus(&Wire);
-  } else {
-    Serial.println(F("[I2C] startup scan skipped"));
-  }
+  Serial.println(F("[I2C] startup scan skipped"));
   sht31Service.begin(&Wire);
   if (sht31Service.isAvailable()) {
     Serial.print(F("[SHT31] ready -> 0x"));
@@ -1332,8 +1304,8 @@ void loop() {
 
   if (nowMs - lastDisplayAt >= currentDisplayRefreshIntervalMs()) {
     lastDisplayAt = nowMs;
-    displayView.render(latestSnapshot, latestSht31Reading, PROJECT_VERSION, PROJECT_BUILD,
-                       timeService.isSynced(), wifiService.isConnected(),
+    displayView.render(latestSnapshot, latestSht31Reading, timeService.isSynced(),
+                       wifiService.isConnected(),
                        wifiService.signalPercent(), displayPinnedOn, PROJECT_POWER_PROFILE);
   }
 

@@ -23,8 +23,6 @@ struct AudioSnapshot {
   uint32_t hourAverage = 0;
   uint32_t totalAverage = 0;
   uint32_t hourSamplesCollected = 0;
-  uint16_t lowSignalHoldSeconds = 0;
-  uint16_t clipSignalHoldSeconds = 0;
   bool lowSignalWarning = false;
   bool clipSignalWarning = false;
   bool statsUpdated = false;

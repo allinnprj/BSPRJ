@@ -8,9 +8,7 @@
 struct MqttRuntimeState {
   AudioSnapshot snapshot;
   const char *signalText = "SILENT";
-  const char *mqttSignalText = "SILENT";
   bool timeSynced = false;
-  String timestamp;
   const char *currentPeriod = "unknown";
   uint32_t currentPeriodPercent = 0;
   uint32_t dayPercent = 0;
@@ -18,7 +16,6 @@ struct MqttRuntimeState {
   uint32_t nightPercent = 0;
   const char *wifiStatus = "OFF";
   uint8_t wifiSignalPercent = 0;
-  int wifiRssiDbm = -127;
   String ipAddress;
   bool environmentAvailable = false;
   float temperatureC = NAN;
@@ -33,8 +30,6 @@ class MqttService {
   void update(bool wifiConnected, const MqttRuntimeState &state);
   bool publishControllerTelemetry(const ControllerTelemetrySnapshot &telemetry);
 
-  bool isConfigured() const;
-  bool isConnected() const;
   bool isWqttConnected() const;
   uint32_t datacakeSuccessCount() const;
   uint32_t datacakeFailureCount() const;
@@ -43,7 +38,6 @@ class MqttService {
   void connectWqttIfNeeded(bool wifiConnected);
   void connectDatacakeIfNeeded(bool wifiConnected);
   void publishWqttOnlineStatus(bool online);
-  void publishDatacakeOnlineStatus(bool online);
   void publishWqttStatus(const MqttRuntimeState &state);
   void publishWqttLiveMetrics(const MqttRuntimeState &state);
   void publishWqttPeriodMetrics(const MqttRuntimeState &state);
@@ -58,12 +52,7 @@ class MqttService {
   bool publishDatacakePayload(const String &body, const String &logLabel);
   void appendDatacakeRecord(String &body, bool &firstRecord, const char *fieldIdentifier,
                             const String &payload);
-  bool publishDatacakeTextField(const char *fieldIdentifier, const String &payload,
-                                bool retained = false);
-  bool publishDatacakeNumberField(const char *fieldIdentifier, uint32_t value,
-                                  bool retained = false);
-  bool publishDatacakeDecimalField(const char *fieldIdentifier, float value, uint8_t decimals,
-                                   bool retained = false);
+  bool publishDatacakeTextField(const char *fieldIdentifier, const String &payload);
   String wqttTopic(const char *topicSuffix) const;
   void markAllPublishDue();
 
@@ -72,8 +61,6 @@ class MqttService {
   bool datacakeHttpActive_ = false;
   uint32_t datacakeSuccessCount_ = 0;
   uint32_t datacakeFailureCount_ = 0;
-  bool wqttAnnouncedOffline_ = false;
-  bool datacakeAnnouncedOffline_ = false;
   unsigned long lastWqttConnectAttemptAt_ = 0;
   unsigned long lastDatacakeConnectAttemptAt_ = 0;
   unsigned long lastWqttStatusPublishAt_ = 0;
@@ -83,9 +70,7 @@ class MqttService {
   unsigned long lastDatacakeSlowPublishAt_ = 0;
   unsigned long lastDatacakeTextPublishAt_ = 0;
   String wqttClientId_;
-  String datacakeClientId_;
   String wqttWillTopic_;
-  String datacakeWillTopic_;
   String wqttBaseTopic_;
   String publishTopicPrefix_;
   String lastDatacakePublishedPeriod_;

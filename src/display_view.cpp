@@ -1,7 +1,6 @@
 #include "display_view.h"
 
 #include <Fonts/FreeSans9pt7b.h>
-#include <math.h>
 
 bool DisplayView::begin(TwoWire *wire, uint8_t sdaPin, uint8_t sclPin, uint8_t address) {
   display_ = Adafruit_SSD1306(kScreenWidth, kScreenHeight, wire, -1);
@@ -50,10 +49,6 @@ void DisplayView::setEnabled(bool enabled) {
   display_.display();
   display_.ssd1306_command(SSD1306_DISPLAYOFF);
   blanked_ = true;
-}
-
-void DisplayView::toggleEnabled() {
-  enabled_ = !enabled_;
 }
 
 bool DisplayView::isEnabled() const {
@@ -215,15 +210,12 @@ void DisplayView::drawPinnedIndicator(bool pinnedOn) {
 }
 
 void DisplayView::render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
-                         const char *versionText, uint32_t buildNumber, bool timeSynced,
-                         bool wifiConnected,
-                         uint8_t wifiPercent, bool pinnedOn, const char *powerProfileText) {
+                         bool timeSynced, bool wifiConnected, uint8_t wifiPercent,
+                         bool pinnedOn, const char *powerProfileText) {
   if (!initialized_) {
     return;
   }
 
-  (void)versionText;
-  (void)buildNumber;
   if (!enabled_) {
     if (!blanked_) {
       display_.clearDisplay();

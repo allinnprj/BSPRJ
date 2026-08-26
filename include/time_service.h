@@ -9,7 +9,6 @@ class TimeService {
 
   bool isSynced() const;
   String dateString() const;
-  String dateTimeString() const;
   String timeString() const;
   uint8_t hour() const;
   uint8_t minute() const;

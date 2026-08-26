@@ -42,7 +42,3 @@ ButtonEvent ButtonService::update() {
 
   return ButtonEvent::None;
 }
-
-bool ButtonService::isPressed() const {
-  return stablePressed_;
-}

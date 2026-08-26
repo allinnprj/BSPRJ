@@ -90,35 +90,8 @@ void WifiService::update() {
   }
 }
 
-bool WifiService::isConfigured() const {
-  return configured_;
-}
-
 bool WifiService::isConnected() const {
   return configured_ && WiFi.status() == WL_CONNECTED;
-}
-
-const __FlashStringHelper *WifiService::statusText() const {
-  if (!configured_) {
-    return F("OFF");
-  }
-
-  switch (WiFi.status()) {
-    case WL_CONNECTED:
-      return F("OK");
-    case WL_NO_SSID_AVAIL:
-      return F("NOAP");
-    case WL_CONNECT_FAILED:
-      return F("FAIL");
-    case WL_CONNECTION_LOST:
-      return F("LOST");
-    case WL_DISCONNECTED:
-      return F("DISC");
-    case WL_IDLE_STATUS:
-      return F("IDLE");
-    default:
-      return F("WAIT");
-  }
 }
 
 String WifiService::ipAddressString() const {
@@ -174,10 +147,6 @@ void WifiService::refreshSignalCache(bool connected, bool force) {
     cachedSignalPercent_ = static_cast<uint8_t>((rssi + 100) * 2);
   }
   lastSignalRefreshAt_ = nowMs;
-}
-
-int WifiService::statusCode() const {
-  return lastStatusCode_;
 }
 
 const char *WifiService::statusTextCStr() const {

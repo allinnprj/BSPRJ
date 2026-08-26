@@ -63,10 +63,6 @@ String compactDateTimeForFile() {
   return String(F("uptime_")) + String(millis());
 }
 
-String archivePathFromMillis() {
-  return String(F("/")) + compactDateTimeForFile() + F(".csv");
-}
-
 bool isCompactArchivePath(const String &path) {
   if (!path.startsWith("/") || !path.endsWith(F(".csv")) || path.length() < 18) {
     return false;
@@ -608,19 +604,6 @@ void LogService::setClock(const String &dateText, const String &timeText) {
   }
 }
 
-void LogService::clearCurrentLog() {
-  if (!ready_) {
-    return;
-  }
-
-  if (LittleFS.exists(kLogPath)) {
-    LittleFS.remove(kLogPath);
-  }
-  if (createFreshLogFile()) {
-    lastWindowKey_ = String();
-  }
-}
-
 void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
                                        uint32_t buildNumber, int32_t wifiRssiDbm) {
   if (!ready_ || record.windowKey.isEmpty() || record.sampleCount == 0 ||
@@ -753,14 +736,6 @@ void LogService::appendRuntimeEvent(const String &eventText, const String &dateT
   file.print(',');
   file.println(PROJECT_ACOUSTIC_REV);
   file.close();
-}
-
-bool LogService::isReady() const {
-  return ready_;
-}
-
-bool LogService::webServerStarted() const {
-  return serverStarted_;
 }
 
 void LogService::appendDiagnosticEvent(const String &eventText, const String &details) {

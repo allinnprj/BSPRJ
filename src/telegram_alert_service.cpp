@@ -449,10 +449,6 @@ void TelegramAlertService::updateCommands(
   pollCommands_(controllerLink);
 }
 
-bool TelegramAlertService::isConfigured() const {
-  return configured_;
-}
-
 bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm,
                                              uint8_t wifiSignalPercent,
                                              const String &wifiSsid, bool timeSynced,

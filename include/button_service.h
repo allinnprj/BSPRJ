@@ -12,7 +12,6 @@ class ButtonService {
  public:
   void begin(uint8_t pin);
   ButtonEvent update();
-  bool isPressed() const;
 
  private:
   static constexpr unsigned long kDebounceMs = 30UL;

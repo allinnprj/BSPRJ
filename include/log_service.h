@@ -67,7 +67,6 @@ class LogService {
   void begin();
   void update(bool wifiConnected, const String &ipAddress);
   void setClock(const String &dateText, const String &timeText);
-  void clearCurrentLog();
   void appendWindowAggregate(const GoogleSheetsWindowRecord &record, uint32_t buildNumber,
                              int32_t wifiRssiDbm);
   void appendRuntimeEvent(const String &eventText, const String &dateText, const String &timeText,
@@ -76,9 +75,6 @@ class LogService {
                           const String &uptimeText, int32_t wifiRssiDbm);
   void appendDiagnosticEvent(const String &eventText, const String &details);
   void appendDiagnosticRecord(const DiagnosticRecord &record);
-
-  bool isReady() const;
-  bool webServerStarted() const;
 
  private:
   bool ready_ = false;

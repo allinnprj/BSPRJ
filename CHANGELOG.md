@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Safe source cleanup - 0.1.86-EXP build 140 - 2026-08-26
+
+1. Removed only source elements proven unused across the repository: orphaned button/display/log/Wi-Fi/MQTT/Telegram/time APIs, unused AudioSnapshot and MQTT runtime fields, write-only MQTT state, unused Datacake helper variants, one unused Wi-Fi client, and the unused Apps Script `timestampKey_()` helper.
+2. Kept runtime behavior equivalent: WQTT and Datacake publish the same signal text, the disabled startup I2C scan still emits the existing `startup scan skipped` line, and display pages receive the same live values without the two previously ignored version/build arguments.
+3. PING/PONG, TEL/ACK, SLEEP/SACK, STATUS, `/c3sts`, retries, timeouts, NVS migration, Wi-Fi, Telegram, WQTT, Datacake HTTP, Google Sheets, local logs, diagnostics, OTA, scheduled restart, audio classification, and all device state remain unchanged. C3, GPIO23, and the future `/c3wkp` stage were not touched.
+4. Validation: the controller contract plus all four Google Sheets regression tests pass, `git diff --check` passes, and the single `pio run -e esp32dev` succeeds. RAM is `65,532 / 327,680` (`20.0%`), `104` bytes below build `139`; linked Flash is `1,362,719 / 1,572,864` (`86.6%`), `768` bytes below build `139`; OTA-slot reserve is `210,145` bytes. `firmware.bin` is `1,363,120` bytes with SHA-256 `3FBEACDFBD51608BDC7D6F7C5478B10876C282AE4F5CD8B0B7F2C64FE14445ED`. No upload, publication, commit, or push was performed.
+
 ## Narrow C3 diagnostic UART cleanup - 0.1.85-EXP build 139 - 2026-08-25
 
 1. Reduced the active BS-to-C3 command allowlist to `STATUS 0` only. `/c3sts`, PING/PONG, TEL/ACK, SLEEP/SACK, strict STATUS parsing, retries, persistence, and truthful fresh/cached Telegram reporting are unchanged.

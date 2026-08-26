@@ -32,7 +32,6 @@ constexpr char kFieldSignalState[] = "SIGNAL_STATE";
 constexpr char kFieldTemperatureC[] = "TEMPERATURE_C";
 constexpr char kFieldHumidityPct[] = "HUMIDITY_PCT";
 
-WiFiClient mqttWifiClient;
 WiFiClient wqttWifiClient;
 PubSubClient wqttClient(wqttWifiClient);
 
@@ -48,8 +47,6 @@ void MqttService::begin() {
   datacakeHttpActive_ = false;
   datacakeSuccessCount_ = 0;
   datacakeFailureCount_ = 0;
-  wqttAnnouncedOffline_ = false;
-  datacakeAnnouncedOffline_ = false;
   lastWqttConnectAttemptAt_ = 0;
   lastDatacakeConnectAttemptAt_ = 0;
   lastDatacakePublishedPeriod_ = "";
@@ -219,14 +216,6 @@ bool MqttService::publishControllerTelemetry(
   return published;
 }
 
-bool MqttService::isConfigured() const {
-  return wqttConfigured_ || datacakeConfigured_;
-}
-
-bool MqttService::isConnected() const {
-  return isWqttConnected();
-}
-
 bool MqttService::isWqttConnected() const {
   return wqttConfigured_ && wqttClient.connected();
 }
@@ -299,24 +288,7 @@ void MqttService::publishWqttOnlineStatus(bool online) {
     return;
   }
 
-  if (publishWqttText("status/online", online ? "true" : "false", true)) {
-    wqttAnnouncedOffline_ = !online;
-  }
-}
-
-void MqttService::publishDatacakeOnlineStatus(bool online) {
-  if (!datacakeConfigured_) {
-    return;
-  }
-
-  String body = "[";
-  bool firstRecord = true;
-  appendDatacakeRecord(body, firstRecord, kFieldOnline, online ? "true" : "false");
-  body += ']';
-
-  if (publishDatacakePayload(body, String(kFieldOnline) + "=bool")) {
-    datacakeAnnouncedOffline_ = !online;
-  }
+  publishWqttText("status/online", online ? "true" : "false", true);
 }
 
 void MqttService::publishWqttStatus(const MqttRuntimeState &state) {
@@ -333,7 +305,7 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
   publishWqttNumber("sound/now_pct", state.snapshot.currentPercent, true);
   publishWqttNumber("sound/hour_pct", state.snapshot.hourPercent, true);
   publishWqttNumber("sound/mean_pct", state.snapshot.totalPercent, true);
-  publishWqttText("sound/signal", state.mqttSignalText, true);
+  publishWqttText("sound/signal", state.signalText, true);
   publishWqttText("period/current", state.currentPeriod, true);
   publishWqttNumber("period/current_pct", state.currentPeriodPercent, true);
   if (state.environmentAvailable) {
@@ -474,33 +446,13 @@ void MqttService::appendDatacakeRecord(String &body, bool &firstRecord,
   body += '}';
 }
 
-bool MqttService::publishDatacakeTextField(const char *fieldIdentifier, const String &payload,
-                                           bool retained) {
+bool MqttService::publishDatacakeTextField(const char *fieldIdentifier,
+                                           const String &payload) {
   String body = "[";
   bool firstRecord = true;
   appendDatacakeRecord(body, firstRecord, fieldIdentifier, "\"" + payload + "\"");
   body += ']';
   return publishDatacakePayload(body, String(fieldIdentifier) + "=text");
-}
-
-bool MqttService::publishDatacakeNumberField(const char *fieldIdentifier, uint32_t value,
-                                             bool retained) {
-  String body = "[";
-  bool firstRecord = true;
-  appendDatacakeRecord(body, firstRecord, fieldIdentifier, String(value));
-  body += ']';
-  return publishDatacakePayload(body, String(fieldIdentifier) + "=number");
-}
-
-bool MqttService::publishDatacakeDecimalField(const char *fieldIdentifier, float value,
-                                              uint8_t decimals, bool retained) {
-  String body = "[";
-  bool firstRecord = true;
-  appendDatacakeRecord(
-      body, firstRecord, fieldIdentifier,
-      String(static_cast<double>(value), static_cast<unsigned int>(decimals)));
-  body += ']';
-  return publishDatacakePayload(body, String(fieldIdentifier) + "=decimal");
 }
 
 String MqttService::wqttTopic(const char *topicSuffix) const {

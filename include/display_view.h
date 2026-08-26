@@ -11,12 +11,11 @@ class DisplayView {
  public:
   bool begin(TwoWire *wire, uint8_t sdaPin, uint8_t sclPin, uint8_t address);
   void render(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
-              const char *versionText, uint32_t buildNumber, bool timeSynced, bool wifiConnected,
-              uint8_t wifiPercent, bool pinnedOn, const char *powerProfileText);
+              bool timeSynced, bool wifiConnected, uint8_t wifiPercent, bool pinnedOn,
+              const char *powerProfileText);
   void showBootMessage(const char *line1, const char *line2, const char *powerProfileText);
   void nextPage();
   void setEnabled(bool enabled);
-  void toggleEnabled();
   bool isEnabled() const;
   uint8_t currentPage() const;
 

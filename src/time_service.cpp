@@ -65,10 +65,6 @@ String TimeService::dateString() const {
   return String(buffer);
 }
 
-String TimeService::dateTimeString() const {
-  return dateString() + " " + timeString();
-}
-
 String TimeService::timeString() const {
   struct tm timeInfo{};
   if (!readLocalTime(timeInfo)) {
