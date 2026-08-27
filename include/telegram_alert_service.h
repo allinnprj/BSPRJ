@@ -44,16 +44,6 @@ class TelegramAlertService {
                       const BsStatusView &bsStatus);
 
  private:
-  enum class C3WakeReplyState : uint8_t {
-    None,
-    Waiting,
-    Online,
-    AlreadyAwake,
-    NotSleeping,
-    Cooldown,
-    NoResponse,
-  };
-
   static constexpr unsigned long kOnlineWarmupMs = 20000UL;
   static constexpr unsigned long kRetryIntervalMs = 30000UL;
   static constexpr unsigned long kRestoreThresholdMs = 90000UL;
@@ -61,7 +51,6 @@ class TelegramAlertService {
   static constexpr unsigned long kCommandPollIntervalMs = 60000UL;
   static constexpr unsigned long kSendSpacingMs = 5000UL;
   static constexpr unsigned long kPendingReplyMaxAgeMs = 120000UL;
-  static constexpr unsigned long kC3WakeResponseTimeoutMs = 40000UL;
   static constexpr uint16_t kTelegramHttpTimeoutMs = 4000;
   static constexpr uint32_t kMaxCommandAgeSeconds = 120;
 
@@ -80,8 +69,7 @@ class TelegramAlertService {
   bool sendControllerBuildChanged_(uint32_t buildNumber);
   bool sendBsStatus_(const BsStatusView &status,
                      const ControllerLinkService &controllerLink);
-  bool sendC3WakeReply_(C3WakeReplyState state,
-                        const ControllerLinkService &controllerLink);
+  bool sendC3WakeReply_(ControllerWakeRequestResult result);
   bool sendStatusMessage_(const String &message, const char *logLabel);
   bool pollCommands_(ControllerLinkService &controllerLink);
   void processCommandUpdates_(const String &response,
@@ -118,7 +106,8 @@ class TelegramAlertService {
   bool c3RefreshCommandPending_ = false;
   bool c3HadTelemetryAtRequest_ = false;
   bool c3WakeReplyPending_ = false;
-  C3WakeReplyState c3WakeReplyState_ = C3WakeReplyState::None;
+  ControllerWakeRequestResult c3WakeReplyResult_ =
+      ControllerWakeRequestResult::Unavailable;
   bool bsStatusReplyPending_ = false;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;

@@ -225,8 +225,8 @@ ControllerWakeRequestResult ControllerLinkService::requestWakePulse(
   if (state_ == State::Online) {
     return ControllerWakeRequestResult::AlreadyAwake;
   }
-  if (state_ != State::Sleeping || wakePin_ == UINT8_MAX) {
-    return ControllerWakeRequestResult::NotSleeping;
+  if (wakePin_ == UINT8_MAX) {
+    return ControllerWakeRequestResult::Unavailable;
   }
   if (wakePulseActive_ ||
       (lastWakePulseAtMs_ != 0 &&

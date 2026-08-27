@@ -97,7 +97,8 @@ const wakePulseBody = functionBody(
   'const char* ControllerLinkService::stateText('
 );
 assert.match(wakePulseBody, /state_ == State::Online[\s\S]*AlreadyAwake/);
-assert.match(wakePulseBody, /state_ != State::Sleeping[\s\S]*NotSleeping/);
+assert.match(wakePulseBody, /wakePin_ == UINT8_MAX[\s\S]*Unavailable/);
+assert.doesNotMatch(wakePulseBody, /state_ != State::Sleeping/);
 assert.match(wakePulseBody, /WAKE_COOLDOWN_MS[\s\S]*Cooldown/);
 assert.match(wakePulseBody, /digitalWrite\(wakePin_, LOW\)/);
 assert.match(wakePulseBody, /state_ = State::Waiting/);
@@ -219,9 +220,10 @@ assert.match(telegram, /command coalesced -> \/c3sts x/);
 assert.match(telegram, /command coalesced -> \/c3wkp x/);
 assert.match(telegram, /command coalesced -> \/bssts x/);
 assert.match(telegram, /controllerLink\.requestWakePulse\(millis\(\)\)/);
-assert.match(telegramHeader, /kC3WakeResponseTimeoutMs = 40000UL/);
-assert.match(telegram, /Wake sent · <b>C3 no response<\/b>/);
-assert.match(telegram, /Already awake · Link <b>OK<\/b>/);
+assert.doesNotMatch(telegramHeader, /kC3WakeResponseTimeoutMs/);
+assert.match(telegram, /Wake pulse sent/);
+assert.match(telegram, /C3 already awake/);
+assert.doesNotMatch(telegram, /C3 no response|c3WakeReplyState_/);
 assert.match(telegram, /BS Controller/);
 assert.doesNotMatch(telegram, new RegExp(['c3', 'svc'].join('')),
   'The user-facing OTA flow must have one command name only.');

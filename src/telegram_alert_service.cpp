@@ -237,7 +237,7 @@ void TelegramAlertService::begin() {
   c3RefreshCommandPending_ = false;
   c3HadTelemetryAtRequest_ = false;
   c3WakeReplyPending_ = false;
-  c3WakeReplyState_ = C3WakeReplyState::None;
+  c3WakeReplyResult_ = ControllerWakeRequestResult::Unavailable;
   c3WakeReplyQueuedAtMs_ = 0;
   bsStatusReplyPending_ = false;
 
@@ -381,19 +381,8 @@ void TelegramAlertService::updateCommands(
   }
 
   if (c3WakeReplyPending_) {
-    if (c3WakeReplyState_ == C3WakeReplyState::Waiting) {
-      if (controllerLink.isOnline()) {
-        c3WakeReplyState_ = C3WakeReplyState::Online;
-      } else if (currentMs - c3WakeReplyQueuedAtMs_ >=
-                 kC3WakeResponseTimeoutMs) {
-        c3WakeReplyState_ = C3WakeReplyState::NoResponse;
-      } else {
-        return;
-      }
-    }
     if (currentMs - c3WakeReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
       c3WakeReplyPending_ = false;
-      c3WakeReplyState_ = C3WakeReplyState::None;
       Serial.println(F("[TG] command /c3wkp -> expired before reply"));
       return;
     }
@@ -405,12 +394,11 @@ void TelegramAlertService::updateCommands(
       return;
     }
     lastStatusReplyAttemptAtMs_ = currentMs;
-    const bool sent = sendC3WakeReply_(c3WakeReplyState_, controllerLink);
+    const bool sent = sendC3WakeReply_(c3WakeReplyResult_);
     Serial.print(F("[TG] command /c3wkp -> "));
     Serial.println(sent ? F("OK") : F("FAIL"));
     if (sent) {
       c3WakeReplyPending_ = false;
-      c3WakeReplyState_ = C3WakeReplyState::None;
       lastStatusReplyAttemptAtMs_ = 0;
     }
     return;
@@ -621,34 +609,24 @@ bool TelegramAlertService::sendBsStatus_(
 }
 
 bool TelegramAlertService::sendC3WakeReply_(
-    C3WakeReplyState state, const ControllerLinkService &controllerLink) {
+    ControllerWakeRequestResult result) {
   String message;
-  message.reserve(128);
+  message.reserve(80);
   message += F("🔔 <b>C3 Wake</b>\n");
-  switch (state) {
-    case C3WakeReplyState::Online:
-      message += F("Result: <b>OK</b>\nLink: <b>OK</b> · build <code>");
-      message += String(controllerLink.remoteBuild());
-      message += F("</code>");
+  switch (result) {
+    case ControllerWakeRequestResult::Sent:
+      message += F("Wake pulse sent");
       break;
-    case C3WakeReplyState::AlreadyAwake:
-      message += F("Already awake · Link <b>OK</b>");
+    case ControllerWakeRequestResult::AlreadyAwake:
+      message += F("C3 already awake");
       break;
-    case C3WakeReplyState::Cooldown:
+    case ControllerWakeRequestResult::Cooldown:
       message += F("Wake not sent · cooldown <b>10 s</b>");
       break;
-    case C3WakeReplyState::NotSleeping:
-      message += F("Wake not sent · Link <b>");
-      message += htmlEscape_(String(controllerLink.stateText()));
-      message += F("</b>");
-      break;
-    case C3WakeReplyState::NoResponse:
-      message += F("Wake sent · <b>C3 no response</b>");
-      break;
-    case C3WakeReplyState::None:
-    case C3WakeReplyState::Waiting:
+    case ControllerWakeRequestResult::Unavailable:
     default:
-      return false;
+      message += F("Wake unavailable");
+      break;
   }
   return sendStatusMessage_(message, "C3 wake");
 }
@@ -850,21 +828,7 @@ void TelegramAlertService::processCommandUpdates_(
   if (c3WakeRequestCount > 0) {
     const ControllerWakeRequestResult wakeResult =
         controllerLink.requestWakePulse(millis());
-    switch (wakeResult) {
-      case ControllerWakeRequestResult::Sent:
-        c3WakeReplyState_ = C3WakeReplyState::Waiting;
-        break;
-      case ControllerWakeRequestResult::AlreadyAwake:
-        c3WakeReplyState_ = C3WakeReplyState::AlreadyAwake;
-        break;
-      case ControllerWakeRequestResult::Cooldown:
-        c3WakeReplyState_ = C3WakeReplyState::Cooldown;
-        break;
-      case ControllerWakeRequestResult::NotSleeping:
-      default:
-        c3WakeReplyState_ = C3WakeReplyState::NotSleeping;
-        break;
-    }
+    c3WakeReplyResult_ = wakeResult;
     c3WakeReplyPending_ = true;
     c3WakeReplyQueuedAtMs_ = millis();
     lastStatusReplyAttemptAtMs_ = 0;

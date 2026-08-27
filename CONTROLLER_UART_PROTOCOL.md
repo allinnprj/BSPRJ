@@ -418,6 +418,6 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 - If C3 is `SLP`, `WAIT`, or `OFF`, BS does not enqueue `STATUS` because UART cannot wake C3. It replies with `Data: Cached` and preserves the telemetry age.
 - `/bssts` is BS-local. It reports already available BS runtime values and a short C3 link summary without sending UART traffic or taking a new sensor measurement.
 - Both commands accept the normal bot-name suffix and coalesce duplicate requests found in one Telegram poll.
-- `/c3wkp` is separate from status. It emits a wake pulse only from a declared `SLP`, reports `Already awake` at `OK`, fails closed at `WAIT/OFF`, and waits up to `40 s` for existing PONG/TEL recovery. `/c3sts` never toggles the wake line.
+- `/c3wkp` is separate from status. Confirmed `OK` returns `C3 already awake` without a pulse; every other state emits one pulse and returns only `Wake pulse sent`. This acknowledges the electrical request, not successful wake; existing PONG/TEL must later establish `Link OK`. `/c3sts` never toggles the wake line.
 - BS builds `138+` no longer recognize `/c3ota`; C3 OTA is enabled manually through the separate C3 bot. `/c3sts` and `/bssts` retain their existing suffix, authorization, coalescing, and truthful status behavior.
 - Starting with local BS build `134`, the C3 card adds a Google Maps link, satellites, HDOP, and saved-fix age only when the accepted telemetry contains a valid saved FIX. An absent FIX is not treated as an error and does not trigger GPS acquisition.

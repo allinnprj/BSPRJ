@@ -39,7 +39,7 @@ enum class ControllerCommandState : uint8_t {
 enum class ControllerWakeRequestResult : uint8_t {
   Sent,
   AlreadyAwake,
-  NotSleeping,
+  Unavailable,
   Cooldown,
 };
 
