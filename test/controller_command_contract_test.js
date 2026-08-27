@@ -227,10 +227,11 @@ assert.doesNotMatch(telegram, /C3 no response|c3WakeReplyState_/);
 assert.match(telegram, /BS Controller/);
 assert.doesNotMatch(telegram, new RegExp(['c3', 'svc'].join('')),
   'The user-facing OTA flow must have one command name only.');
-assert.match(telegram, /controllerLink\.remoteBuild\(\) == observedControllerBuild_/);
-assert.match(telegram, /sendControllerBuildChanged_\(controllerLink\.remoteBuild\(\)\)/);
-assert.match(telegram, /C3 Update/);
-assert.match(telegram, /Online · build/);
+assert.match(telegram, /controllerLink\.remoteBuild\(\)/,
+  'C3 build detection must remain available to status output.');
+assert.doesNotMatch(telegram + telegramHeader,
+  /C3 Update|sendControllerBuildChanged_|buildControllerBuildChangedMessage_|observedControllerBuild_/,
+  'BS must not duplicate the C3 bot online/build notification.');
 assert.match(telegram, /Google Maps/);
 assert.match(telegram, /gpsFixAgeText\(telemetry\.gpsFixEpoch\)/);
 assert.match(mqtt, /telemetry\.gpsFixed/);
@@ -241,8 +242,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.87-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 141\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.88-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 142\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,

@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Retire redundant BS C3 build-change notice - 0.1.88-EXP build 142 - 2026-08-28
+
+1. Removed only the BS Telegram message `C3 Update / Online · build N`. C3 now reports its own startup and firmware build in the shared group, so the BS copy was redundant.
+2. Preserved C3 build parsing and storage in `ControllerLinkService`, `/c3sts`, the normal one-time `C3 Controller` card after each BS boot, serial status, diagnostics, sleep restoration, compatibility checks, and MQTT/log telemetry. C3 firmware and its bot are unchanged.
+3. Removed the now-unused notification builder, sender, and cached Telegram-only observed-build field. No UART frame, command, wake behavior, timing, Wi-Fi/OTA ownership, telemetry, INA3221, GPS, sound pipeline, or cloud-delivery behavior changed.
+4. Validation: `node test/controller_command_contract_test.js` passes; `git diff --check` passes; the single completed `pio run -e esp32dev` succeeds with RAM `65,540 / 327,680` (`20.0%`), linked Flash `1,363,663 / 1,572,864` (`86.7%`), and OTA-slot reserve `209,201` bytes. `firmware.bin` is `1,364,064` bytes with SHA-256 `77BFAA45EEA88F90451AEFFDB16A83580EB64EC5E5EFAE1F875B3C6B3CD9330B`. No upload or publication was performed.
+
 ## Dedicated C3 hardware-wake command - 0.1.87-EXP build 141 - 2026-08-27
 
 1. Added the BS half of the separately approved hardware-wake path. `GPIO23` is released at startup as an active-LOW open-drain output; `/c3wkp` emits one non-blocking `15 ms` LOW pulse in every link state except confirmed `OK`, with a `10 s` cooldown. EN/Reset is not used.

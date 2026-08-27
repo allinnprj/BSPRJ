@@ -220,7 +220,6 @@ void TelegramAlertService::begin() {
   wifiWasConnected_ = false;
   restorePending_ = false;
   controllerStatusSentThisBoot_ = false;
-  observedControllerBuild_ = 0;
   wifiConnectedSinceMs_ = 0;
   wifiLostAtMs_ = 0;
   restoreDowntimeMs_ = 0;
@@ -346,8 +345,7 @@ void TelegramAlertService::updateControllerStatus(
     return;
   }
 
-  if (controllerStatusSentThisBoot_ &&
-      controllerLink.remoteBuild() == observedControllerBuild_) {
+  if (controllerStatusSentThisBoot_) {
     return;
   }
   if (lastControllerAttemptAtMs_ != 0 &&
@@ -356,17 +354,10 @@ void TelegramAlertService::updateControllerStatus(
   }
 
   lastControllerAttemptAtMs_ = currentMs;
-  if (!controllerStatusSentThisBoot_ &&
-      sendControllerStatus_(controllerLink, currentMs, wifiRssiDbm,
+  if (sendControllerStatus_(controllerLink, currentMs, wifiRssiDbm,
                             wifiSignalPercent, wifiSsid)) {
     controllerStatusSentThisBoot_ = true;
-    observedControllerBuild_ = controllerLink.remoteBuild();
     Serial.println(F("[TG] sent -> C3 Controller"));
-  } else if (controllerStatusSentThisBoot_ &&
-             sendControllerBuildChanged_(controllerLink.remoteBuild())) {
-    observedControllerBuild_ = controllerLink.remoteBuild();
-    Serial.print(F("[TG] sent -> C3 Update build "));
-    Serial.println(observedControllerBuild_);
   }
 }
 
@@ -596,11 +587,6 @@ bool TelegramAlertService::sendControllerStatus_(
                                 controllerLink, nowMs, wifiRssiDbm,
                                 wifiSignalPercent, wifiSsid, refreshState),
                             "C3");
-}
-
-bool TelegramAlertService::sendControllerBuildChanged_(uint32_t buildNumber) {
-  return sendStatusMessage_(buildControllerBuildChangedMessage_(buildNumber),
-                            "C3 update");
 }
 
 bool TelegramAlertService::sendBsStatus_(
@@ -1027,17 +1013,6 @@ String TelegramAlertService::buildControllerStatusMessage_(
     message += gpsFixAgeText(telemetry.gpsFixEpoch);
     message += F("</b>");
   }
-  return message;
-}
-
-String TelegramAlertService::buildControllerBuildChangedMessage_(
-    uint32_t buildNumber) const {
-  String message;
-  message.reserve(80);
-  message += F("🔧 <b>C3 Update</b>\n");
-  message += F("Online · build <code>");
-  message += String(buildNumber);
-  message += F("</code>");
   return message;
 }
 
