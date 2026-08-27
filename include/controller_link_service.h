@@ -36,6 +36,13 @@ enum class ControllerCommandState : uint8_t {
   Expired = 6,
 };
 
+enum class ControllerWakeRequestResult : uint8_t {
+  Sent,
+  AlreadyAwake,
+  NotSleeping,
+  Cooldown,
+};
+
 struct ControllerCommandSnapshot {
   ControllerCommandState state = ControllerCommandState::Idle;
   uint32_t session = 0;
@@ -51,10 +58,12 @@ class ControllerLinkService {
  public:
   using CommandEventHandler = void (*)(const char* eventText, const String& details);
 
-  void begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin);
+  void begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin,
+             uint8_t wakePin);
   void setCommandEventHandler(CommandEventHandler handler);
   bool restoreExpectedSleep(uint32_t remainingSeconds, uint32_t build, uint32_t nowMs);
   void update(uint32_t nowMs);
+  ControllerWakeRequestResult requestWakePulse(uint32_t nowMs);
 
   bool queueStatusCommand(uint32_t ttlSeconds = 120);
   bool clearTerminalCommand();
@@ -156,9 +165,15 @@ class ControllerLinkService {
   static constexpr uint32_t COMMAND_RESULT_RETRY_MS = 5000;
   static constexpr uint32_t COMMAND_RESULT_TIMEOUT_MS = 40000;
   static constexpr uint8_t COMMAND_MAX_RESULT_RECOVERY_RETRIES = 2;
+  static constexpr uint32_t WAKE_PULSE_MS = 15;
+  static constexpr uint32_t WAKE_COOLDOWN_MS = 10000;
   static constexpr time_t MIN_VALID_COMMAND_EPOCH = 1700000000;
 
   HardwareSerial* serial_ = nullptr;
+  uint8_t wakePin_ = UINT8_MAX;
+  bool wakePulseActive_ = false;
+  uint32_t wakePulseStartedAtMs_ = 0;
+  uint32_t lastWakePulseAtMs_ = 0;
   State state_ = State::Waiting;
   char rxLine_[RX_LINE_CAPACITY] = {};
   size_t rxLength_ = 0;

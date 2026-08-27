@@ -190,6 +190,17 @@ bool isC3StatusCommand(String command) {
   return command.indexOf(' ') < 0 && command.length() > strlen("/c3sts@");
 }
 
+bool isC3WakeCommand(String command) {
+  command.trim();
+  if (command == F("/c3wkp")) {
+    return true;
+  }
+  if (!command.startsWith(F("/c3wkp@"))) {
+    return false;
+  }
+  return command.indexOf(' ') < 0 && command.length() > strlen("/c3wkp@");
+}
+
 bool isBsStatusCommand(String command) {
   command.trim();
   if (command == F("/bssts")) {
@@ -225,6 +236,9 @@ void TelegramAlertService::begin() {
   c3StatusReplyPending_ = false;
   c3RefreshCommandPending_ = false;
   c3HadTelemetryAtRequest_ = false;
+  c3WakeReplyPending_ = false;
+  c3WakeReplyState_ = C3WakeReplyState::None;
+  c3WakeReplyQueuedAtMs_ = 0;
   bsStatusReplyPending_ = false;
 
   if (configured_) {
@@ -232,7 +246,7 @@ void TelegramAlertService::begin() {
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /c3sts /bssts poll=60s last_update="));
+      Serial.print(F("[TG] commands ready -> /c3sts /c3wkp /bssts poll=60s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
@@ -363,6 +377,42 @@ void TelegramAlertService::updateCommands(
   const uint32_t currentMs = millis();
   if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
       !timeSynced || !onlineSentThisBoot_) {
+    return;
+  }
+
+  if (c3WakeReplyPending_) {
+    if (c3WakeReplyState_ == C3WakeReplyState::Waiting) {
+      if (controllerLink.isOnline()) {
+        c3WakeReplyState_ = C3WakeReplyState::Online;
+      } else if (currentMs - c3WakeReplyQueuedAtMs_ >=
+                 kC3WakeResponseTimeoutMs) {
+        c3WakeReplyState_ = C3WakeReplyState::NoResponse;
+      } else {
+        return;
+      }
+    }
+    if (currentMs - c3WakeReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
+      c3WakeReplyPending_ = false;
+      c3WakeReplyState_ = C3WakeReplyState::None;
+      Serial.println(F("[TG] command /c3wkp -> expired before reply"));
+      return;
+    }
+    if (currentMs - c3WakeReplyQueuedAtMs_ < kSendSpacingMs ||
+        (lastSuccessfulSendAtMs_ != 0 &&
+         currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
+        (lastStatusReplyAttemptAtMs_ != 0 &&
+         currentMs - lastStatusReplyAttemptAtMs_ < kRetryIntervalMs)) {
+      return;
+    }
+    lastStatusReplyAttemptAtMs_ = currentMs;
+    const bool sent = sendC3WakeReply_(c3WakeReplyState_, controllerLink);
+    Serial.print(F("[TG] command /c3wkp -> "));
+    Serial.println(sent ? F("OK") : F("FAIL"));
+    if (sent) {
+      c3WakeReplyPending_ = false;
+      c3WakeReplyState_ = C3WakeReplyState::None;
+      lastStatusReplyAttemptAtMs_ = 0;
+    }
     return;
   }
 
@@ -570,6 +620,39 @@ bool TelegramAlertService::sendBsStatus_(
   return sendStatusMessage_(buildBsStatusMessage_(status, controllerLink), "BS");
 }
 
+bool TelegramAlertService::sendC3WakeReply_(
+    C3WakeReplyState state, const ControllerLinkService &controllerLink) {
+  String message;
+  message.reserve(128);
+  message += F("🔔 <b>C3 Wake</b>\n");
+  switch (state) {
+    case C3WakeReplyState::Online:
+      message += F("Result: <b>OK</b>\nLink: <b>OK</b> · build <code>");
+      message += String(controllerLink.remoteBuild());
+      message += F("</code>");
+      break;
+    case C3WakeReplyState::AlreadyAwake:
+      message += F("Already awake · Link <b>OK</b>");
+      break;
+    case C3WakeReplyState::Cooldown:
+      message += F("Wake not sent · cooldown <b>10 s</b>");
+      break;
+    case C3WakeReplyState::NotSleeping:
+      message += F("Wake not sent · Link <b>");
+      message += htmlEscape_(String(controllerLink.stateText()));
+      message += F("</b>");
+      break;
+    case C3WakeReplyState::NoResponse:
+      message += F("Wake sent · <b>C3 no response</b>");
+      break;
+    case C3WakeReplyState::None:
+    case C3WakeReplyState::Waiting:
+    default:
+      return false;
+  }
+  return sendStatusMessage_(message, "C3 wake");
+}
+
 bool TelegramAlertService::sendStatusMessage_(const String &message,
                                               const char *logLabel) {
   WiFiClientSecure client;
@@ -664,6 +747,7 @@ void TelegramAlertService::processCommandUpdates_(
     const String &response, ControllerLinkService &controllerLink) {
   uint32_t newestUpdateId = lastCommandUpdateId_;
   uint8_t c3StatusRequestCount = 0;
+  uint8_t c3WakeRequestCount = 0;
   uint8_t bsStatusRequestCount = 0;
   int searchAt = 0;
   while (true) {
@@ -728,6 +812,10 @@ void TelegramAlertService::processCommandUpdates_(
       if (c3StatusRequestCount < UINT8_MAX) {
         ++c3StatusRequestCount;
       }
+    } else if (isC3WakeCommand(command)) {
+      if (c3WakeRequestCount < UINT8_MAX) {
+        ++c3WakeRequestCount;
+      }
     } else if (isBsStatusCommand(command)) {
       if (bsStatusRequestCount < UINT8_MAX) {
         ++bsStatusRequestCount;
@@ -753,6 +841,37 @@ void TelegramAlertService::processCommandUpdates_(
     bsStatusReplyPending_ = true;
     bsStatusReplyQueuedAtMs_ = millis();
     Serial.println(F("[TG] command /bssts -> queued"));
+  }
+
+  if (c3WakeRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /c3wkp x"));
+    Serial.println(c3WakeRequestCount);
+  }
+  if (c3WakeRequestCount > 0) {
+    const ControllerWakeRequestResult wakeResult =
+        controllerLink.requestWakePulse(millis());
+    switch (wakeResult) {
+      case ControllerWakeRequestResult::Sent:
+        c3WakeReplyState_ = C3WakeReplyState::Waiting;
+        break;
+      case ControllerWakeRequestResult::AlreadyAwake:
+        c3WakeReplyState_ = C3WakeReplyState::AlreadyAwake;
+        break;
+      case ControllerWakeRequestResult::Cooldown:
+        c3WakeReplyState_ = C3WakeReplyState::Cooldown;
+        break;
+      case ControllerWakeRequestResult::NotSleeping:
+      default:
+        c3WakeReplyState_ = C3WakeReplyState::NotSleeping;
+        break;
+    }
+    c3WakeReplyPending_ = true;
+    c3WakeReplyQueuedAtMs_ = millis();
+    lastStatusReplyAttemptAtMs_ = 0;
+    Serial.print(F("[TG] command /c3wkp -> queued "));
+    Serial.println(wakeResult == ControllerWakeRequestResult::Sent
+                       ? F("wake")
+                       : F("reply"));
   }
 
   if (c3StatusRequestCount > 1) {

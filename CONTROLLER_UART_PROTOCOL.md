@@ -407,8 +407,8 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 2. `[done]` Route `/c3sts` through the existing authorized BS bot and physically prove a fresh status lifecycle plus duplicate-command coalescing on builds `131/192`.
 3. `[done and deployed on BS; C3 unchanged]` Uploaded BS build `136` prepares `TREQ/TIME`, dormant `WIFI_OFF`, and `/c3ota -> OTA_ON 600`. Backward compatibility with Direct-mode C3 build `197` physically passed one complete `600 s` `SLP -> WAIT -> OK` cycle with `7 s` recovery, `C3_GAP=0`, WQTT `OK`, and `GS_DROP=0`.
 4. `[historical, superseded]` The Direct/Gateway/Service and maintenance-Wi-Fi experiments ended with unflashed C3 build `204` and are not the current architecture.
-5. `[current local]` C3 build `205` owns Wi-Fi, its bot, MQTT, Sheets, and manual OTA. BS build `139` keeps `/c3sts`/STATUS and the diagnostic transport, removes `/c3ota`, `OTA_ON`, `WIFI_OFF`, and `TREQ/TIME`, and safely clears persisted legacy command codes `2/3`.
-6. `[next separate hardware stage]` Add no further UART command. GPIO23 active-LOW open-drain wake remains deferred until the C3 wake input is physically ready and separately approved.
+5. `[done]` C3 build `205+` owns Wi-Fi, its bot, MQTT, Sheets, and manual OTA. BS build `139+` keeps `/c3sts`/STATUS and the diagnostic transport, removes `/c3ota`, `OTA_ON`, `WIFI_OFF`, and `TREQ/TIME`, and safely clears persisted legacy command codes `2/3`.
+6. `[local code ready; physical proof pending]` C3 build `207` uses RTC `GPIO5` as an active-LOW Deep-Sleep wake input. BS build `141` uses `GPIO23` open-drain and the dedicated `/c3wkp` command for one non-blocking `15 ms` pulse with a `10 s` cooldown. No UART command was added.
 7. `[later]` Keep `RESTART` separately approved. Do not add Charge/mode/GPIO3/GPS/sleep-setting control to protocol v1.
 
 ### Telegram Status Bridge
@@ -418,5 +418,6 @@ WROOM diagnostics record bounded metadata only: `CMD_QUEUE`, `CMD_TX`, `CMD_ACK`
 - If C3 is `SLP`, `WAIT`, or `OFF`, BS does not enqueue `STATUS` because UART cannot wake C3. It replies with `Data: Cached` and preserves the telemetry age.
 - `/bssts` is BS-local. It reports already available BS runtime values and a short C3 link summary without sending UART traffic or taking a new sensor measurement.
 - Both commands accept the normal bot-name suffix and coalesce duplicate requests found in one Telegram poll.
+- `/c3wkp` is separate from status. It emits a wake pulse only from a declared `SLP`, reports `Already awake` at `OK`, fails closed at `WAIT/OFF`, and waits up to `40 s` for existing PONG/TEL recovery. `/c3sts` never toggles the wake line.
 - BS builds `138+` no longer recognize `/c3ota`; C3 OTA is enabled manually through the separate C3 bot. `/c3sts` and `/bssts` retain their existing suffix, authorization, coalescing, and truthful status behavior.
 - Starting with local BS build `134`, the C3 card adds a Google Maps link, satellites, HDOP, and saved-fix age only when the accepted telemetry contains a valid saved FIX. An absent FIX is not treated as an error and does not trigger GPS acquisition.

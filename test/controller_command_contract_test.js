@@ -7,6 +7,7 @@ const header = fs.readFileSync(path.join(root, 'include', 'controller_link_servi
 const source = fs.readFileSync(path.join(root, 'src', 'controller_link_service.cpp'), 'utf8');
 const main = fs.readFileSync(path.join(root, 'src', 'main.cpp'), 'utf8');
 const telegram = fs.readFileSync(path.join(root, 'src', 'telegram_alert_service.cpp'), 'utf8');
+const telegramHeader = fs.readFileSync(path.join(root, 'include', 'telegram_alert_service.h'), 'utf8');
 const mqtt = fs.readFileSync(path.join(root, 'src', 'mqtt_service.cpp'), 'utf8');
 const protocol = fs.readFileSync(path.join(root, 'CONTROLLER_UART_PROTOCOL.md'), 'utf8');
 const version = fs.readFileSync(path.join(root, 'include', 'project_version.h'), 'utf8');
@@ -55,6 +56,15 @@ assert.match(header, /PersistedCommandRecord commandRecord_/);
 assert.match(header, /bool gpsFixed = false/);
 assert.match(header, /int32_t gpsLatitudeMicrodegrees = 0/);
 assert.match(header, /uint32_t gpsFixEpoch = 0/);
+assert.match(header, /ControllerWakeRequestResult requestWakePulse\(uint32_t nowMs\)/);
+assert.match(header, /static constexpr uint32_t WAKE_PULSE_MS = 15/);
+assert.match(header, /static constexpr uint32_t WAKE_COOLDOWN_MS = 10000/);
+
+assert.match(main, /CONTROLLER_WAKE_PIN = 23/);
+assert.match(
+  main,
+  /controllerLinkService\.begin\(Serial2,[\s\S]*CONTROLLER_UART_RX_PIN,[\s\S]*CONTROLLER_UART_TX_PIN, CONTROLLER_WAKE_PIN\)/
+);
 
 const beginBody = functionBody(
   source,
@@ -63,6 +73,36 @@ const beginBody = functionBody(
 );
 assert.match(beginBody, /commandPreferences_\.begin\("c3_command", false\)/);
 assert.match(beginBody, /loadCommandRecord\(\)/);
+assert.match(
+  beginBody,
+  /digitalWrite\(wakePin_, HIGH\)[\s\S]*pinMode\(wakePin_, OUTPUT_OPEN_DRAIN\)[\s\S]*digitalWrite\(wakePin_, HIGH\)/,
+  'The active-LOW wake output must be released before and after open-drain setup.'
+);
+
+const linkUpdateBody = functionBody(
+  source,
+  'void ControllerLinkService::update(',
+  'ControllerWakeRequestResult ControllerLinkService::requestWakePulse('
+);
+assert.match(
+  linkUpdateBody,
+  /wakePulseActive_[\s\S]*WAKE_PULSE_MS[\s\S]*digitalWrite\(wakePin_, HIGH\)[\s\S]*wakePulseActive_ = false/,
+  'The millis-based service loop must release the wake line after the bounded pulse.'
+);
+assert.doesNotMatch(linkUpdateBody, /delay\s*\(/);
+
+const wakePulseBody = functionBody(
+  source,
+  'ControllerWakeRequestResult ControllerLinkService::requestWakePulse(',
+  'const char* ControllerLinkService::stateText('
+);
+assert.match(wakePulseBody, /state_ == State::Online[\s\S]*AlreadyAwake/);
+assert.match(wakePulseBody, /state_ != State::Sleeping[\s\S]*NotSleeping/);
+assert.match(wakePulseBody, /WAKE_COOLDOWN_MS[\s\S]*Cooldown/);
+assert.match(wakePulseBody, /digitalWrite\(wakePin_, LOW\)/);
+assert.match(wakePulseBody, /state_ = State::Waiting/);
+assert.match(wakePulseBody, /emitCommandEvent\("C3_WAKE_CMD"/);
+assert.doesNotMatch(wakePulseBody, /delay\s*\(/);
 
 const queueBody = functionBody(
   source,
@@ -164,6 +204,7 @@ assert.match(main, /appendControllerDiagnosticRecord\(F\("C3_GPS"\)/);
 assert.doesNotMatch(main, /queueStatusCommand\s*\(/,
   'STATUS must only be triggered by the authorized Telegram command path.');
 assert.match(telegram, /isC3StatusCommand\(command\)/);
+assert.match(telegram, /isC3WakeCommand\(command\)/);
 assert.match(telegram, /isBsStatusCommand\(command\)/);
 assert.match(telegram, /controllerLink\.isOnline\(\)/);
 assert.match(telegram, /controllerLink\.queueStatusCommand\(\)/);
@@ -175,7 +216,12 @@ assert.match(telegram, /freshTelemetryReceived/);
 assert.match(telegram, /"CACHED"/);
 assert.match(telegram, /Data: <b>Fresh<\/b>/);
 assert.match(telegram, /command coalesced -> \/c3sts x/);
+assert.match(telegram, /command coalesced -> \/c3wkp x/);
 assert.match(telegram, /command coalesced -> \/bssts x/);
+assert.match(telegram, /controllerLink\.requestWakePulse\(millis\(\)\)/);
+assert.match(telegramHeader, /kC3WakeResponseTimeoutMs = 40000UL/);
+assert.match(telegram, /Wake sent · <b>C3 no response<\/b>/);
+assert.match(telegram, /Already awake · Link <b>OK<\/b>/);
 assert.match(telegram, /BS Controller/);
 assert.doesNotMatch(telegram, new RegExp(['c3', 'svc'].join('')),
   'The user-facing OTA flow must have one command name only.');
@@ -193,8 +239,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.86-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 140\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.87-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 141\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,

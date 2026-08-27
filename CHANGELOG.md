@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Dedicated C3 hardware-wake command - 0.1.87-EXP build 141 - 2026-08-27
+
+1. Added the BS half of the separately approved hardware-wake path. `GPIO23` is released at startup as an active-LOW open-drain output; `/c3wkp` emits one non-blocking `15 ms` LOW pulse only while the accepted link state is `SLP`, with a `10 s` cooldown. EN/Reset is not used.
+2. After a pulse, BS changes the expected link state to `WAIT` and uses only the existing `PING/PONG` and `TEL/ACK` traffic to prove recovery. Telegram waits up to `40 s`, then reports either `Result: OK` or the truthful `Wake sent · C3 no response`. When C3 is already `OK`, no pulse is emitted; `WAIT/OFF` also fail closed without a pulse.
+3. `/c3sts` remains status-only and its existing STATUS/fresh/cached behavior is unchanged. No UART frame, NVS record, library, task, command queue, C3 Wi-Fi/OTA control, sensor/control change, or blocking delay was added. Duplicate `/c3wkp` updates found in one Telegram poll are coalesced into one action.
+4. The existing diagnostic callback records the bounded `C3_WAKE_CMD pin=23 pulse_ms=15` event. Existing `UART_WAIT`, `UART_OK`, and new-session `C3_WAKE` records remain the physical recovery evidence.
+5. Validation: `node test/controller_command_contract_test.js` passes; the single `pio run -e esp32dev` succeeds with RAM `65,548 / 327,680` (`20.0%`), linked Flash `1,364,675 / 1,572,864` (`86.8%`), and OTA-slot reserve `208,189` bytes. `firmware.bin` is `1,365,072` bytes with SHA-256 `61CA93639E50CE4BD4FEA40E999B81228C41520943B83F981CAF97D6F04BD79F`. Upload, publication, wiring, and physical wake proof were not performed.
+
 ## Safe source cleanup - 0.1.86-EXP build 140 - 2026-08-26
 
 1. Removed only source elements proven unused across the repository: orphaned button/display/log/Wi-Fi/MQTT/Telegram/time APIs, unused AudioSnapshot and MQTT runtime fields, write-only MQTT state, unused Datacake helper variants, one unused Wi-Fi client, and the unused Apps Script `timestampKey_()` helper.

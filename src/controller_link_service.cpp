@@ -111,8 +111,13 @@ bool isAllowedCommandResult(const char* result) {
 
 }  // namespace
 
-void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t txPin) {
+void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin,
+                                  uint8_t txPin, uint8_t wakePin) {
   serial_ = &serial;
+  wakePin_ = wakePin;
+  digitalWrite(wakePin_, HIGH);
+  pinMode(wakePin_, OUTPUT_OPEN_DRAIN);
+  digitalWrite(wakePin_, HIGH);
   startedAtMs_ = millis();
   serial_->begin(BAUD_RATE, SERIAL_8N1, rxPin, txPin);
   Serial.print(F("[UART] link ready -> RX="));
@@ -121,6 +126,9 @@ void ControllerLinkService::begin(HardwareSerial& serial, uint8_t rxPin, uint8_t
   Serial.print(txPin);
   Serial.print(F(" baud="));
   Serial.println(BAUD_RATE);
+  Serial.print(F("[UART] C3 wake ready -> GPIO"));
+  Serial.print(wakePin_);
+  Serial.println(F(" active=LOW pulse=15ms cooldown=10s"));
 
   commandPreferencesReady_ = commandPreferences_.begin("c3_command", false);
   if (commandPreferencesReady_ && loadCommandRecord()) {
@@ -162,6 +170,12 @@ bool ControllerLinkService::restoreExpectedSleep(uint32_t remainingSeconds,
 }
 
 void ControllerLinkService::update(uint32_t nowMs) {
+  if (wakePulseActive_ && nowMs - wakePulseStartedAtMs_ >= WAKE_PULSE_MS) {
+    digitalWrite(wakePin_, HIGH);
+    wakePulseActive_ = false;
+    Serial.println(F("[UART] C3 WAKE -> line released"));
+  }
+
   if (serial_ == nullptr) {
     return;
   }
@@ -204,6 +218,44 @@ void ControllerLinkService::update(uint32_t nowMs) {
   if (!pingPending_ && (!pingSent_ || nowMs - lastPingAtMs_ >= PING_INTERVAL_MS)) {
     sendPing(nowMs);
   }
+}
+
+ControllerWakeRequestResult ControllerLinkService::requestWakePulse(
+    uint32_t nowMs) {
+  if (state_ == State::Online) {
+    return ControllerWakeRequestResult::AlreadyAwake;
+  }
+  if (state_ != State::Sleeping || wakePin_ == UINT8_MAX) {
+    return ControllerWakeRequestResult::NotSleeping;
+  }
+  if (wakePulseActive_ ||
+      (lastWakePulseAtMs_ != 0 &&
+       nowMs - lastWakePulseAtMs_ < WAKE_COOLDOWN_MS)) {
+    return ControllerWakeRequestResult::Cooldown;
+  }
+
+  digitalWrite(wakePin_, LOW);
+  wakePulseActive_ = true;
+  wakePulseStartedAtMs_ = nowMs;
+  lastWakePulseAtMs_ = nowMs;
+
+  state_ = State::Waiting;
+  sleepUntilMs_ = 0;
+  pingPending_ = false;
+  pingSent_ = false;
+  consecutiveMisses_ = 0;
+  startedAtMs_ = nowMs;
+  hasValidActivity_ = false;
+
+  String details = F("pin=");
+  details += wakePin_;
+  details += F(" pulse_ms=");
+  details += WAKE_PULSE_MS;
+  emitCommandEvent("C3_WAKE_CMD", details);
+  Serial.print(F("[UART] C3 WAKE -> GPIO"));
+  Serial.print(wakePin_);
+  Serial.println(F(" LOW for 15 ms"));
+  return ControllerWakeRequestResult::Sent;
 }
 
 const char* ControllerLinkService::stateText() const {
