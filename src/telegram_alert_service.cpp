@@ -258,7 +258,7 @@ void TelegramAlertService::begin() {
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /help /c3sts /c3wkp /bssts poll=60s last_update="));
+      Serial.print(F("[TG] commands ready -> /help /c3sts /c3wkp /bssts poll=30s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));

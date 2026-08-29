@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Faster ECO Telegram command polling - 0.1.91-EXP build 145 - 2026-08-29
+
+1. Reduced only the BS Telegram command polling interval from `60 s` to `30 s`. Normal `/help` and `/bssts` response latency becomes approximately `5..35 s` instead of `5..65 s`, depending on arrival relative to the next poll.
+2. Preserved the existing `5 s` send spacing, duplicate-command coalescing, authorized-group check, stale-update rejection, retry bounds, STATUS lifecycle, hardware wake, UART, telemetry, Wi-Fi/cloud behavior, and ECO operation. No fast active window, long polling, new state, library, or C3 change was added.
+3. BS build `145` includes the complete bilingual BS+C3 `/help` from build `144`; build `144` therefore does not need a separate physical upload.
+4. Validation: `node test/controller_command_contract_test.js` passes; `git diff --check` passes; the single `pio run -e esp32dev` succeeds with RAM `65,548 / 327,680` (`20.0%`), linked Flash `1,368,267 / 1,572,864` (`87.0%`), and OTA-slot reserve `204,597` bytes. `firmware.bin` is `1,368,672` bytes with SHA-256 `EAD19AB081F6FD6F1D9B1B5AE102D40FE893F64F024C1DD0B95DB999DD013465`. No upload or publication was performed.
+
 ## Complete BS + C3 group help - 0.1.90-EXP build 144 - 2026-08-29
 
 1. Extended the existing unified bilingual `/help` message with the current C3-bot commands: `/status`, `/power`, `/slpon`, `/slpoff`, `/chrgon`, `/chrgoff`, and `/sa`, including concise purpose text and the Smart Auto charging boundary.

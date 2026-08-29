@@ -48,7 +48,7 @@ class TelegramAlertService {
   static constexpr unsigned long kRetryIntervalMs = 30000UL;
   static constexpr unsigned long kRestoreThresholdMs = 90000UL;
   static constexpr unsigned long kRestoreWarmupMs = 10000UL;
-  static constexpr unsigned long kCommandPollIntervalMs = 60000UL;
+  static constexpr unsigned long kCommandPollIntervalMs = 30000UL;
   static constexpr unsigned long kSendSpacingMs = 5000UL;
   static constexpr unsigned long kPendingReplyMaxAgeMs = 120000UL;
   static constexpr uint16_t kTelegramHttpTimeoutMs = 4000;

@@ -221,6 +221,8 @@ assert.match(telegram, /command coalesced -> \/c3sts x/);
 assert.match(telegram, /command coalesced -> \/c3wkp x/);
 assert.match(telegram, /command coalesced -> \/bssts x/);
 assert.match(telegram, /command coalesced -> \/help x/);
+assert.match(telegramHeader, /kCommandPollIntervalMs = 30000UL/);
+assert.match(telegram, /poll=30s last_update=/);
 assert.match(telegram, /controllerLink\.requestWakePulse\(millis\(\)\)/);
 assert.doesNotMatch(telegramHeader, /kC3WakeResponseTimeoutMs/);
 assert.match(telegram, /Wake pulse sent/);
@@ -256,8 +258,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.90-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 144\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.91-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 145\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,
