@@ -207,6 +207,7 @@ assert.doesNotMatch(main, /queueStatusCommand\s*\(/,
 assert.match(telegram, /isC3StatusCommand\(command\)/);
 assert.match(telegram, /isC3WakeCommand\(command\)/);
 assert.match(telegram, /isBsStatusCommand\(command\)/);
+assert.match(telegram, /isHelpCommand\(command\)/);
 assert.match(telegram, /controllerLink\.isOnline\(\)/);
 assert.match(telegram, /controllerLink\.queueStatusCommand\(\)/);
 assert.doesNotMatch(telegram, /c3ota|C3Ota|queueOtaOnCommand|OTA_ON/);
@@ -219,12 +220,19 @@ assert.match(telegram, /Data: <b>Fresh<\/b>/);
 assert.match(telegram, /command coalesced -> \/c3sts x/);
 assert.match(telegram, /command coalesced -> \/c3wkp x/);
 assert.match(telegram, /command coalesced -> \/bssts x/);
+assert.match(telegram, /command coalesced -> \/help x/);
 assert.match(telegram, /controllerLink\.requestWakePulse\(millis\(\)\)/);
 assert.doesNotMatch(telegramHeader, /kC3WakeResponseTimeoutMs/);
 assert.match(telegram, /Wake pulse sent/);
 assert.match(telegram, /C3 already awake/);
 assert.doesNotMatch(telegram, /C3 no response|c3WakeReplyState_/);
 assert.match(telegram, /BS Controller/);
+assert.match(telegram, /BS \+ C3 · Помощь \/ Help/);
+assert.match(telegram, /Link \/ Data/);
+assert.match(telegram, /Cached — последние сохранённые данные/);
+assert.match(telegram, /C3 settings are admin-only/);
+assert.doesNotMatch(telegram, /\/help_bs|\/help_c3|\/help_link/,
+  'All end-user guidance must remain inside one /help command.');
 assert.doesNotMatch(telegram, new RegExp(['c3', 'svc'].join('')),
   'The user-facing OTA flow must have one command name only.');
 assert.match(telegram, /controllerLink\.remoteBuild\(\)/,
@@ -242,8 +250,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.88-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 142\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.89-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 143\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,

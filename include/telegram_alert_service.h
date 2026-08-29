@@ -68,6 +68,7 @@ class TelegramAlertService {
                              const char *refreshState = nullptr);
   bool sendBsStatus_(const BsStatusView &status,
                      const ControllerLinkService &controllerLink);
+  bool sendHelp_();
   bool sendC3WakeReply_(ControllerWakeRequestResult result);
   bool sendStatusMessage_(const String &message, const char *logLabel);
   bool pollCommands_(ControllerLinkService &controllerLink);
@@ -89,6 +90,7 @@ class TelegramAlertService {
       const char *refreshState) const;
   String buildBsStatusMessage_(const BsStatusView &status,
                                const ControllerLinkService &controllerLink) const;
+  String buildHelpMessage_() const;
   static String htmlEscape_(const String &value);
   static String urlEncode_(const String &value);
   static String formatDowntimeText_(unsigned long downtimeMs);
@@ -106,6 +108,7 @@ class TelegramAlertService {
   ControllerWakeRequestResult c3WakeReplyResult_ =
       ControllerWakeRequestResult::Unavailable;
   bool bsStatusReplyPending_ = false;
+  bool helpReplyPending_ = false;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;
   unsigned long restoreDowntimeMs_ = 0;
@@ -117,6 +120,7 @@ class TelegramAlertService {
   uint32_t c3TelemetryReceivedAtRequestMs_ = 0;
   unsigned long c3WakeReplyQueuedAtMs_ = 0;
   unsigned long bsStatusReplyQueuedAtMs_ = 0;
+  unsigned long helpReplyQueuedAtMs_ = 0;
   unsigned long lastStatusReplyAttemptAtMs_ = 0;
   uint32_t lastCommandUpdateId_ = 0;
   Preferences commandPreferences_;

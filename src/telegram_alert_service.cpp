@@ -212,6 +212,17 @@ bool isBsStatusCommand(String command) {
   return command.indexOf(' ') < 0 && command.length() > strlen("/bssts@");
 }
 
+bool isHelpCommand(String command) {
+  command.trim();
+  if (command == F("/help")) {
+    return true;
+  }
+  if (!command.startsWith(F("/help@"))) {
+    return false;
+  }
+  return command.indexOf(' ') < 0 && command.length() > strlen("/help@");
+}
+
 }  // namespace
 
 void TelegramAlertService::begin() {
@@ -239,13 +250,15 @@ void TelegramAlertService::begin() {
   c3WakeReplyResult_ = ControllerWakeRequestResult::Unavailable;
   c3WakeReplyQueuedAtMs_ = 0;
   bsStatusReplyPending_ = false;
+  helpReplyPending_ = false;
+  helpReplyQueuedAtMs_ = 0;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /c3sts /c3wkp /bssts poll=60s last_update="));
+      Serial.print(F("[TG] commands ready -> /help /c3sts /c3wkp /bssts poll=60s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
@@ -368,6 +381,30 @@ void TelegramAlertService::updateCommands(
   const uint32_t currentMs = millis();
   if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
       !timeSynced || !onlineSentThisBoot_) {
+    return;
+  }
+
+  if (helpReplyPending_) {
+    if (currentMs - helpReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
+      helpReplyPending_ = false;
+      Serial.println(F("[TG] command /help -> expired before reply"));
+      return;
+    }
+    if (currentMs - helpReplyQueuedAtMs_ < kSendSpacingMs ||
+        (lastSuccessfulSendAtMs_ != 0 &&
+         currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
+        (lastStatusReplyAttemptAtMs_ != 0 &&
+         currentMs - lastStatusReplyAttemptAtMs_ < kRetryIntervalMs)) {
+      return;
+    }
+    lastStatusReplyAttemptAtMs_ = currentMs;
+    const bool sent = sendHelp_();
+    Serial.print(F("[TG] command /help -> "));
+    Serial.println(sent ? F("OK") : F("FAIL"));
+    if (sent) {
+      helpReplyPending_ = false;
+      lastStatusReplyAttemptAtMs_ = 0;
+    }
     return;
   }
 
@@ -594,6 +631,10 @@ bool TelegramAlertService::sendBsStatus_(
   return sendStatusMessage_(buildBsStatusMessage_(status, controllerLink), "BS");
 }
 
+bool TelegramAlertService::sendHelp_() {
+  return sendStatusMessage_(buildHelpMessage_(), "Help");
+}
+
 bool TelegramAlertService::sendC3WakeReply_(
     ControllerWakeRequestResult result) {
   String message;
@@ -713,6 +754,7 @@ void TelegramAlertService::processCommandUpdates_(
   uint8_t c3StatusRequestCount = 0;
   uint8_t c3WakeRequestCount = 0;
   uint8_t bsStatusRequestCount = 0;
+  uint8_t helpRequestCount = 0;
   int searchAt = 0;
   while (true) {
     const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
@@ -784,6 +826,10 @@ void TelegramAlertService::processCommandUpdates_(
       if (bsStatusRequestCount < UINT8_MAX) {
         ++bsStatusRequestCount;
       }
+    } else if (isHelpCommand(command)) {
+      if (helpRequestCount < UINT8_MAX) {
+        ++helpRequestCount;
+      }
     }
   }
 
@@ -795,6 +841,16 @@ void TelegramAlertService::processCommandUpdates_(
       return;
     }
     lastCommandUpdateId_ = newestUpdateId;
+  }
+
+  if (helpRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /help x"));
+    Serial.println(helpRequestCount);
+  }
+  if (helpRequestCount > 0) {
+    helpReplyPending_ = true;
+    helpReplyQueuedAtMs_ = millis();
+    Serial.println(F("[TG] command /help -> queued"));
   }
 
   if (bsStatusRequestCount > 1) {
@@ -1085,6 +1141,46 @@ String TelegramAlertService::buildBsStatusMessage_(
     message += F(" s</b>");
   }
   appendLinks(message, status.ipAddress);
+  return message;
+}
+
+String TelegramAlertService::buildHelpMessage_() const {
+  String message;
+  message.reserve(2200);
+  message += F("📘 <b>BS + C3 · Помощь / Help</b>\n\n");
+  message += F("<b>Команды / Commands</b>\n");
+  message += F("<code>/bssts</code> — состояние BS / BS status\n");
+  message += F("<code>/c3sts</code> — питание и состояние C3 / C3 power and status\n");
+  message += F("<code>/c3wkp</code> — пробудить C3 / Wake C3\n");
+
+  message += F("\n🔊 <b>BS Controller</b>\n");
+  message += F("State — состояние BS / operating state\n");
+  message += F("Version, Uptime — прошивка и время работы / firmware and uptime\n");
+  message += F("Wi-Fi, IP, Time — сеть и синхронизация / network and time\n");
+  message += F("Now, H, M — текущий, часовой, общий относительный шум / current, hourly, total relative sound (not dB)\n");
+  message += F("Period, Level, Signal — период, уровень и микрофон / period, level and microphone health\n");
+  message += F("Environment — температура и влажность / temperature and humidity\n");
+  message += F("Cloud — WQTT и очередь Sheets / WQTT and Sheets queue\n");
+  message += F("C3 link — связь с C3 / C3 connection\n");
+
+  message += F("\n🔗 <b>C3 Controller</b>\n");
+  message += F("Link, build — связь и прошивка / link and firmware\n");
+  message += F("Data, Telemetry age — свежесть и возраст данных / freshness and data age\n");
+  message += F("INA3221 — состояние измерителя питания / power monitor health\n");
+  message += F("Solar, Battery, Load — панель, аккумулятор, нагрузка / solar, battery and load\n");
+  message += F("Charge, Mode — зарядка и режим управления / charging and control mode\n");
+  message += F("GPS — сохранённое местоположение / saved location\n");
+
+  message += F("\n<b>Link / Data</b>\n");
+  message += F("OK — C3 работает, связь активна / C3 online\n");
+  message += F("SLP — штатный Deep Sleep / normal Deep Sleep\n");
+  message += F("WAIT — ожидание пробуждения или ответа / waiting for wake or reply\n");
+  message += F("OFF — давно нет корректного ответа / no valid response\n");
+  message += F("Fresh — получены новые данные / new data received\n");
+  message += F("Cached — последние сохранённые данные; нормально во сне / last saved data; normal during sleep\n");
+
+  message += F("\nПосле <code>/c3wkp</code> дождитесь сообщения C3 Online, затем используйте <code>/c3sts</code>. / After <code>/c3wkp</code>, wait for C3 Online, then use <code>/c3sts</code>.\n");
+  message += F("Настройки C3 доступны только администратору. / C3 settings are admin-only.");
   return message;
 }
 
