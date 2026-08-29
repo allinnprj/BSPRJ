@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Complete BS + C3 group help - 0.1.90-EXP build 144 - 2026-08-29
+
+1. Extended the existing unified bilingual `/help` message with the current C3-bot commands: `/status`, `/power`, `/slpon`, `/slpoff`, `/chrgon`, `/chrgoff`, and `/sa`, including concise purpose text and the Smart Auto charging boundary.
+2. Clearly separated BS commands available to participants in the authorized group from C3 control commands accepted only from the configured C3 administrator. This prevents group members from mistaking an intentionally ignored C3 command for a device fault.
+3. Added no command handler, BotFather menu entry, alias, callback, library, state, UART traffic, or C3 change. Existing BS commands, authorization, telemetry, wake, STATUS, sound processing, cloud delivery, and both controller behaviors are unchanged.
+4. Validation: `node test/controller_command_contract_test.js` passes; `git diff --check` passes; the single `pio run -e esp32dev` succeeds with RAM `65,548 / 327,680` (`20.0%`), linked Flash `1,368,267 / 1,572,864` (`87.0%`), and OTA-slot reserve `204,597` bytes. `firmware.bin` is `1,368,672` bytes with SHA-256 `1EDAE9DA824AF18A74C6DCE29349380A6D95DD11D1DD90032BCB78BDB5D3C67E`. The complete help body is `2,439` characters (`3,168` UTF-8 bytes), below Telegram's message limit. No upload or publication was performed.
+
 ## Unified bilingual Telegram help - 0.1.89-EXP build 143 - 2026-08-29
 
 1. Added one read-only `/help` command for the authorized BS group. It contains the complete short Russian/English command guide, BS Controller and C3 Controller field meanings, `Link/Data` state meanings, the post-wake sequence, and the C3 admin-control boundary in one message.

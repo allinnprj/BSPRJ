@@ -230,7 +230,13 @@ assert.match(telegram, /BS Controller/);
 assert.match(telegram, /BS \+ C3 · Помощь \/ Help/);
 assert.match(telegram, /Link \/ Data/);
 assert.match(telegram, /Cached — последние сохранённые данные/);
-assert.match(telegram, /C3 settings are admin-only/);
+assert.match(telegram, /BS bot · для участников \/ for group members/);
+assert.match(telegram, /C3 bot · только админ \/ admin only/);
+for (const command of ['/status', '/power', '/slpon', '/slpoff', '/chrgon', '/chrgoff', '/sa']) {
+  assert.match(telegram, new RegExp(`<code>\\${command}<\\/code>`),
+    `Unified /help must explain the C3 command ${command}.`);
+}
+assert.match(telegram, /The C3 bot accepts C3 commands from its admin only/);
 assert.doesNotMatch(telegram, /\/help_bs|\/help_c3|\/help_link/,
   'All end-user guidance must remain inside one /help command.');
 assert.doesNotMatch(telegram, new RegExp(['c3', 'svc'].join('')),
@@ -250,8 +256,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.89-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 143\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.90-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 144\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,

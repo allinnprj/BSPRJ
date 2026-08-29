@@ -1146,12 +1146,22 @@ String TelegramAlertService::buildBsStatusMessage_(
 
 String TelegramAlertService::buildHelpMessage_() const {
   String message;
-  message.reserve(2200);
+  message.reserve(3000);
   message += F("📘 <b>BS + C3 · Помощь / Help</b>\n\n");
-  message += F("<b>Команды / Commands</b>\n");
+  message += F("<b>BS bot · для участников / for group members</b>\n");
   message += F("<code>/bssts</code> — состояние BS / BS status\n");
   message += F("<code>/c3sts</code> — питание и состояние C3 / C3 power and status\n");
   message += F("<code>/c3wkp</code> — пробудить C3 / Wake C3\n");
+
+  message += F("\n<b>C3 bot · только админ / admin only</b>\n");
+  message += F("<code>/status</code> — статус и меню C3 / C3 status and menu\n");
+  message += F("<code>/power</code> — питание INA3221 / INA3221 power readings\n");
+  message += F("<code>/slpon</code> — включить Deep Sleep / Enable Deep Sleep\n");
+  message += F("<code>/slpoff</code> — отключить Deep Sleep / Disable Deep Sleep\n");
+  message += F("<code>/chrgon</code> — включить заряд в Classic / Charge ON in Classic\n");
+  message += F("<code>/chrgoff</code> — отключить заряд в Classic / Charge OFF in Classic\n");
+  message += F("<code>/sa</code> — включить Smart Auto / Enable Smart Auto\n");
+  message += F("В Smart Auto зарядом управляет автоматика. / Smart Auto controls charging automatically.\n");
 
   message += F("\n🔊 <b>BS Controller</b>\n");
   message += F("State — состояние BS / operating state\n");
@@ -1180,7 +1190,7 @@ String TelegramAlertService::buildHelpMessage_() const {
   message += F("Cached — последние сохранённые данные; нормально во сне / last saved data; normal during sleep\n");
 
   message += F("\nПосле <code>/c3wkp</code> дождитесь сообщения C3 Online, затем используйте <code>/c3sts</code>. / After <code>/c3wkp</code>, wait for C3 Online, then use <code>/c3sts</code>.\n");
-  message += F("Настройки C3 доступны только администратору. / C3 settings are admin-only.");
+  message += F("Команды C3 принимает собственный бот C3 только от админа. / The C3 bot accepts C3 commands from its admin only.");
   return message;
 }
 
