@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Protected portable Wi-Fi setup - 0.1.92-EXP build 146 - 2026-08-29
+
+1. Added a bounded provisioning mode for moving BS to another Wi-Fi network without recompiling. Holding the existing `GPIO27` button for `5 s` during boot opens the WPA2-protected `BS-Setup-XXXX` AP and a minimal page at `http://192.168.4.1/` for at most `10 min`; normal short/long button handling after boot is unchanged.
+2. Candidate SSID/password values remain only in RAM while BS tests the connection for up to `30 s`. One checksummed NVS profile is written only after the requested SSID is actually connected. Invalid input, connection failure, or NVS failure keeps/restores the previous runtime profile; an unavailable saved profile falls back to the compile-time `WIFI_SSID` / `WIFI_PASSWORD` recovery profile after `30 s`.
+3. Reused the existing synchronous port-80 `WebServer`: the setup form is available only while the physically requested AP is active, submits by HTTP POST, never echoes the password, and leaves the normal log/download routes unchanged outside setup mode. No scan, captive portal, new dependency, Telegram credential path, second server, C3 change, upload, or publication was added. The separate AP password remains only in ignored `include/secrets.h`.
+4. Validation: `node test/wifi_provisioning_contract_test.js` passes; the final `pio run -e esp32dev` succeeds with RAM `65,660 / 327,680` (`20.0%`), linked Flash `1,375,035 / 1,572,864` (`87.4%`), and OTA-slot reserve `197,829` bytes. `firmware.bin` is `1,375,440` bytes with SHA-256 `4F128370A4A155A5BAC0EF13BE771C1DA8709265E87B83AFF180BC4BBD62B389`. The first sandboxed PlatformIO invocation stopped before compilation because its global lock was inaccessible; one intermediate compile exposed no error, and the final rebuild followed the exact `10 min` AP-bound correction. Physical AP/rollback/save checks remain pending; no upload was performed.
+
 ## Faster ECO Telegram command polling - 0.1.91-EXP build 145 - 2026-08-29
 
 1. Reduced only the BS Telegram command polling interval from `60 s` to `30 s`. Normal `/help` and `/bssts` response latency becomes approximately `5..35 s` instead of `5..65 s`, depending on arrival relative to the next poll.

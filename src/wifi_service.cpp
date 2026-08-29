@@ -1,10 +1,36 @@
 #include "wifi_service.h"
 
 #include <WiFi.h>
+#include <stddef.h>
 
 #include "secrets.h"
 
+#ifndef WIFI_SETUP_AP_PASSWORD
+#error "Define WIFI_SETUP_AP_PASSWORD in include/secrets.h"
+#endif
+
 namespace {
+
+constexpr char kWifiPreferencesNamespace[] = "wifi_cfg";
+constexpr char kWifiProfileKey[] = "profile";
+constexpr uint32_t kWifiProfileMagic = 0x42535746UL;
+
+struct WifiCredentialRecord {
+  uint32_t magic = 0;
+  char ssid[33] = {};
+  char password[65] = {};
+  uint32_t checksum = 0;
+};
+
+uint32_t profileChecksum(const WifiCredentialRecord &record) {
+  const auto *bytes = reinterpret_cast<const uint8_t *>(&record);
+  uint32_t hash = 2166136261UL;
+  for (size_t index = 0; index < offsetof(WifiCredentialRecord, checksum); ++index) {
+    hash ^= bytes[index];
+    hash *= 16777619UL;
+  }
+  return hash;
+}
 
 const char *wifiStatusText(wl_status_t status) {
   switch (status) {
@@ -27,17 +53,33 @@ const char *wifiStatusText(wl_status_t status) {
 
 }  // namespace
 
-void WifiService::begin() {
-  configured_ = strlen(WIFI_SSID) > 0;
+void WifiService::begin(uint8_t setupButtonPin) {
   lastStatusCode_ = -1;
   announcedIp_ = false;
   lastReconnectAttemptAt_ = 0;
   lastSignalRefreshAt_ = 0;
+  stationConnectionStartedAt_ = 0;
   cachedRssiDbm_ = -127;
   cachedSignalPercent_ = 0;
+  setupState_ = WifiSetupState::Inactive;
+
+  preferencesReady_ = preferences_.begin(kWifiPreferencesNamespace, false);
+  usingSavedProfile_ = preferencesReady_ && loadSavedProfile();
+  if (!usingSavedProfile_) {
+    activeSsid_ = WIFI_SSID;
+    activePassword_ = WIFI_PASSWORD;
+  }
+  configured_ = !activeSsid_.isEmpty();
+
+  if (setupRequestedAtBoot(setupButtonPin)) {
+    startSetupAccessPoint();
+    if (isSetupActive()) {
+      return;
+    }
+  }
 
   if (!configured_) {
-    Serial.println(F("[WF] OFF -> WIFI_SSID is empty in secrets.h"));
+    Serial.println(F("[WF] OFF -> no saved or default Wi-Fi profile"));
     WiFi.mode(WIFI_OFF);
     return;
   }
@@ -46,18 +88,57 @@ void WifiService::begin() {
   WiFi.setSleep(true);
   WiFi.setAutoReconnect(true);
   WiFi.persistent(false);
-  Serial.print(F("[WF] begin -> "));
-  Serial.println(WIFI_SSID);
-  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  beginStationConnection(activeSsid_, activePassword_);
 }
 
 void WifiService::update() {
-  if (!configured_) {
+  if (!configured_ && !isSetupActive()) {
     return;
   }
 
   unsigned long nowMs = millis();
   wl_status_t status = WiFi.status();
+
+  if (isSetupActive()) {
+    if (setupState_ == WifiSetupState::Testing) {
+      if (status == WL_CONNECTED && WiFi.SSID() == candidateSsid_) {
+        if (saveCandidateProfile()) {
+          activeSsid_ = candidateSsid_;
+          activePassword_ = candidatePassword_;
+          candidateSsid_ = String();
+          candidatePassword_ = String();
+          configured_ = true;
+          usingSavedProfile_ = true;
+          defaultFallbackTried_ = false;
+          setupState_ = WifiSetupState::Saved;
+          setupRestartAt_ = nowMs + kSetupRestartDelayMs;
+          Serial.println(F("[WF] setup -> connection verified, profile saved"));
+        } else {
+          setupState_ = WifiSetupState::SaveFailed;
+          Serial.println(F("[WF] setup -> profile save failed, previous profile restored"));
+          rollbackCandidate();
+        }
+      } else if (nowMs - setupConnectionStartedAt_ >= kSetupConnectionTimeoutMs) {
+        setupState_ = WifiSetupState::Failed;
+        Serial.println(F("[WF] setup -> connection failed, previous profile restored"));
+        rollbackCandidate();
+      }
+    } else if (setupState_ == WifiSetupState::Saved &&
+               static_cast<long>(nowMs - setupRestartAt_) >= 0) {
+      ESP.restart();
+    }
+
+    if (setupState_ != WifiSetupState::Saved &&
+        nowMs - setupStartedAt_ >= kSetupWindowMs) {
+      Serial.println(F("[WF] setup -> 10 min window closed"));
+      if (setupState_ == WifiSetupState::Testing) {
+        rollbackCandidate();
+      }
+      stopSetupAccessPoint();
+      status = WiFi.status();
+    }
+  }
+
   const bool connected = status == WL_CONNECTED;
   const bool statusChanged = status != lastStatusCode_;
   if (statusChanged) {
@@ -79,6 +160,22 @@ void WifiService::update() {
   } else if (!connected) {
     announcedIp_ = false;
     refreshSignalCache(false, true);
+
+    if (!isSetupActive() && usingSavedProfile_ && !defaultFallbackTried_ &&
+        stationConnectionStartedAt_ != 0 &&
+        nowMs - stationConnectionStartedAt_ >= kSavedProfileFallbackMs) {
+      defaultFallbackTried_ = true;
+      if (strlen(WIFI_SSID) > 0 && activeSsid_ != WIFI_SSID) {
+        Serial.println(F("[WF] saved profile unavailable -> default recovery"));
+        usingSavedProfile_ = false;
+        activeSsid_ = WIFI_SSID;
+        activePassword_ = WIFI_PASSWORD;
+        configured_ = true;
+        beginStationConnection(activeSsid_, activePassword_);
+        return;
+      }
+    }
+
     if (nowMs - lastReconnectAttemptAt_ >= kReconnectIntervalMs &&
         (status == WL_DISCONNECTED || status == WL_CONNECTION_LOST ||
          status == WL_CONNECT_FAILED || status == WL_NO_SSID_AVAIL)) {
@@ -121,6 +218,156 @@ uint8_t WifiService::signalPercent() const {
   }
 
   return cachedSignalPercent_;
+}
+
+bool WifiService::isSetupActive() const {
+  return setupState_ != WifiSetupState::Inactive;
+}
+
+WifiSetupState WifiService::setupState() const {
+  return setupState_;
+}
+
+String WifiService::setupApSsid() const {
+  return setupApSsid_;
+}
+
+bool WifiService::submitSetupCredentials(const String &ssid, const String &password) {
+  if (!isSetupActive() || setupState_ == WifiSetupState::Testing ||
+      setupState_ == WifiSetupState::Saved) {
+    return false;
+  }
+
+  if (ssid.isEmpty() || ssid.length() > 32 || password.length() > 63 ||
+      (!password.isEmpty() && password.length() < 8)) {
+    setupState_ = WifiSetupState::Invalid;
+    return false;
+  }
+
+  candidateSsid_ = ssid;
+  candidatePassword_ = password;
+  setupState_ = WifiSetupState::Testing;
+  setupConnectionStartedAt_ = millis();
+  WiFi.disconnect(false, false);
+  beginStationConnection(candidateSsid_, candidatePassword_);
+  Serial.println(F("[WF] setup -> testing submitted profile"));
+  return true;
+}
+
+bool WifiService::setupRequestedAtBoot(uint8_t pin) const {
+  pinMode(pin, INPUT_PULLUP);
+  if (digitalRead(pin) != LOW) {
+    return false;
+  }
+
+  const unsigned long startedAt = millis();
+  Serial.println(F("[WF] setup request -> keep button pressed for 5 s"));
+  while (digitalRead(pin) == LOW) {
+    if (millis() - startedAt >= kSetupButtonHoldMs) {
+      return true;
+    }
+    delay(10);
+  }
+  Serial.println(F("[WF] setup request cancelled"));
+  return false;
+}
+
+bool WifiService::loadSavedProfile() {
+  if (preferences_.getBytesLength(kWifiProfileKey) != sizeof(WifiCredentialRecord)) {
+    return false;
+  }
+
+  WifiCredentialRecord record;
+  if (preferences_.getBytes(kWifiProfileKey, &record, sizeof(record)) != sizeof(record) ||
+      record.magic != kWifiProfileMagic || record.checksum != profileChecksum(record) ||
+      record.ssid[0] == '\0') {
+    return false;
+  }
+  record.ssid[sizeof(record.ssid) - 1] = '\0';
+  record.password[sizeof(record.password) - 1] = '\0';
+  activeSsid_ = record.ssid;
+  activePassword_ = record.password;
+  return true;
+}
+
+bool WifiService::saveCandidateProfile() {
+  if (!preferencesReady_) {
+    return false;
+  }
+
+  WifiCredentialRecord record;
+  record.magic = kWifiProfileMagic;
+  candidateSsid_.toCharArray(record.ssid, sizeof(record.ssid));
+  candidatePassword_.toCharArray(record.password, sizeof(record.password));
+  record.checksum = profileChecksum(record);
+  return preferences_.putBytes(kWifiProfileKey, &record, sizeof(record)) == sizeof(record);
+}
+
+void WifiService::beginStationConnection(const String &ssid, const String &password) {
+  stationConnectionStartedAt_ = millis();
+  lastReconnectAttemptAt_ = stationConnectionStartedAt_;
+  announcedIp_ = false;
+  Serial.print(F("[WF] begin -> "));
+  Serial.println(ssid);
+  WiFi.begin(ssid.c_str(), password.c_str());
+}
+
+void WifiService::startSetupAccessPoint() {
+  const size_t apPasswordLength = strlen(WIFI_SETUP_AP_PASSWORD);
+  if (apPasswordLength < 8 || apPasswordLength > 63) {
+    Serial.println(F("[WF] setup unavailable -> AP password length must be 8..63"));
+    return;
+  }
+
+  WiFi.mode(WIFI_AP_STA);
+  WiFi.setSleep(true);
+  WiFi.setAutoReconnect(false);
+  WiFi.persistent(false);
+
+  char suffix[5];
+  snprintf(suffix, sizeof(suffix), "%04X",
+           static_cast<uint16_t>(ESP.getEfuseMac() & 0xFFFFU));
+  setupApSsid_ = String(F("BS-Setup-")) + suffix;
+  if (!WiFi.softAP(setupApSsid_.c_str(), WIFI_SETUP_AP_PASSWORD)) {
+    Serial.println(F("[WF] setup unavailable -> AP start failed"));
+    WiFi.mode(WIFI_STA);
+    return;
+  }
+
+  setupState_ = WifiSetupState::Ready;
+  setupStartedAt_ = millis();
+  Serial.print(F("[WF] setup AP ready -> "));
+  Serial.print(setupApSsid_);
+  Serial.print(F(" at http://"));
+  Serial.println(WiFi.softAPIP());
+
+  if (configured_) {
+    beginStationConnection(activeSsid_, activePassword_);
+  }
+}
+
+void WifiService::stopSetupAccessPoint() {
+  candidateSsid_ = String();
+  candidatePassword_ = String();
+  setupApSsid_ = String();
+  setupState_ = WifiSetupState::Inactive;
+  WiFi.softAPdisconnect(true);
+  if (!configured_) {
+    WiFi.mode(WIFI_OFF);
+    return;
+  }
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  beginStationConnection(activeSsid_, activePassword_);
+}
+
+void WifiService::rollbackCandidate() {
+  candidateSsid_ = String();
+  candidatePassword_ = String();
+  WiFi.disconnect(false, false);
+  if (configured_) {
+    beginStationConnection(activeSsid_, activePassword_);
+  }
 }
 
 void WifiService::refreshSignalCache(bool connected, bool force) {

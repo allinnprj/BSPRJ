@@ -8,8 +8,8 @@ Main ESP32 noise-monitoring firmware project `BSPRJ`, with:
 ## Status
 
 - Type: main firmware project
-- Current version: `0.1.61-EXP`
-- Current build: `115`
+- Current version: `0.1.92-EXP`
+- Current build: `146`
 - GitHub: `https://github.com/allinnprj/BSPRJ`
 - Branch model: `main` = release/stable, `devlop` = test/development
 - Active microphone path: `INMP441` on `I2S`
@@ -107,6 +107,16 @@ pio run
 
 - Local credentials live in `include/secrets.h`
 - `include/secrets.h` is ignored by Git
+- Define a separate `WIFI_SETUP_AP_PASSWORD` there for the temporary setup AP; use `8..63` characters and do not reuse the normal Wi-Fi or OTA password
+
+## Portable Wi-Fi Setup
+
+1. Power BS off.
+2. Hold the existing `GPIO27` button, power BS on, and keep holding it for about `5 s`.
+3. Connect to `BS-Setup-XXXX` and open `http://192.168.4.1/`.
+4. Enter the new SSID/password and select `Test and save`.
+
+The AP exists for at most `10 min`. New credentials are stored only after a successful connection test. A failed test keeps the previous profile, and the compile-time `WIFI_SSID` / `WIFI_PASSWORD` profile remains the boot recovery path. The setup page is unavailable from the normal LAN web server.
 
 ## Monitor
 

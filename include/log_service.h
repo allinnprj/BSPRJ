@@ -4,6 +4,8 @@
 
 #include "google_sheets_service.h"
 
+class WifiService;
+
 struct DiagnosticRecord {
   String event;
   String info;
@@ -64,7 +66,7 @@ struct DiagnosticRecord {
 
 class LogService {
  public:
-  void begin();
+  void begin(WifiService &wifiService);
   void update(bool wifiConnected, const String &ipAddress);
   void setClock(const String &dateText, const String &timeText);
   void appendWindowAggregate(const GoogleSheetsWindowRecord &record, uint32_t buildNumber,

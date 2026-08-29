@@ -4,6 +4,7 @@
 #include <WebServer.h>
 
 #include "project_version.h"
+#include "wifi_service.h"
 
 namespace {
 
@@ -25,6 +26,7 @@ constexpr char kDiagnosticLogHeader[] =
     "battery_mv\tbattery_ma\tsoc\tload_mv\tload_ma\tcharge\tmode\tnow\thour\ttotal\t"
     "p2p\tsignal\ttemp_c\thum_pct\theap\tmin_heap\tgs_queue\tgs_ok\tgs_fail\tgs_drop\tinfo";
 WebServer logServer(80);
+WifiService *wifiSetupService = nullptr;
 bool logClearedByWeb = false;
 String currentDateText;
 String currentTimeText;
@@ -295,7 +297,51 @@ void ensureHeader() {
   createFreshLogFile();
 }
 
+void handleWifiSetupRoot() {
+  String body = pageStart(F("BS Wi-Fi Setup"));
+  body += F("<p>Temporary setup AP: <b>");
+  body += wifiSetupService->setupApSsid();
+  body += F("</b><br>Window: 10 min</p>");
+
+  switch (wifiSetupService->setupState()) {
+    case WifiSetupState::Testing:
+      body += F("<meta http-equiv=\"refresh\" content=\"3\"><p>Testing connection...</p>");
+      break;
+    case WifiSetupState::Invalid:
+      body += F("<p>Invalid SSID or password length.</p>");
+      break;
+    case WifiSetupState::Failed:
+      body += F("<p>Connection failed. Previous profile was kept.</p>");
+      break;
+    case WifiSetupState::SaveFailed:
+      body += F("<p>Connection worked, but saving failed. Previous profile was kept.</p>");
+      break;
+    case WifiSetupState::Saved:
+      body += F("<p>Connected and saved. BS is restarting...</p>");
+      break;
+    default:
+      break;
+  }
+
+  if (wifiSetupService->setupState() != WifiSetupState::Testing &&
+      wifiSetupService->setupState() != WifiSetupState::Saved) {
+    body += F("<form method=\"post\" action=\"/wifi-setup\">"
+              "<p><label>SSID<br><input name=\"ssid\" maxlength=\"32\" required></label></p>"
+              "<p><label>Password<br><input name=\"password\" type=\"password\" "
+              "maxlength=\"63\" autocomplete=\"new-password\"></label></p>"
+              "<button type=\"submit\">Test and save</button></form>"
+              "<p>The password is never displayed or logged.</p>");
+  }
+  logServer.sendHeader(F("Cache-Control"), F("no-store"));
+  logServer.send(200, "text/html", body);
+}
+
 void handleRoot() {
+  if (wifiSetupService != nullptr && wifiSetupService->isSetupActive()) {
+    handleWifiSetupRoot();
+    return;
+  }
+
   String body = pageStart(F("BS Noise Log"));
   body += F("<p>WROOM ");
   body += F(PROJECT_VERSION);
@@ -346,6 +392,18 @@ void handleRoot() {
   }
   body += F("</ul>");
   logServer.send(200, "text/html", body);
+}
+
+void handleWifiSetupPost() {
+  if (wifiSetupService == nullptr || !wifiSetupService->isSetupActive()) {
+    logServer.send(404, "text/plain", "not found\n");
+    return;
+  }
+
+  const String ssid = logServer.arg("ssid");
+  const String password = logServer.arg("password");
+  wifiSetupService->submitSetupCredentials(ssid, password);
+  redirectToRoot();
 }
 
 void handleArchiveLogConfirm() {
@@ -535,7 +593,8 @@ void handleDiagnosticDownload(const char *path) {
 
 }  // namespace
 
-void LogService::begin() {
+void LogService::begin(WifiService &wifiService) {
+  wifiSetupService = &wifiService;
   ready_ = LittleFS.begin(true);
   if (!ready_) {
     Serial.println(F("[LOG] LittleFS mount failed"));
@@ -552,8 +611,11 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     return;
   }
 
-  if (wifiConnected && !serverStarted_) {
+  const bool webAvailable = wifiConnected ||
+                            (wifiSetupService != nullptr && wifiSetupService->isSetupActive());
+  if (webAvailable && !serverStarted_) {
     logServer.on("/", handleRoot);
+    logServer.on("/wifi-setup", HTTP_POST, handleWifiSetupPost);
     logServer.on("/log.csv", HTTP_GET, handleLogDownload);
     logServer.on("/diagnostics.log", HTTP_GET,
                  []() { handleDiagnosticDownload(kDiagnosticLogPath); });

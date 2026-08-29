@@ -1143,7 +1143,7 @@ void setup() {
                                                restoredControllerBuild, millis());
   }
 
-  wifiService.begin();
+  wifiService.begin(BUTTON_PIN);
   if (!audioSampler.begin(I2S_BCLK_PIN, I2S_WS_PIN, I2S_DATA_PIN)) {
     Serial.println(F("[MIC] INMP441 I2S init failed."));
     while (true) {
@@ -1152,7 +1152,7 @@ void setup() {
   }
   buttonService.begin(BUTTON_PIN);
   googleSheetsService.begin();
-  logService.begin();
+  logService.begin(wifiService);
   controllerLinkService.setCommandEventHandler(recordControllerCommandEvent);
   DiagnosticRecord bootRecord;
   bootRecord.event = F("BOOT");
