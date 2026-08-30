@@ -53,7 +53,7 @@ const char *wifiStatusText(wl_status_t status) {
 
 }  // namespace
 
-void WifiService::begin(uint8_t setupButtonPin) {
+void WifiService::begin() {
   lastStatusCode_ = -1;
   announcedIp_ = false;
   lastReconnectAttemptAt_ = 0;
@@ -70,13 +70,6 @@ void WifiService::begin(uint8_t setupButtonPin) {
     activePassword_ = WIFI_PASSWORD;
   }
   configured_ = !activeSsid_.isEmpty();
-
-  if (setupRequestedAtBoot(setupButtonPin)) {
-    startSetupAccessPoint();
-    if (isSetupActive()) {
-      return;
-    }
-  }
 
   if (!configured_) {
     Serial.println(F("[WF] OFF -> no saved or default Wi-Fi profile"));
@@ -220,6 +213,14 @@ uint8_t WifiService::signalPercent() const {
   return cachedSignalPercent_;
 }
 
+bool WifiService::startSetup() {
+  if (isSetupActive()) {
+    return false;
+  }
+  startSetupAccessPoint();
+  return isSetupActive();
+}
+
 bool WifiService::isSetupActive() const {
   return setupState_ != WifiSetupState::Inactive;
 }
@@ -228,8 +229,19 @@ WifiSetupState WifiService::setupState() const {
   return setupState_;
 }
 
-String WifiService::setupApSsid() const {
+const String &WifiService::setupApSsid() const {
   return setupApSsid_;
+}
+
+uint32_t WifiService::setupRemainingSeconds() const {
+  if (!isSetupActive()) {
+    return 0;
+  }
+  const unsigned long elapsedMs = millis() - setupStartedAt_;
+  if (elapsedMs >= kSetupWindowMs) {
+    return 0;
+  }
+  return static_cast<uint32_t>((kSetupWindowMs - elapsedMs + 999UL) / 1000UL);
 }
 
 bool WifiService::submitSetupCredentials(const String &ssid, const String &password) {
@@ -252,24 +264,6 @@ bool WifiService::submitSetupCredentials(const String &ssid, const String &passw
   beginStationConnection(candidateSsid_, candidatePassword_);
   Serial.println(F("[WF] setup -> testing submitted profile"));
   return true;
-}
-
-bool WifiService::setupRequestedAtBoot(uint8_t pin) const {
-  pinMode(pin, INPUT_PULLUP);
-  if (digitalRead(pin) != LOW) {
-    return false;
-  }
-
-  const unsigned long startedAt = millis();
-  Serial.println(F("[WF] setup request -> keep button pressed for 5 s"));
-  while (digitalRead(pin) == LOW) {
-    if (millis() - startedAt >= kSetupButtonHoldMs) {
-      return true;
-    }
-    delay(10);
-  }
-  Serial.println(F("[WF] setup request cancelled"));
-  return false;
 }
 
 bool WifiService::loadSavedProfile() {
@@ -319,6 +313,7 @@ void WifiService::startSetupAccessPoint() {
     return;
   }
 
+  const bool stationAlreadyConnected = WiFi.status() == WL_CONNECTED;
   WiFi.mode(WIFI_AP_STA);
   WiFi.setSleep(true);
   WiFi.setAutoReconnect(false);
@@ -341,7 +336,7 @@ void WifiService::startSetupAccessPoint() {
   Serial.print(F(" at http://"));
   Serial.println(WiFi.softAPIP());
 
-  if (configured_) {
+  if (configured_ && !stationAlreadyConnected) {
     beginStationConnection(activeSsid_, activePassword_);
   }
 }

@@ -15,7 +15,7 @@ enum class WifiSetupState : uint8_t {
 
 class WifiService {
  public:
-  void begin(uint8_t setupButtonPin);
+  void begin();
   void update();
 
   bool isConnected() const;
@@ -25,16 +25,17 @@ class WifiService {
   int rssiDbm() const;
   uint8_t signalPercent() const;
 
+  bool startSetup();
   bool isSetupActive() const;
   WifiSetupState setupState() const;
-  String setupApSsid() const;
+  const String &setupApSsid() const;
+  uint32_t setupRemainingSeconds() const;
   bool submitSetupCredentials(const String &ssid, const String &password);
 
  private:
   static constexpr unsigned long kReconnectIntervalMs = 15000UL;
   static constexpr unsigned long kSignalRefreshIntervalMs = 120000UL;
   static constexpr unsigned long kSavedProfileFallbackMs = 30000UL;
-  static constexpr unsigned long kSetupButtonHoldMs = 5000UL;
   static constexpr unsigned long kSetupWindowMs = 600000UL;
   static constexpr unsigned long kSetupConnectionTimeoutMs = 30000UL;
   static constexpr unsigned long kSetupRestartDelayMs = 4000UL;
@@ -61,7 +62,6 @@ class WifiService {
   String candidatePassword_;
   String setupApSsid_;
 
-  bool setupRequestedAtBoot(uint8_t pin) const;
   bool loadSavedProfile();
   bool saveCandidateProfile();
   void beginStationConnection(const String &ssid, const String &password);

@@ -14,6 +14,8 @@ class DisplayView {
               bool timeSynced, bool wifiConnected, uint8_t wifiPercent, bool pinnedOn,
               const char *powerProfileText);
   void showBootMessage(const char *line1, const char *line2, const char *powerProfileText);
+  void showWifiSetupCountdown(uint8_t secondsRemaining);
+  void showWifiSetupActive(const char *ssid, const char *statusText);
   void nextPage();
   void setEnabled(bool enabled);
   bool isEnabled() const;

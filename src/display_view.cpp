@@ -28,6 +28,37 @@ void DisplayView::showBootMessage(const char *line1, const char *line2,
   display_.display();
 }
 
+void DisplayView::showWifiSetupCountdown(uint8_t secondsRemaining) {
+  if (!initialized_) {
+    return;
+  }
+
+  char countdownText[18];
+  snprintf(countdownText, sizeof(countdownText), "Hold %u sec", secondsRemaining);
+  display_.clearDisplay();
+  display_.setFont(nullptr);
+  display_.setTextColor(SSD1306_WHITE);
+  drawCenteredText(F("WI-FI SETUP"), 4, 1);
+  drawCenteredText(countdownText, 25, 1);
+  drawCenteredText(F("Release: cancel"), 46, 1);
+  display_.display();
+}
+
+void DisplayView::showWifiSetupActive(const char *ssid, const char *statusText) {
+  if (!initialized_) {
+    return;
+  }
+
+  display_.clearDisplay();
+  display_.setFont(nullptr);
+  display_.setTextColor(SSD1306_WHITE);
+  drawCenteredText(F("WI-FI SETUP"), 0, 1);
+  drawCenteredText(ssid, 16, 1);
+  drawCenteredText(F("192.168.4.1"), 32, 1);
+  drawCenteredText(statusText, 48, 1);
+  display_.display();
+}
+
 void DisplayView::nextPage() {
   currentPage_ = (currentPage_ + 1) % kPageCount;
 }

@@ -126,6 +126,9 @@ unsigned long lastMeanPersistAt = 0;
 unsigned long lastRtcUptimeSaveAt = 0;
 unsigned long lastSht31RecoverAttemptAt = 0;
 bool displayPinnedOn = false;
+bool wifiSetupCountdownVisible = false;
+bool wifiSetupPreviousDisplayEnabled = true;
+bool wifiSetupWasActive = false;
 bool scheduledRestartStarted = false;
 bool scheduledRestartWaitLogged = false;
 bool sht31LostLogged = false;
@@ -1143,7 +1146,7 @@ void setup() {
                                                restoredControllerBuild, millis());
   }
 
-  wifiService.begin(BUTTON_PIN);
+  wifiService.begin();
   if (!audioSampler.begin(I2S_BCLK_PIN, I2S_WS_PIN, I2S_DATA_PIN)) {
     Serial.println(F("[MIC] INMP441 I2S init failed."));
     while (true) {
@@ -1198,7 +1201,49 @@ void loop() {
   unsigned long nowMs = millis();
   controllerLinkService.update(nowMs);
   ButtonEvent buttonEvent = buttonService.update();
-  if (buttonEvent == ButtonEvent::ShortPress) {
+  const bool wifiSetupActiveBeforeUpdate = wifiService.isSetupActive();
+  uint8_t wifiSetupCountdownSeconds = 0;
+  if (buttonEvent == ButtonEvent::WifiSetupCountdown3) {
+    wifiSetupCountdownSeconds = 3;
+  } else if (buttonEvent == ButtonEvent::WifiSetupCountdown2) {
+    wifiSetupCountdownSeconds = 2;
+  } else if (buttonEvent == ButtonEvent::WifiSetupCountdown1) {
+    wifiSetupCountdownSeconds = 1;
+  }
+
+  if (!wifiSetupActiveBeforeUpdate && wifiSetupCountdownSeconds > 0) {
+    if (!wifiSetupCountdownVisible) {
+      wifiSetupPreviousDisplayEnabled = displayView.isEnabled();
+      wifiSetupCountdownVisible = true;
+    }
+    displayView.setEnabled(true);
+    displayView.showWifiSetupCountdown(wifiSetupCountdownSeconds);
+    lastDisplayInteractionAt = nowMs;
+    lastDisplayAt = nowMs;
+  } else if (!wifiSetupActiveBeforeUpdate &&
+             buttonEvent == ButtonEvent::WifiSetupCancelled) {
+    wifiSetupCountdownVisible = false;
+    displayView.setEnabled(wifiSetupPreviousDisplayEnabled || displayPinnedOn);
+    lastDisplayInteractionAt = nowMs;
+    lastDisplayAt = 0;
+    Serial.println(F("[BTN] Wi-Fi setup cancelled"));
+  } else if (!wifiSetupActiveBeforeUpdate &&
+             buttonEvent == ButtonEvent::WifiSetupRequested) {
+    if (!wifiSetupCountdownVisible) {
+      wifiSetupPreviousDisplayEnabled = displayView.isEnabled();
+    }
+    wifiSetupCountdownVisible = false;
+    displayView.setEnabled(true);
+    lastDisplayInteractionAt = nowMs;
+    lastDisplayAt = 0;
+    if (wifiService.startSetup()) {
+      Serial.println(F("[BTN] Wi-Fi setup AP requested"));
+    } else {
+      displayView.setEnabled(wifiSetupPreviousDisplayEnabled || displayPinnedOn);
+      Serial.println(F("[BTN] Wi-Fi setup AP failed to start"));
+    }
+  } else if (!wifiSetupActiveBeforeUpdate &&
+             buttonEvent == ButtonEvent::ShortPress) {
     if (displayView.isEnabled()) {
       displayView.nextPage();
       lastDisplayInteractionAt = nowMs;
@@ -1212,7 +1257,8 @@ void loop() {
       lastDisplayAt = 0;
       Serial.println(F("[BTN] short press -> display ON (auto)"));
     }
-  } else if (buttonEvent == ButtonEvent::LongPress) {
+  } else if (!wifiSetupActiveBeforeUpdate &&
+             buttonEvent == ButtonEvent::LongPress) {
     if (!displayView.isEnabled()) {
       displayView.setEnabled(true);
       displayPinnedOn = true;
@@ -1233,6 +1279,14 @@ void loop() {
   }
 
   wifiService.update();
+  const bool wifiSetupActive = wifiService.isSetupActive();
+  if (wifiSetupWasActive && !wifiSetupActive) {
+    displayView.setEnabled(wifiSetupPreviousDisplayEnabled || displayPinnedOn);
+    lastDisplayInteractionAt = nowMs;
+    lastDisplayAt = 0;
+    Serial.println(F("[DSP] Wi-Fi setup closed -> normal display"));
+  }
+  wifiSetupWasActive = wifiSetupActive;
   ArduinoOTA.handle();
   logService.update(wifiService.isConnected(), wifiService.ipAddressString());
   timeService.update(wifiService.isConnected());
@@ -1298,17 +1352,50 @@ void loop() {
     lastRtcUptimeSaveAt = nowMs;
   }
 
-  if (displayView.isEnabled() && !displayPinnedOn &&
-      nowMs - lastDisplayInteractionAt >= DISPLAY_IDLE_TIMEOUT_MS) {
-    displayView.setEnabled(false);
-    Serial.println(F("[DSP] idle timeout -> display OFF"));
-  }
+  if (wifiSetupActive) {
+    displayView.setEnabled(true);
+    if (nowMs - lastDisplayAt >= 1000UL) {
+      lastDisplayAt = nowMs;
+      char setupStatusText[20];
+      switch (wifiService.setupState()) {
+        case WifiSetupState::Testing:
+          snprintf(setupStatusText, sizeof(setupStatusText), "Testing Wi-Fi");
+          break;
+        case WifiSetupState::Invalid:
+          snprintf(setupStatusText, sizeof(setupStatusText), "Invalid - retry");
+          break;
+        case WifiSetupState::Failed:
+          snprintf(setupStatusText, sizeof(setupStatusText), "Failed - retry");
+          break;
+        case WifiSetupState::SaveFailed:
+          snprintf(setupStatusText, sizeof(setupStatusText), "Save failed");
+          break;
+        case WifiSetupState::Saved:
+          snprintf(setupStatusText, sizeof(setupStatusText), "Saved - restart");
+          break;
+        default: {
+          const uint32_t remainingSeconds = wifiService.setupRemainingSeconds();
+          snprintf(setupStatusText, sizeof(setupStatusText), "%lu:%02lu left",
+                   static_cast<unsigned long>(remainingSeconds / 60U),
+                   static_cast<unsigned long>(remainingSeconds % 60U));
+          break;
+        }
+      }
+      displayView.showWifiSetupActive(wifiService.setupApSsid().c_str(), setupStatusText);
+    }
+  } else if (!wifiSetupCountdownVisible) {
+    if (displayView.isEnabled() && !displayPinnedOn &&
+        nowMs - lastDisplayInteractionAt >= DISPLAY_IDLE_TIMEOUT_MS) {
+      displayView.setEnabled(false);
+      Serial.println(F("[DSP] idle timeout -> display OFF"));
+    }
 
-  if (nowMs - lastDisplayAt >= currentDisplayRefreshIntervalMs()) {
-    lastDisplayAt = nowMs;
-    displayView.render(latestSnapshot, latestSht31Reading, timeService.isSynced(),
-                       wifiService.isConnected(),
-                       wifiService.signalPercent(), displayPinnedOn, PROJECT_POWER_PROFILE);
+    if (nowMs - lastDisplayAt >= currentDisplayRefreshIntervalMs()) {
+      lastDisplayAt = nowMs;
+      displayView.render(latestSnapshot, latestSht31Reading, timeService.isSynced(),
+                         wifiService.isConnected(),
+                         wifiService.signalPercent(), displayPinnedOn, PROJECT_POWER_PROFILE);
+    }
   }
 
   if (nowMs - lastSerialLogAt >= SERIAL_LOG_INTERVAL_MS) {

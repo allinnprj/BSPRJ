@@ -8,8 +8,8 @@ Main ESP32 noise-monitoring firmware project `BSPRJ`, with:
 ## Status
 
 - Type: main firmware project
-- Current version: `0.1.92-EXP`
-- Current build: `146`
+- Current version: `0.1.93-EXP`
+- Current build: `147`
 - GitHub: `https://github.com/allinnprj/BSPRJ`
 - Branch model: `main` = release/stable, `devlop` = test/development
 - Active microphone path: `INMP441` on `I2S`
@@ -111,12 +111,12 @@ pio run
 
 ## Portable Wi-Fi Setup
 
-1. Power BS off.
-2. Hold the existing `GPIO27` button, power BS on, and keep holding it for about `5 s`.
-3. Connect to `BS-Setup-XXXX` and open `http://192.168.4.1/`.
+1. While BS is running, hold the existing `GPIO27` button continuously.
+2. After `2 s`, follow the `3 / 2 / 1` countdown on the OLED. Releasing before `5 s` cancels setup.
+3. At `5 s`, connect to the protected `BS-Setup-XXXX` AP shown on the OLED and open `http://192.168.4.1/`.
 4. Enter the new SSID/password and select `Test and save`.
 
-The AP exists for at most `10 min`. New credentials are stored only after a successful connection test. A failed test keeps the previous profile, and the compile-time `WIFI_SSID` / `WIFI_PASSWORD` profile remains the boot recovery path. The setup page is unavailable from the normal LAN web server.
+The AP exists for at most `10 min`; the OLED shows its SSID, address, and remaining time or connection-test status. New credentials are stored only after a successful connection test. A failed test keeps the previous profile, and the compile-time `WIFI_SSID` / `WIFI_PASSWORD` profile remains the boot recovery path. The setup page is unavailable from the normal LAN web server.
 
 ## Monitor
 

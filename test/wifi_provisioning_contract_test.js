@@ -5,6 +5,9 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const wifiHeader = fs.readFileSync(path.join(root, 'include', 'wifi_service.h'), 'utf8');
 const wifiSource = fs.readFileSync(path.join(root, 'src', 'wifi_service.cpp'), 'utf8');
+const buttonHeader = fs.readFileSync(path.join(root, 'include', 'button_service.h'), 'utf8');
+const buttonSource = fs.readFileSync(path.join(root, 'src', 'button_service.cpp'), 'utf8');
+const displaySource = fs.readFileSync(path.join(root, 'src', 'display_view.cpp'), 'utf8');
 const logSource = fs.readFileSync(path.join(root, 'src', 'log_service.cpp'), 'utf8');
 const main = fs.readFileSync(path.join(root, 'src', 'main.cpp'), 'utf8');
 const version = fs.readFileSync(path.join(root, 'include', 'project_version.h'), 'utf8');
@@ -22,9 +25,10 @@ function functionBody(text, signature, nextSignature) {
   return text.slice(start, end);
 }
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.92-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 146\b/);
-assert.match(wifiHeader, /kSetupButtonHoldMs = 5000UL/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.93-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 147\b/);
+assert.match(buttonHeader, /kWifiSetupCountdownStartMs = 2000UL/);
+assert.match(buttonHeader, /kWifiSetupHoldMs = 5000UL/);
 assert.match(wifiHeader, /kSetupWindowMs = 600000UL/);
 assert.match(wifiHeader, /kSetupConnectionTimeoutMs = 30000UL/);
 assert.match(wifiHeader, /Preferences preferences_/);
@@ -34,9 +38,18 @@ assert.match(wifiSource, /putBytes\(kWifiProfileKey/);
 assert.match(wifiSource, /WiFi\.mode\(WIFI_AP_STA\)/);
 assert.match(wifiSource, /#error "Define WIFI_SETUP_AP_PASSWORD in include\/secrets\.h"/);
 assert.match(wifiSource, /WiFi\.softAP\(setupApSsid_\.c_str\(\), WIFI_SETUP_AP_PASSWORD\)/);
-assert.match(wifiSource, /setupRequestedAtBoot\(setupButtonPin\)/);
-assert.match(main, /wifiService\.begin\(BUTTON_PIN\)/);
+assert.doesNotMatch(wifiSource, /setupRequestedAtBoot|setupButtonPin/);
+assert.match(main, /wifiService\.begin\(\)/);
+assert.match(main, /wifiService\.startSetup\(\)/);
 assert.match(main, /logService\.begin\(wifiService\)/);
+assert.match(buttonSource, /heldMs >= kWifiSetupHoldMs[\s\S]*ButtonEvent::WifiSetupRequested/);
+assert.match(buttonSource, /lastWifiSetupCountdown_ != 0[\s\S]*ButtonEvent::WifiSetupCancelled/);
+assert.match(buttonSource, /heldMs >= kLongPressMs \? ButtonEvent::LongPress[\s\S]*ButtonEvent::ShortPress/);
+assert.match(main, /WifiSetupCountdown3[\s\S]*showWifiSetupCountdown/);
+assert.match(main, /WifiSetupCancelled[\s\S]*Wi-Fi setup cancelled/);
+assert.match(main, /WifiSetupRequested[\s\S]*wifiService\.startSetup\(\)/);
+assert.match(displaySource, /WI-FI SETUP[\s\S]*Release: cancel/);
+assert.match(displaySource, /WI-FI SETUP[\s\S]*192\.168\.4\.1/);
 
 const updateBody = functionBody(
   wifiSource,
@@ -56,7 +69,7 @@ assert.match(updateBody, /kSavedProfileFallbackMs[\s\S]*WIFI_SSID/);
 const submitBody = functionBody(
   wifiSource,
   'bool WifiService::submitSetupCredentials(',
-  'bool WifiService::setupRequestedAtBoot('
+  'bool WifiService::loadSavedProfile('
 );
 assert.doesNotMatch(submitBody, /putBytes|putString|preferences_\./,
   'Submitting credentials must not persist them before validation.');

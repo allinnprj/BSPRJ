@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Runtime Wi-Fi setup button and OLED guidance - 0.1.93-EXP build 147 - 2026-08-30
+
+1. Replaced the boot-only Wi-Fi setup gesture with one continuous runtime `GPIO27` hold. Short press remains display page/on; releasing after `0.8 s` and before `2 s` keeps the existing pinned/auto toggle; from `2 s` the OLED shows a `3 / 2 / 1` countdown, release cancels without changing display mode, and reaching `5 s` starts one protected setup AP without rebooting BS.
+2. While setup is active, the OLED shows `WI-FI SETUP`, the `BS-Setup-XXXX` SSID, `192.168.4.1`, and the remaining window or candidate-test result. Closing or timing out setup restores the prior display state. The existing `10 min` AP bound, `30 s` candidate test, validated-only NVS save, rollback, compile-time recovery profile, shared port-80 server, and password protections are unchanged.
+3. Removed the obsolete boot-hold path. No new library, task, server, captive portal, scan, Telegram credential path, C3 change, upload, or publication was added.
+4. Validation: `node test/wifi_provisioning_contract_test.js` passes; `git diff --check` passes; the single `pio run -e esp32dev` succeeds with RAM `65,660 / 327,680` (`20.0%`), linked Flash `1,376,495 / 1,572,864` (`87.5%`), and OTA-slot reserve `196,369` bytes. `firmware.bin` is `1,376,896` bytes with SHA-256 `7C79264D88663DE7FC07E5F4129367A7442C2BA9EC74C86BC3565D4E83B46002`. Physical button/AP/rollback/save checks remain pending; no upload was performed.
+
 ## Protected portable Wi-Fi setup - 0.1.92-EXP build 146 - 2026-08-29
 
 1. Added a bounded provisioning mode for moving BS to another Wi-Fi network without recompiling. Holding the existing `GPIO27` button for `5 s` during boot opens the WPA2-protected `BS-Setup-XXXX` AP and a minimal page at `http://192.168.4.1/` for at most `10 min`; normal short/long button handling after boot is unchanged.
