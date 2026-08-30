@@ -54,7 +54,7 @@
 ## D. Relative Classification Completion
 
 29. [ ] LOCAL SOURCE READY; DEPLOYMENT PENDING: use `MIXED NORMAL/LOUD` when the two leading classes differ by no more than `10` percentage points.
-30. [ ] LOCAL SOURCE READY; DEPLOYMENT PENDING: split coverage confidence from level dominance as `DATA CONFIDENCE` and `LEVEL DOMINANCE`.
+30. [x] Deploy and visually accept the split between coverage-based `DATA CONFIDENCE` and independent `LEVEL DOMINANCE`; `summary_conclusions`, `daily_verdict`, and `daily_verdict_table` show correctly aligned values and styling.
 31. [ ] Review days where average P2P is `LOUD` while the modal window level is `NORMAL`.
 32. [ ] LOCAL SOURCE ALIGNED; LIVE VALIDATION PENDING: Sheets tables and Telegram daily summaries share the same mixed/dominance calculation, while firmware/MQTT/Datacake retain the accepted per-window P2P levels.
 33. [x] Keep the accepted P2P thresholds unchanged unless controlled evidence requires retuning.
