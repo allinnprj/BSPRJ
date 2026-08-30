@@ -39,6 +39,9 @@ Expected columns:
 - `DAY CONF`
 - `EVE CONF`
 - `NGT CONF`
+- `DAY DOM`
+- `EVE DOM`
+- `NGT DOM`
 - `VERDICT`
 
 ## Setup Order
@@ -179,6 +182,16 @@ Important:
 - `Show?`: `OFF`
 - `App formula`: empty
 
+### `DAY DOM`, `EVE DOM`, `NGT DOM`
+
+- `Type`: `Text`
+- `Key?`: `OFF`
+- `Label?`: `OFF`
+- `Show?`: `OFF`
+- `App formula`: empty
+
+These fields keep level dominance separate from the `DAY/EVE/NGT CONF` coverage labels.
+
 ### `VERDICT`
 
 - `Type`: `Text`
@@ -207,6 +220,9 @@ Leave hidden:
 - `DAY CONF`
 - `EVE CONF`
 - `NGT CONF`
+- `DAY DOM`
+- `EVE DOM`
+- `NGT DOM`
 
 ## 3. UX > Views
 

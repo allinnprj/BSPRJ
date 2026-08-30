@@ -672,7 +672,7 @@ How dominant the `MAIN LEVEL` is.
 
 Example: `80%` means most windows agree with the main level. `35%` means the day-part was mixed.
 
-### `CONFIDENCE`
+### `DATA CONFIDENCE`
 
 Trust label based on coverage.
 
@@ -682,7 +682,21 @@ Current values:
 - `PARTIAL`: usable but incomplete
 - `WEAK`: too little data for a strong conclusion
 
-Important: `CONFIDENCE` does not mean "the microphone is correct." It means "we have enough windows to trust this summary."
+Important: `DATA CONFIDENCE` does not mean "the microphone is correct." It means "we have enough windows to trust this summary."
+
+### `LEVEL DOMINANCE`
+
+How clearly one level leads the other levels, independently of data coverage.
+
+Current values:
+
+- `STRONG`: one level has a large share and a clear lead
+- `CLEAR`: one level has a usable lead
+- `MIXED`: `NORMAL` and `LOUD` are tied or within `10` percentage points
+- `WEAK`: no level dominates clearly
+- `NO DATA`: no valid windows
+
+`MIXED NORMAL/LOUD` is used as `MAIN LEVEL` when the two leading classes are `NORMAL` and `LOUD` and their shares differ by no more than `10` percentage points.
 
 ### `READING`
 
@@ -691,7 +705,7 @@ Human-readable sentence summarizing the row.
 Example:
 
 ```text
-NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
+NGT: typical SILENT, avg 219 P2P, top share 90.5%, data good, dominance strong
 ```
 
 This is meant to be read directly by a person or shown in AppSheet.
@@ -704,6 +718,7 @@ Current mapping:
 
 - `SILENT`: `1`
 - `NORMAL`: `2`
+- `MIXED NORMAL/LOUD`: `2.5`
 - `LOUD`: `3`
 - `PEAK`: `4`
 
@@ -728,6 +743,10 @@ If `NGT LEVEL = SILENT` and `NGT SHARE % = 90%`, the night was very consistently
 Coverage confidence for each part of the day.
 
 Use these before trusting the verdict.
+
+### `DAY DOM`, `EVE DOM`, `NGT DOM`
+
+Level-dominance labels for each part of the day. They remain separate from coverage confidence.
 
 ### `VERDICT`
 
@@ -810,7 +829,7 @@ Look at the mix: how many windows were `SILENT`, `NORMAL`, `LOUD`, or `PEAK`.
 
 4. Check `summary_conclusions` or `daily_verdict_table`.
 
-Use `MAIN LEVEL`, `MAIN SHARE %`, and `CONFIDENCE` for the simple conclusion.
+Use `MAIN LEVEL`, `MAIN SHARE %`, `DATA CONFIDENCE`, and `LEVEL DOMINANCE` for the simple conclusion.
 
 5. Only then look at raw technical columns.
 
@@ -845,5 +864,6 @@ These columns are likely to remain important:
 - `COVERAGE %`
 - `MAIN LEVEL`
 - `MAIN SHARE %`
-- `CONFIDENCE`
+- `DATA CONFIDENCE`
+- `LEVEL DOMINANCE`
 - `VERDICT`

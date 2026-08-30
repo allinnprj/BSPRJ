@@ -664,7 +664,7 @@ WINDOWS VALID / EXPECTED WINDOWS * 100
 
 Пример: `80%` означает, что большинство окон согласны с главным уровнем. `35%` означает, что период был смешанным.
 
-### `CONFIDENCE`
+### `DATA CONFIDENCE`
 
 Метка доверия на основе покрытия данных.
 
@@ -674,7 +674,21 @@ WINDOWS VALID / EXPECTED WINDOWS * 100
 - `PARTIAL`: использовать можно, но день неполный
 - `WEAK`: слишком мало данных для сильного вывода
 
-Важно: `CONFIDENCE` не означает "микрофон точно прав". Это означает "у нас достаточно окон, чтобы доверять сводке".
+Важно: `DATA CONFIDENCE` не означает «микрофон точно прав». Это означает «у нас достаточно окон, чтобы доверять сводке».
+
+### `LEVEL DOMINANCE`
+
+Насколько явно один уровень преобладает над остальными независимо от полноты данных.
+
+Текущие значения:
+
+- `STRONG`: у одного уровня большая доля и явный отрыв
+- `CLEAR`: у одного уровня достаточный отрыв
+- `MIXED`: `NORMAL` и `LOUD` равны или отличаются не более чем на `10` процентных пунктов
+- `WEAK`: явного преобладания нет
+- `NO DATA`: корректных окон нет
+
+`MIXED NORMAL/LOUD` используется как `MAIN LEVEL`, когда лидируют `NORMAL` и `LOUD`, а разница их долей не превышает `10` процентных пунктов.
 
 ### `READING`
 
@@ -683,7 +697,7 @@ WINDOWS VALID / EXPECTED WINDOWS * 100
 Пример:
 
 ```text
-NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
+NGT: typical SILENT, avg 219 P2P, top share 90.5%, data good, dominance strong
 ```
 
 Ее можно читать напрямую или показывать в AppSheet.
@@ -696,6 +710,7 @@ NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
 
 - `SILENT`: `1`
 - `NORMAL`: `2`
+- `MIXED NORMAL/LOUD`: `2.5`
 - `LOUD`: `3`
 - `PEAK`: `4`
 
@@ -720,6 +735,10 @@ NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
 Доверие к данным для каждой части суток.
 
 Сначала смотрите на эти поля, потом доверяйте verdict.
+
+### `DAY DOM`, `EVE DOM`, `NGT DOM`
+
+Метки преобладания уровня для каждой части суток. Они не зависят от полноты покрытия.
 
 ### `VERDICT`
 
@@ -802,7 +821,7 @@ NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
 
 4. Потом смотреть `summary_conclusions` или `daily_verdict_table`.
 
-Использовать `MAIN LEVEL`, `MAIN SHARE %` и `CONFIDENCE` для простого вывода.
+Использовать `MAIN LEVEL`, `MAIN SHARE %`, `DATA CONFIDENCE` и `LEVEL DOMINANCE` для простого вывода.
 
 5. Только потом идти в технические поля.
 
@@ -837,5 +856,6 @@ NGT: typical SILENT, avg 219 P2P, mix share 90.5%, good confidence
 - `COVERAGE %`
 - `MAIN LEVEL`
 - `MAIN SHARE %`
-- `CONFIDENCE`
+- `DATA CONFIDENCE`
+- `LEVEL DOMINANCE`
 - `VERDICT`

@@ -119,6 +119,11 @@ const DIAGNOSTICS_STATE_UNKNOWN = 'CHECK';
 const MIN_VALID_SAMPLES = 100;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
+const MIXED_NORMAL_LOUD_MAX_GAP_PCT = 10;
+const STRONG_LEVEL_SHARE_PCT = 60;
+const STRONG_LEVEL_LEAD_PCT = 20;
+const CLEAR_LEVEL_SHARE_PCT = 50;
+const CLEAR_LEVEL_LEAD_PCT = 10;
 const EXPECTED_WINDOWS_PER_PART = {
   DAY: 66,
   EVE: 36,
@@ -234,7 +239,8 @@ const CONCLUSION_SUMMARY_HEADERS = [
   'VALID WINDOWS',
   'EXPECTED WINDOWS',
   'COVERAGE %',
-  'CONFIDENCE',
+  'DATA CONFIDENCE',
+  'LEVEL DOMINANCE',
   'READING'
 ];
 const DAILY_VERDICT_HEADERS = [
@@ -249,7 +255,8 @@ const DAILY_VERDICT_HEADERS = [
   'PEAK FLAG',
   'MAIN SHARE %',
   'COVERAGE %',
-  'CONFIDENCE',
+  'DATA CONFIDENCE',
+  'LEVEL DOMINANCE',
   'READING'
 ];
 const DAILY_VERDICT_TABLE_HEADERS = [
@@ -264,6 +271,9 @@ const DAILY_VERDICT_TABLE_HEADERS = [
   'DAY CONF',
   'EVE CONF',
   'NGT CONF',
+  'DAY DOM',
+  'EVE DOM',
+  'NGT DOM',
   'VERDICT'
 ];
 const SHEET_STYLE_PROFILES = {
@@ -379,11 +389,11 @@ const SHEET_STYLE_PROFILES = {
       '#d9ead3', '#cfe2f3', '#cfe2f3',
       '#ffe599', '#ffe599', '#fff2cc',
       '#d9d2e9', '#d9d2e9', '#d9d2e9',
-      '#d0e0e3', '#d0e0e3'
+      '#d0e0e3', '#ead1dc', '#d0e0e3'
     ],
     bodyOdd: '#f8fcfd',
     bodyEven: '#f1f8fa',
-    accentCols: [4, 5, 6, 9, 10, 11],
+    accentCols: [4, 5, 6, 9, 10, 11, 12],
     accentColor: '#e7f4f7',
     freezeCols: 3
   },
@@ -397,11 +407,11 @@ const SHEET_STYLE_PROFILES = {
       '#d9ead3', '#cfe2f3', '#cfe2f3',
       '#ffe599', '#ffe599',
       '#d5f5e3', '#fff2cc', '#f9cb9c', '#ea9999',
-      '#fff2cc', '#d9d2e9', '#d0e0e3', '#d0e0e3'
+      '#fff2cc', '#d9d2e9', '#d0e0e3', '#ead1dc', '#d0e0e3'
     ],
     bodyOdd: '#fffdf8',
     bodyEven: '#fff8ee',
-    accentCols: [3, 4, 5, 10, 11, 12],
+    accentCols: [3, 4, 5, 10, 11, 12, 13, 14],
     accentColor: '#fff4d8',
     freezeCols: 3
   },
@@ -416,11 +426,12 @@ const SHEET_STYLE_PROFILES = {
       '#fff2cc', '#f9cb9c', '#d5f5e3',
       '#fff2cc', '#f9cb9c', '#d5f5e3',
       '#d0e0e3', '#d0e0e3', '#d0e0e3',
+      '#ead1dc', '#ead1dc', '#ead1dc',
       '#fce5cd'
     ],
     bodyOdd: '#fbfdf8',
     bodyEven: '#f4f9ef',
-    accentCols: [3, 4, 5, 12],
+    accentCols: [3, 4, 5, 12, 13, 14, 15],
     accentColor: '#fff7d6',
     freezeCols: 2
   }
@@ -460,11 +471,15 @@ const HEADER_WIDTH_OVERRIDES = {
   'DAY CONF': 95,
   'EVE CONF': 95,
   'NGT CONF': 95,
+  'DAY DOM': 95,
+  'EVE DOM': 95,
+  'NGT DOM': 95,
   'MAIN SHARE %': 110,
   'VALID WINDOWS': 100,
   'EXPECTED WINDOWS': 120,
   'COVERAGE %': 115,
-  'CONFIDENCE': 115,
+  'DATA CONFIDENCE': 125,
+  'LEVEL DOMINANCE': 130,
   'READING': 260,
   'WINDOWS TOTAL': 105,
   'WINDOWS VALID': 105,
@@ -2191,14 +2206,13 @@ function getMainLevelForPart_(dateText, partText) {
     return 'no data';
   }
 
-  const levelPairs = [
-    ['SILENT', toNumber_(row[4])],
-    ['NORMAL', toNumber_(row[5])],
-    ['LOUD', toNumber_(row[6])],
-    ['PEAK', toNumber_(row[7])]
-  ];
-  levelPairs.sort((left, right) => right[1] - left[1]);
-  return levelPairs[0][1] > 0 ? levelPairs[0][0] : 'no data';
+  const stats = getMainLevelStats_({
+    SILENT: toNumber_(row[4]),
+    NORMAL: toNumber_(row[5]),
+    LOUD: toNumber_(row[6]),
+    PEAK: toNumber_(row[7])
+  });
+  return stats.count > 0 ? stats.level : 'no data';
 }
 
 function partIcon_(partText) {
@@ -2887,10 +2901,41 @@ function buildLevelSummaryRows_(records) {
 
 function getMainLevelStats_(levelCounts) {
   const pairs = LEVEL_ORDER.map((level) => [level, levelCounts[level] || 0]);
-  pairs.sort((left, right) => right[1] - left[1]);
+  pairs.sort((left, right) => {
+    const countDifference = right[1] - left[1];
+    return countDifference !== 0
+      ? countDifference
+      : LEVEL_ORDER.indexOf(left[0]) - LEVEL_ORDER.indexOf(right[0]);
+  });
+  const total = pairs.reduce((sum, pair) => sum + pair[1], 0);
+  const top = pairs[0];
+  const second = pairs[1];
+  const sharePct = total > 0 ? roundValue_(top[1] * 100 / total, 1) : 0;
+  const secondSharePct = total > 0 ? roundValue_(second[1] * 100 / total, 1) : 0;
+  const leadPct = roundValue_(sharePct - secondSharePct, 1);
+  const topPair = [top[0], second[0]].sort().join('/');
+  const mixedNormalLoud = second[1] > 0 && topPair === 'LOUD/NORMAL' &&
+    leadPct <= MIXED_NORMAL_LOUD_MAX_GAP_PCT;
+
+  let dominance = 'WEAK';
+  if (total === 0) {
+    dominance = 'NO DATA';
+  } else if (mixedNormalLoud) {
+    dominance = 'MIXED';
+  } else if (sharePct >= STRONG_LEVEL_SHARE_PCT && leadPct >= STRONG_LEVEL_LEAD_PCT) {
+    dominance = 'STRONG';
+  } else if (sharePct >= CLEAR_LEVEL_SHARE_PCT && leadPct >= CLEAR_LEVEL_LEAD_PCT) {
+    dominance = 'CLEAR';
+  }
+
   return {
-    level: pairs[0][0],
-    count: pairs[0][1]
+    level: mixedNormalLoud ? 'MIXED NORMAL/LOUD' : top[0],
+    count: top[1],
+    sharePct,
+    secondLevel: second[0],
+    secondSharePct,
+    leadPct,
+    dominance
   };
 }
 
@@ -2905,14 +2950,19 @@ function getCoverageConfidence_(coveragePct) {
 }
 
 function levelToVerdictScore_(levelText) {
+  if (String(levelText || '').toUpperCase() === 'MIXED NORMAL/LOUD') {
+    return 2.5;
+  }
   const index = LEVEL_ORDER.indexOf(String(levelText || '').toUpperCase());
   return index >= 0 ? index + 1 : '';
 }
 
-function buildConclusionReading_(partText, avgPeakToPeak, mainLevel, mainSharePct, confidence) {
+function buildConclusionReading_(partText, avgPeakToPeak, mainLevel, mainSharePct,
+                                 dataConfidence, levelDominance) {
   const avgText = avgPeakToPeak === '' ? 'n/a' : `${avgPeakToPeak} P2P`;
   const shareText = mainSharePct === '' ? 'n/a' : `${mainSharePct}%`;
-  return `${partText}: typical ${mainLevel}, avg ${avgText}, mix share ${shareText}, ${confidence.toLowerCase()} confidence`;
+  return `${partText}: typical ${mainLevel}, avg ${avgText}, top share ${shareText}, ` +
+    `data ${dataConfidence.toLowerCase()}, dominance ${levelDominance.toLowerCase()}`;
 }
 
 function buildConclusionSummaryRows_(records) {
@@ -2951,10 +3001,9 @@ function buildConclusionSummaryRows_(records) {
       : '';
     const mainLevelStats = getMainLevelStats_(bucket.levelCounts);
     const avgPeakToPeak = bucket.validWindows > 0 ? roundValue_(bucket.sumP2P / bucket.validWindows, 1) : '';
-    const mainSharePct = bucket.validWindows > 0
-      ? roundValue_(mainLevelStats.count * 100 / bucket.validWindows, 1)
-      : '';
-    const confidence = getCoverageConfidence_(toNumber_(coveragePct));
+    const mainSharePct = bucket.validWindows > 0 ? mainLevelStats.sharePct : '';
+    const dataConfidence = getCoverageConfidence_(toNumber_(coveragePct));
+    const levelDominance = bucket.validWindows > 0 ? mainLevelStats.dominance : 'NO DATA';
 
     return [
       bucket.deviceId,
@@ -2966,9 +3015,11 @@ function buildConclusionSummaryRows_(records) {
       bucket.validWindows,
       expectedWindows,
       coveragePct,
-      confidence,
+      dataConfidence,
+      levelDominance,
       bucket.validWindows > 0
-        ? buildConclusionReading_(bucket.partText, avgPeakToPeak, mainLevelStats.level, mainSharePct, confidence)
+        ? buildConclusionReading_(bucket.partText, avgPeakToPeak, mainLevelStats.level,
+                                  mainSharePct, dataConfidence, levelDominance)
         : `${bucket.partText}: no valid windows yet`
     ];
   });
@@ -2982,6 +3033,7 @@ function buildDailyVerdictRows_(records) {
   const conclusionRows = buildConclusionSummaryRows_(records);
   return conclusionRows.map((row) => {
     const mainLevel = String(row[4] || 'NO DATA');
+    const mixedNormalLoud = mainLevel === 'MIXED NORMAL/LOUD';
     const verdictScore = levelToVerdictScore_(mainLevel);
     return [
       row[0],
@@ -2990,13 +3042,14 @@ function buildDailyVerdictRows_(records) {
       mainLevel,
       verdictScore,
       mainLevel === 'SILENT' ? 1 : 0,
-      mainLevel === 'NORMAL' ? 1 : 0,
-      mainLevel === 'LOUD' ? 1 : 0,
+      mainLevel === 'NORMAL' || mixedNormalLoud ? 1 : 0,
+      mainLevel === 'LOUD' || mixedNormalLoud ? 1 : 0,
       mainLevel === 'PEAK' ? 1 : 0,
       row[5],
       row[8],
       row[9],
-      row[10]
+      row[10],
+      row[11]
     ];
   });
 }
@@ -3020,7 +3073,8 @@ function buildDailyVerdictTableRows_(records) {
     bucket.byPart[normalizePartText_(row[2])] = {
       level: row[3],
       sharePct: row[9],
-      confidence: row[11]
+      confidence: row[11],
+      dominance: row[12]
     };
   });
 
@@ -3048,6 +3102,9 @@ function buildDailyVerdictTableRows_(records) {
       day.confidence || 'NO DATA',
       eve.confidence || 'NO DATA',
       ngt.confidence || 'NO DATA',
+      day.dominance || 'NO DATA',
+      eve.dominance || 'NO DATA',
+      ngt.dominance || 'NO DATA',
       verdictText
     ];
   });

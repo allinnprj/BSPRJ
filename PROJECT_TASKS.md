@@ -31,11 +31,11 @@
 
 11. [x] Fix automatic Telegram daily-summary date tracking so old report dates are never alternated or resent.
 12. [x] Add a script lock around the automatic daily-summary decision, send, and watermark update.
-13. [ ] Validate three consecutive automatic reports with exactly one report for each completed date.
-14. [ ] Locate the loss of the `00:00-00:09` window between the local CSV and Google Sheets.
-15. [ ] Eliminate any race between the midnight window upload and `SCHEDULED_RESTART`.
+13. [ ] CODE READY; RUN EVIDENCE PENDING: validate three consecutive automatic reports with exactly one report for each completed date.
+14. [ ] CODE READY; RUN EVIDENCE PENDING: confirm that the guarded upload path retains the `00:00-00:09` window between the local CSV and Google Sheets.
+15. [ ] CODE READY; RUN EVIDENCE PENDING: confirm that the completed/delivered-window gate prevents a midnight race with `SCHEDULED_RESTART`.
 16. [ ] Achieve `144/144` full-day cloud windows and `42/42` `NGT` windows.
-17. [ ] Align `BOOT / SCHEDULED_RESTART` rows with the 35-field local CSV header.
+17. [x] Align `BOOT / SCHEDULED_RESTART` rows with the 35-field local CSV header; build `115+` source and later physical logs use the corrected event shape.
 18. [ ] Verify automatic archive-sheet hiding in the deployed spreadsheet.
 19. [ ] Remove stale or duplicate Apps Script triggers after the corrected script is deployed.
 20. [ ] Verify that manual and automatic Telegram summaries do not conflict.
@@ -53,11 +53,11 @@
 
 ## D. Relative Classification Completion
 
-29. [ ] Add `MIXED NORMAL/LOUD` handling for tied or nearly tied dominant levels.
-30. [ ] Split coverage confidence from level dominance as `DATA CONFIDENCE` and `LEVEL DOMINANCE`.
+29. [ ] LOCAL SOURCE READY; DEPLOYMENT PENDING: use `MIXED NORMAL/LOUD` when the two leading classes differ by no more than `10` percentage points.
+30. [ ] LOCAL SOURCE READY; DEPLOYMENT PENDING: split coverage confidence from level dominance as `DATA CONFIDENCE` and `LEVEL DOMINANCE`.
 31. [ ] Review days where average P2P is `LOUD` while the modal window level is `NORMAL`.
-32. [ ] Align level semantics across firmware, Sheets, Telegram, MQTT, and Datacake.
-33. [ ] Keep the accepted P2P thresholds unchanged unless controlled evidence requires retuning.
+32. [ ] LOCAL SOURCE ALIGNED; LIVE VALIDATION PENDING: Sheets tables and Telegram daily summaries share the same mixed/dominance calculation, while firmware/MQTT/Datacake retain the accepted per-window P2P levels.
+33. [x] Keep the accepted P2P thresholds unchanged unless controlled evidence requires retuning.
 34. [ ] Run a clean 3-7 day regression after pipeline, memory, and classification fixes.
 35. [ ] Confirm that every output surface gives the same level for the same source window.
 36. [ ] Freeze the relative noise monitor as accepted sound version v1.
@@ -88,7 +88,7 @@
 55. [x] Keep the BSPRJ ESP32 as the primary noise, logging, and network controller; WROOM build `120` physically passed repeated C3-to-WQTT gateway delivery with accepted sequences `q=2` and `q=9`.
 56. [ ] Implement automatic `LOW_BAT` behavior from measured power data.
 57. [ ] Validate the main controller operating from the battery/converter path managed and monitored by the ESP32-C3 solar controller.
-58. [ ] Complete system-level GPS integration through C3: the tested GPS remains physically and logically owned by C3, while local builds `134/195` relay its saved manual FIX to BS; physical gateway proof remains.
+58. [x] Complete system-level GPS integration through C3: uploaded builds `134/195` physically relayed the saved manual FIX to BS and its Google Maps card; GPS remains C3-owned and manual-only.
 59. [ ] Validate time and day-part statistics without NTP.
 60. [x] Optimize the current ESP32 firmware and review RAM, Flash, and OTA-slot capacity before GSM integration; build `128` passes at `65,436` bytes RAM and `1,349,483` bytes linked Flash with `223,381` bytes OTA-slot reserve, so an ESP32-S3 migration is not currently required.
 61. [ ] Design the power path for GSM current peaks.
@@ -128,7 +128,7 @@
 88. [x] Close the abandoned Gateway/Service branch without weakening autonomous INA3221, solar-charge, GPS, or Deep-Sleep logic. C3 build `205` again owns Wi-Fi and Internet services; BS remains the diagnostic/status UART peer.
 89. [ ] Validate exactly-once STATUS behavior before final remote-diagnostic acceptance. Sequences `18..25` returned `4/8` fresh `OK STATUS` and `4/8` bounded `ACK_TIMEOUT` while automatic telemetry continued. Local BS build `139` preserves STATUS and clears retired persisted command codes `2/3` so they cannot block `/c3sts`; STATUS TTL/restart recovery stays later evidence debt.
 90. [x] Route C3 status through the existing authorized BS Telegram bot with replay protection and truthful lifecycle states. `/c3sts` is physically accepted; local build `139` keeps only STATUS as an outgoing C3 command and leaves the BS token and group `chat_id` unchanged.
-91. [ ] Manually upload and physically accept BS build `139` only after explicit flash approval: `/c3ota` is absent, `/c3sts` still returns fresh/cached status, and retired OTA_ON/WIFI_OFF records cannot block STATUS. C3 remains unchanged.
+91. [x] Superseded and physically covered by later uploaded BS builds: `/c3ota` is absent, `/c3sts` still returns fresh/cached status, and retired OTA_ON/WIFI_OFF records do not block STATUS. C3 remains unchanged.
 92. [x] Migrate and physically prove routine C3 Internet-bound telemetry through BS. Power telemetry, saved GPS FIX, WQTT forwarding, Telegram status, duplicate re-ACK, continuous sequence handling, and repeated sleep/wake recovery are accepted. Preserve C3's current Wi-Fi and own-bot OTA recovery for now; decide later whether normal C3 Wi-Fi can be reduced or disabled without losing the selected upload path. USB recovery remains mandatory.
 93. [x] Functionally accept the saved-GPS UART extension. Uploaded builds `134/195` prove fresh extended telemetry, `/c3sts` Google Maps with `9` satellites/HDOP `2.4`/truthful age, and bounded `C3_GPS fixed=1`; all `12` build-195 HEALTH rows show WQTT connected. Direct retained-JSON inspection remains optional evidence because the journal does not store payload bodies. The manual-only GPS workflow is unchanged.
 94. [ ] FOLLOWING STAGE: after dedicated hardware-wake acceptance, validate both controllers on the real shared battery/converter path, including charge transitions, UART integrity, resets, ground/noise behavior, and later SIM800 interference/current peaks. Keep noncritical STATUS/restart evidence as a parallel log ledger instead of delaying the active stage.
@@ -138,7 +138,7 @@
 
 ## H. Later Portability and Productization
 
-98. [ ] SOURCE READY IN BUILD 147; PHYSICAL ACCEPTANCE PENDING: add a resource-conscious Wi-Fi setup page to the existing BS web server so the finished portable device can be connected manually to a new network without recompiling firmware. A continuous runtime `GPIO27` hold shows an OLED countdown from `2 s` and opens one protected `10 min` AP at `5 s`; releasing during the countdown cancels setup. Submitted credentials stay in RAM until a successful connection test, then one validated profile is stored in NVS. A failed test restores the prior profile, and compile-time Wi-Fi remains the boot recovery path. The password is sent only by HTTP POST and is never displayed or written to Serial, diagnostics, or logs. No captive portal, scan, new library, second server, Telegram credential path, or C3 change is included. Close this item only after manual short/long/cancel button checks, AP OLED proof, wrong-password rollback, correct-network save/restart, normal log-page, Telegram, and OTA checks.
+98. [ ] CORE PHYSICALLY ACCEPTED IN BUILD 147; FINAL SERVICE CHECKS PENDING: the runtime `GPIO27` hold, OLED countdown/AP guidance, correct new-network save, Telegram `/bssts`, restart, loss of the phone hotspot, and fallback to the recovery Wi-Fi are physically proven. Candidate credentials remain RAM-only until validation, the protected AP stays bounded to `10 min`, and no captive portal, new library/server, Telegram credential path, or C3 change exists. Close this item with one convenient wrong-password rollback check, normal log-page check, and the next real OTA upload; do not create a dummy firmware build only for evidence.
 99. [x] PHYSICALLY ACCEPTED: C3 build `207` and BS `0.1.87-EXP` build `141` implement the two software halves of dedicated hardware wake. The powered-off wiring and continuity gates passed; BS GPIO23 open-drain is connected to the pulled-up C3 GPIO5 wake input with common ground. One online-guard check returned `C3 already awake`; three Deep-Sleep commands each produced one request and a matching C3 `Boot: Wakeup BS` report after `6 s`; ordinary timer wake and later `Link: OK / Data: Fresh / INA3221: OK` remain intact. `/c3sts` is still status-only; EN/Reset and new UART frames are not used. Physical cooldown timing remains optional regression evidence, not a blocker.
 100. [x] Remove the redundant BS `C3 Update / Online · build N` Telegram card now that the C3 bot reports its own startup/build in the same group. BS build `142` retains C3 build detection for `/c3sts`, diagnostics, sleep restoration, compatibility, and telemetry; C3 is not modified.
 101. [x] Add one compact bilingual `/help` command in BS build `143`. Keep all command, BS/C3 block, `Link/Data`, wake-sequence, and admin-boundary explanations inside this single message; do not add help subcommands, aliases, inline menus, NVS, UART activity, or C3 changes. Telegram/BotFather command-menu cleanup remains a one-time external configuration step after upload.

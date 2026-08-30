@@ -41,6 +41,9 @@
 - `DAY CONF`
 - `EVE CONF`
 - `NGT CONF`
+- `DAY DOM`
+- `EVE DOM`
+- `NGT DOM`
 - `VERDICT`
 
 ## Порядок настройки
@@ -194,6 +197,16 @@
 - `Show?`: `OFF`
 - `App formula`: пусто
 
+### `DAY DOM`, `EVE DOM`, `NGT DOM`
+
+- `Type`: `Text`
+- `Key?`: `OFF`
+- `Label?`: `OFF`
+- `Show?`: `OFF`
+- `App formula`: пусто
+
+Эти поля показывают преобладание уровня отдельно от полноты данных `DAY/EVE/NGT CONF`.
+
 Эти поля тоже лучше скрыть в `v1`.
 
 ### `VERDICT`
@@ -226,6 +239,9 @@
 - `DAY CONF`
 - `EVE CONF`
 - `NGT CONF`
+- `DAY DOM`
+- `EVE DOM`
+- `NGT DOM`
 
 ## 3. UX > Views
 

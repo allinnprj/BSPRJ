@@ -225,7 +225,8 @@ If `Noise` only shows decorative charts without improving understanding, it shou
 - `MAIN LEVEL`
 - `MAIN SHARE %`
 - `COVERAGE %`
-- `CONFIDENCE`
+- `DATA CONFIDENCE`
+- `LEVEL DOMINANCE`
 - `READING`
 
 Скрыть в AppSheet при первом проходе:
@@ -389,13 +390,14 @@ If `Noise` only shows decorative charts without improving understanding, it shou
 - `VALID WINDOWS` -> `Number`
 - `EXPECTED WINDOWS` -> `Number`
 - `COVERAGE %` -> `Percent` или `Number`
-- `CONFIDENCE` -> `Text`
+- `DATA CONFIDENCE` -> `Text`
+- `LEVEL DOMINANCE` -> `Text`
 - `READING` -> `LongText`
 
 Практика для `v1`:
 
 - `Label` лучше поставить на `READING`
-- `DATE`, `PART`, `MAIN LEVEL`, `CONFIDENCE` оставить в основном карточном выводе
+- `DATE`, `PART`, `MAIN LEVEL`, `DATA CONFIDENCE`, `LEVEL DOMINANCE` оставить в основном карточном выводе
 - `READING` оставить главным читаемым текстом
 
 ### Таблица `SummaryDaypart`
@@ -488,13 +490,15 @@ SWITCH(
 - `MAIN LEVEL = "LOUD"` -> оранжевый
 - `MAIN LEVEL = "PEAK"` -> красный
 
-### Для `CONFIDENCE`
+### Для `DATA CONFIDENCE`
 
 Сделать 3 правила:
 
-- `CONFIDENCE = "GOOD"` -> зелёный
-- `CONFIDENCE = "PARTIAL"` -> жёлтый
-- `CONFIDENCE = "WEAK"` -> красный
+- `DATA CONFIDENCE = "GOOD"` -> зелёный
+- `DATA CONFIDENCE = "PARTIAL"` -> жёлтый
+- `DATA CONFIDENCE = "WEAK"` -> красный
+
+Для `LEVEL DOMINANCE` выделить `MIXED` и `WEAK` как требующие осторожного чтения вывода.
 
 ### Для `summary_health`
 
@@ -546,7 +550,7 @@ What to change:
 - keep `Overview` on `summary_conclusions`
 - keep it as `Deck`
 - set `READING` as the main label or main body text
-- keep `DATE`, `PART`, `MAIN LEVEL`, and `CONFIDENCE` visible
+- keep `DATE`, `PART`, `MAIN LEVEL`, `DATA CONFIDENCE`, and `LEVEL DOMINANCE` visible
 - hide `DEV ID`, `VALID WINDOWS`, `EXPECTED WINDOWS`
 
 What the user should read there:
@@ -714,7 +718,7 @@ This order matches the intended reading flow:
 4. В `SummaryConclusions` сделать стартовый `Deck`
 5. В остальных трёх сделать обычные `Table`
 6. Добавить `PART_ORDER` как virtual column там, где есть `PART`
-7. Повесить format rules на `MAIN LEVEL`, `CONFIDENCE`, `MISSING WIN`, `LOW SAMPLE WIN`
+7. Повесить format rules на `MAIN LEVEL`, `DATA CONFIDENCE`, `LEVEL DOMINANCE`, `MISSING WIN`, `LOW SAMPLE WIN`
 
 Такой порядок даст уже полезное мобильное приложение без вмешательства в текущую Google Sheets запись.
 
@@ -724,7 +728,7 @@ This order matches the intended reading flow:
 
 1. Собрать `read-only` AppSheet только на `summary_*`
 2. Проверить, достаточно ли `summary_conclusions` как главного экрана
-3. Добавить цветовую логику по `CONFIDENCE` и `MAIN LEVEL`
+3. Добавить цветовую логику по `DATA CONFIDENCE`, `LEVEL DOMINANCE` и `MAIN LEVEL`
 4. Добавить отдельные `APP_KEY` колонки в `summary_*`, если понадобятся стабильные deep links
 5. Только потом думать о подключении `clean_summary_10m`
 

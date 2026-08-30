@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Separate data confidence from level dominance - Apps Script source - 2026-08-30
+
+1. Added one deterministic daily-summary rule for near ties: when `NORMAL` and `LOUD` are the leading classes and differ by no more than `10` percentage points, `MAIN LEVEL` becomes `MIXED NORMAL/LOUD` instead of selecting one class arbitrarily. Its chart score is `2.5`, and both NORMAL/LOUD flags remain visible to technical charts.
+2. Renamed the old coverage-only `CONFIDENCE` field to `DATA CONFIDENCE` and added independent `LEVEL DOMINANCE` values `STRONG / CLEAR / MIXED / WEAK / NO DATA`. The compact daily table carries matching `DAY/EVE/NGT DOM` fields, and Telegram daily summaries use the same shared main-level calculation.
+3. Preserved the accepted per-window P2P thresholds and raw/window schemas; firmware, MQTT, Datacake, BS/C3 behavior, and controller versions are unchanged. Updated the English/Russian dictionaries and AppSheet setup references.
+4. Local validation: the new `google_sheets_level_semantics_test.js` plus the existing daily-summary, UI-mode, newest-first, and chart-resilience regressions all pass. Deployment and live table/Telegram validation remain pending.
+
 ## Runtime Wi-Fi setup button and OLED guidance - 0.1.93-EXP build 147 - 2026-08-30
 
 1. Replaced the boot-only Wi-Fi setup gesture with one continuous runtime `GPIO27` hold. Short press remains display page/on; releasing after `0.8 s` and before `2 s` keeps the existing pinned/auto toggle; from `2 s` the OLED shows a `3 / 2 / 1` countdown, release cancels without changing display mode, and reaching `5 s` starts one protected setup AP without rebooting BS.
