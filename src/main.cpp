@@ -1295,6 +1295,7 @@ void loop() {
   }
   latestSht31Reading = sht31Service.update();
   latestSnapshot = audioSampler.sample();
+  logService.updateDbCalibration(latestSnapshot, nowMs);
   updateSht31Health(latestSnapshot);
   updateDayPartStats(latestSnapshot, timeService);
   updateGoogleSheetsWindow(latestSnapshot, timeService);
@@ -1338,7 +1339,8 @@ void loop() {
       wifiSsid, controllerLinkService);
   telegramAlertService.updateCommands(
       wifiService.isConnected(), timeService.isSynced(), wifiService.rssiDbm(),
-      wifiService.signalPercent(), wifiSsid, controllerLinkService, bsStatus);
+      wifiService.signalPercent(), wifiSsid, controllerLinkService, bsStatus,
+      logService);
   updateDiagnosticEvents(nowMs);
   appendDiagnosticHealth(nowMs);
   if (!otaStarted && latestSnapshot.statsUpdated &&
@@ -1382,6 +1384,15 @@ void loop() {
         }
       }
       displayView.showWifiSetupActive(wifiService.setupApSsid().c_str(), setupStatusText);
+    }
+  } else if (logService.dbCalibrationActive()) {
+    displayView.setEnabled(true);
+    lastDisplayInteractionAt = nowMs;
+    if (nowMs - lastDisplayAt >= 1000UL) {
+      lastDisplayAt = nowMs;
+      displayView.showDbCalibration(
+          logService.dbCalibrationRemainingSeconds(nowMs),
+          logService.dbCalibrationPointCount());
     }
   } else if (!wifiSetupCountdownVisible) {
     if (displayView.isEnabled() && !displayPinnedOn &&

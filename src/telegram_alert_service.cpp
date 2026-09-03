@@ -4,6 +4,7 @@
 #include <WiFiClientSecure.h>
 #include <time.h>
 
+#include "log_service.h"
 #include "secrets.h"
 
 namespace {
@@ -223,6 +224,17 @@ bool isHelpCommand(String command) {
   return command.indexOf(' ') < 0 && command.length() > strlen("/help@");
 }
 
+bool isDbCommand(String command, const char *name) {
+  command.trim();
+  const String base = String(F("/")) + name;
+  if (command == base) {
+    return true;
+  }
+  const String addressed = base + '@';
+  return command.startsWith(addressed) && command.indexOf(' ') < 0 &&
+         command.length() > addressed.length();
+}
+
 }  // namespace
 
 void TelegramAlertService::begin() {
@@ -252,13 +264,16 @@ void TelegramAlertService::begin() {
   bsStatusReplyPending_ = false;
   helpReplyPending_ = false;
   helpReplyQueuedAtMs_ = 0;
+  dbCalibrationReply_ = DbCalibrationReply::None;
+  dbCalibrationReplyPending_ = false;
+  dbCalibrationReplyQueuedAtMs_ = 0;
 
   if (configured_) {
     Serial.println(F("[TG] ready -> Telegram online alert configured"));
     commandPreferencesReady_ = commandPreferences_.begin("tg_commands", false);
     if (commandPreferencesReady_) {
       lastCommandUpdateId_ = commandPreferences_.getULong("last_update", 0);
-      Serial.print(F("[TG] commands ready -> /help /c3sts /c3wkp /bssts poll=30s last_update="));
+      Serial.print(F("[TG] commands ready -> /help /c3sts /c3wkp /bssts /dbstart /dbsts /dbstop poll=30s last_update="));
       Serial.println(lastCommandUpdateId_);
     } else {
       Serial.println(F("[TG] commands OFF -> update_id persistence unavailable"));
@@ -377,10 +392,56 @@ void TelegramAlertService::updateControllerStatus(
 void TelegramAlertService::updateCommands(
     bool wifiConnected, bool timeSynced, int wifiRssiDbm,
     uint8_t wifiSignalPercent, const String &wifiSsid,
-    ControllerLinkService &controllerLink, const BsStatusView &bsStatus) {
+    ControllerLinkService &controllerLink, const BsStatusView &bsStatus,
+    LogService &logService) {
   const uint32_t currentMs = millis();
   if (!configured_ || !commandPreferencesReady_ || !wifiConnected ||
       !timeSynced || !onlineSentThisBoot_) {
+    return;
+  }
+
+  if (!dbCalibrationReplyPending_ &&
+      logService.dbCalibrationTerminalNotificationPending()) {
+    dbCalibrationReply_ =
+        logService.dbCalibrationTerminalState() == DbCalibrationTerminalState::Completed
+            ? DbCalibrationReply::Completed
+            : (logService.dbCalibrationTerminalState() ==
+                       DbCalibrationTerminalState::WriteError
+                   ? DbCalibrationReply::WriteError
+                   : DbCalibrationReply::Stopped);
+    dbCalibrationReplyPending_ = true;
+    dbCalibrationReplyQueuedAtMs_ = currentMs;
+  }
+
+  if (dbCalibrationReplyPending_) {
+    if (currentMs - dbCalibrationReplyQueuedAtMs_ > kPendingReplyMaxAgeMs) {
+      dbCalibrationReplyPending_ = false;
+      dbCalibrationReply_ = DbCalibrationReply::None;
+      Serial.println(F("[TG] command dB calibration -> expired before reply"));
+      return;
+    }
+    if (currentMs - dbCalibrationReplyQueuedAtMs_ < kSendSpacingMs ||
+        (lastSuccessfulSendAtMs_ != 0 &&
+         currentMs - lastSuccessfulSendAtMs_ < kSendSpacingMs) ||
+        (lastStatusReplyAttemptAtMs_ != 0 &&
+         currentMs - lastStatusReplyAttemptAtMs_ < kRetryIntervalMs)) {
+      return;
+    }
+    lastStatusReplyAttemptAtMs_ = currentMs;
+    const DbCalibrationReply reply = dbCalibrationReply_;
+    const bool sent = sendDbCalibrationReply_(logService, bsStatus.ipAddress);
+    Serial.print(F("[TG] command dB calibration -> "));
+    Serial.println(sent ? F("OK") : F("FAIL"));
+    if (sent) {
+      if (reply == DbCalibrationReply::Completed ||
+          reply == DbCalibrationReply::Stopped ||
+          reply == DbCalibrationReply::WriteError) {
+        logService.markDbCalibrationTerminalNotificationSent();
+      }
+      dbCalibrationReplyPending_ = false;
+      dbCalibrationReply_ = DbCalibrationReply::None;
+      lastStatusReplyAttemptAtMs_ = 0;
+    }
     return;
   }
 
@@ -512,7 +573,7 @@ void TelegramAlertService::updateCommands(
     return;
   }
   lastCommandPollAtMs_ = currentMs;
-  pollCommands_(controllerLink);
+  pollCommands_(controllerLink, logService);
 }
 
 bool TelegramAlertService::sendDeviceOnline_(const String &ipAddress, int wifiRssiDbm,
@@ -658,6 +719,92 @@ bool TelegramAlertService::sendC3WakeReply_(
   return sendStatusMessage_(message, "C3 wake");
 }
 
+bool TelegramAlertService::sendDbCalibrationReply_(
+    const LogService &logService, const String &ipAddress) {
+  const uint32_t nowMs = millis();
+  String message;
+  message.reserve(420);
+  message += F("🎙 <b>dB Calibration</b>\n");
+  switch (dbCalibrationReply_) {
+    case DbCalibrationReply::Started:
+      message += F("State: <b>Started</b>\nStart: <code>");
+      message += htmlEscape_(logService.dbCalibrationStartText());
+      message += F("</code>\nFinish: <code>");
+      message += htmlEscape_(logService.dbCalibrationFinishText());
+      message += F("</code>\nInterval: <b>10 s</b>\nTake 10–30 timestamped photos now.");
+      break;
+    case DbCalibrationReply::AlreadyActive:
+      message += F("State: <b>Already running</b>\n");
+      message += F("Remaining: <b>");
+      message += String(logService.dbCalibrationRemainingSeconds(nowMs) / 60UL);
+      message += F(" min ");
+      message += String(logService.dbCalibrationRemainingSeconds(nowMs) % 60UL);
+      message += F(" s</b>\nPoints: <b>");
+      message += String(logService.dbCalibrationPointCount());
+      message += F("</b>");
+      break;
+    case DbCalibrationReply::Status:
+      if (logService.dbCalibrationActive()) {
+        message += F("State: <b>Recording</b>\nElapsed: <b>");
+        message += String(logService.dbCalibrationElapsedSeconds(nowMs) / 60UL);
+        message += F(" min ");
+        message += String(logService.dbCalibrationElapsedSeconds(nowMs) % 60UL);
+        message += F(" s</b>\nRemaining: <b>");
+        message += String(logService.dbCalibrationRemainingSeconds(nowMs) / 60UL);
+        message += F(" min ");
+        message += String(logService.dbCalibrationRemainingSeconds(nowMs) % 60UL);
+        message += F(" s</b>\nPoints: <b>");
+        message += String(logService.dbCalibrationPointCount());
+        message += F("</b>");
+      } else {
+        message += F("State: <b>Idle</b>\nPoints in latest log: <b>");
+        message += String(logService.dbCalibrationPointCount());
+        message += F("</b>");
+      }
+      break;
+    case DbCalibrationReply::Stopped:
+      message += F("State: <b>Stopped</b>\nPoints: <b>");
+      message += String(logService.dbCalibrationPointCount());
+      message += F("</b>");
+      break;
+    case DbCalibrationReply::NotActive:
+      message += F("State: <b>Not running</b>");
+      break;
+    case DbCalibrationReply::ClockUnavailable:
+      message += F("State: <b>Not started</b>\nReason: time is not synchronized");
+      break;
+    case DbCalibrationReply::StorageError:
+      message += F("State: <b>Not started</b>\nReason: calibration log unavailable");
+      break;
+    case DbCalibrationReply::Completed:
+      message += F("State: <b>Complete</b>\nPoints: <b>");
+      message += String(logService.dbCalibrationPointCount());
+      message += F("</b>");
+      break;
+    case DbCalibrationReply::WriteError:
+      message += F("State: <b>Stopped</b>\nReason: calibration log write failed\nPoints: <b>");
+      message += String(logService.dbCalibrationPointCount());
+      message += F("</b>");
+      break;
+    case DbCalibrationReply::None:
+    default:
+      return false;
+  }
+
+  if (!logService.dbCalibrationActive() &&
+      !logService.dbCalibrationDownloadName().isEmpty()) {
+    const String baseUrl = localLogUrl(ipAddress);
+    if (!baseUrl.isEmpty()) {
+      message += F("\n🔗 <a href=\"");
+      message += baseUrl;
+      message += F("dbcal.csv\">Download ");
+      message += htmlEscape_(logService.dbCalibrationDownloadName());
+      message += F("</a>");
+    }
+  }
+  return sendStatusMessage_(message, "dB calibration");
+}
+
 bool TelegramAlertService::sendStatusMessage_(const String &message,
                                               const char *logLabel) {
   WiFiClientSecure client;
@@ -712,7 +859,7 @@ bool TelegramAlertService::sendStatusMessage_(const String &message,
 }
 
 bool TelegramAlertService::pollCommands_(
-    ControllerLinkService &controllerLink) {
+    ControllerLinkService &controllerLink, LogService &logService) {
   WiFiClientSecure client;
   client.setInsecure();
   client.setHandshakeTimeout(4);
@@ -744,17 +891,21 @@ bool TelegramAlertService::pollCommands_(
 
   const String response = http.getString();
   http.end();
-  processCommandUpdates_(response, controllerLink);
+  processCommandUpdates_(response, controllerLink, logService);
   return true;
 }
 
 void TelegramAlertService::processCommandUpdates_(
-    const String &response, ControllerLinkService &controllerLink) {
+    const String &response, ControllerLinkService &controllerLink,
+    LogService &logService) {
   uint32_t newestUpdateId = lastCommandUpdateId_;
   uint8_t c3StatusRequestCount = 0;
   uint8_t c3WakeRequestCount = 0;
   uint8_t bsStatusRequestCount = 0;
   uint8_t helpRequestCount = 0;
+  uint8_t dbStartRequestCount = 0;
+  uint8_t dbStatusRequestCount = 0;
+  uint8_t dbStopRequestCount = 0;
   int searchAt = 0;
   while (true) {
     const int updateAt = response.indexOf(F("\"update_id\""), searchAt);
@@ -830,6 +981,18 @@ void TelegramAlertService::processCommandUpdates_(
       if (helpRequestCount < UINT8_MAX) {
         ++helpRequestCount;
       }
+    } else if (isDbCommand(command, "dbstart")) {
+      if (dbStartRequestCount < UINT8_MAX) {
+        ++dbStartRequestCount;
+      }
+    } else if (isDbCommand(command, "dbsts")) {
+      if (dbStatusRequestCount < UINT8_MAX) {
+        ++dbStatusRequestCount;
+      }
+    } else if (isDbCommand(command, "dbstop")) {
+      if (dbStopRequestCount < UINT8_MAX) {
+        ++dbStopRequestCount;
+      }
     }
   }
 
@@ -851,6 +1014,55 @@ void TelegramAlertService::processCommandUpdates_(
     helpReplyPending_ = true;
     helpReplyQueuedAtMs_ = millis();
     Serial.println(F("[TG] command /help -> queued"));
+  }
+
+  if (dbStartRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /dbstart x"));
+    Serial.println(dbStartRequestCount);
+  }
+  if (dbStatusRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /dbsts x"));
+    Serial.println(dbStatusRequestCount);
+  }
+  if (dbStopRequestCount > 1) {
+    Serial.print(F("[TG] command coalesced -> /dbstop x"));
+    Serial.println(dbStopRequestCount);
+  }
+
+  if (dbStopRequestCount > 0) {
+    if (logService.stopDbCalibration(millis()) == DbCalibrationStopResult::Stopped) {
+      dbCalibrationReply_ =
+          logService.dbCalibrationTerminalState() ==
+                  DbCalibrationTerminalState::WriteError
+              ? DbCalibrationReply::WriteError
+              : DbCalibrationReply::Stopped;
+    } else {
+      dbCalibrationReply_ = DbCalibrationReply::NotActive;
+    }
+  } else if (dbStartRequestCount > 0) {
+    switch (logService.startDbCalibration(millis())) {
+      case DbCalibrationStartResult::Started:
+        dbCalibrationReply_ = DbCalibrationReply::Started;
+        break;
+      case DbCalibrationStartResult::AlreadyActive:
+        dbCalibrationReply_ = DbCalibrationReply::AlreadyActive;
+        break;
+      case DbCalibrationStartResult::ClockUnavailable:
+        dbCalibrationReply_ = DbCalibrationReply::ClockUnavailable;
+        break;
+      case DbCalibrationStartResult::StorageError:
+      default:
+        dbCalibrationReply_ = DbCalibrationReply::StorageError;
+        break;
+    }
+  } else if (dbStatusRequestCount > 0) {
+    dbCalibrationReply_ = DbCalibrationReply::Status;
+  }
+  if (dbCalibrationReply_ != DbCalibrationReply::None) {
+    dbCalibrationReplyPending_ = true;
+    dbCalibrationReplyQueuedAtMs_ = millis();
+    lastStatusReplyAttemptAtMs_ = 0;
+    Serial.println(F("[TG] command dB calibration -> queued"));
   }
 
   if (bsStatusRequestCount > 1) {
@@ -1152,6 +1364,9 @@ String TelegramAlertService::buildHelpMessage_() const {
   message += F("<code>/bssts</code> — состояние BS / BS status\n");
   message += F("<code>/c3sts</code> — питание и состояние C3 / C3 power and status\n");
   message += F("<code>/c3wkp</code> — пробудить C3 / Wake C3\n");
+  message += F("<code>/dbstart</code> — начать калибровку dB / Start dB calibration\n");
+  message += F("<code>/dbsts</code> — состояние калибровки / Calibration status\n");
+  message += F("<code>/dbstop</code> — завершить калибровку / Stop calibration\n");
 
   message += F("\n<b>C3 bot · только админ / admin only</b>\n");
   message += F("<code>/status</code> — статус и меню C3 / C3 status and menu\n");

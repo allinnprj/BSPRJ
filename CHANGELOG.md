@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Dedicated real-dB calibration capture - 0.1.94-EXP build 148 - 2026-09-03
+
+1. Added the authorized Telegram commands `/dbstart`, `/dbsts`, and `/dbstop` for one bounded `20 min` calibration session. The start response states the exact local start/finish time, the OLED shows the active countdown and point count, and completion produces a Telegram notice with the local download link.
+2. During the session BS records one numerical aggregate every `10 s` to the separate `/dbcal.csv`: timestamp, elapsed time, P2P average/minimum/maximum, raw minimum/maximum, sample count, signal state, build, and acoustic revision. No audio is recorded, and starting a new session replaces only the previous calibration file; the ordinary sound log does not need to be cleared.
+3. The calibration file is exposed through the existing port-80 log server with a timestamped download name and is included in storage accounting and `Clear ALL logs`. Normal sound statistics, Google Sheets, UART/C3, INA3221, Wi-Fi, alerts, and their timings remain unchanged; no library, task, server, C3 change, upload, or publication was added.
+4. Local validation: the focused dB-calibration contract plus the existing controller-command and Wi-Fi provisioning regressions pass; the final `pio run -e esp32dev` succeeds with RAM `66,180 / 327,680` (`20.2%`), linked Flash `1,397,843 / 1,572,864` (`88.9%`), and OTA-slot reserve `175,021` bytes. `firmware.bin` is `1,398,240` bytes with SHA-256 `CA6C8F7EA0728DA979794A8EDA15E7E514B01F843EC85C52EE6F799A4BA3263E`. Physical acceptance requires a manually uploaded build and one session compared with original timestamped FNIRSI FDM01 photos; no upload was performed.
+
 ## Separate data confidence from level dominance - Apps Script source - 2026-08-30
 
 1. Added one deterministic daily-summary rule for near ties: when `NORMAL` and `LOUD` are the leading classes and differ by no more than `10` percentage points, `MAIN LEVEL` becomes `MIXED NORMAL/LOUD` instead of selecting one class arbitrarily. Its chart score is `2.5`, and both NORMAL/LOUD flags remain visible to technical charts.

@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 
+#include "audio_sampler.h"
 #include "google_sheets_service.h"
 
 class WifiService;
@@ -64,6 +65,25 @@ struct DiagnosticRecord {
   uint32_t googleSheetsDropCount = 0;
 };
 
+enum class DbCalibrationStartResult : uint8_t {
+  Started,
+  AlreadyActive,
+  ClockUnavailable,
+  StorageError,
+};
+
+enum class DbCalibrationStopResult : uint8_t {
+  Stopped,
+  NotActive,
+};
+
+enum class DbCalibrationTerminalState : uint8_t {
+  None,
+  Completed,
+  Stopped,
+  WriteError,
+};
+
 class LogService {
  public:
   void begin(WifiService &wifiService);
@@ -77,6 +97,19 @@ class LogService {
                           const String &uptimeText, int32_t wifiRssiDbm);
   void appendDiagnosticEvent(const String &eventText, const String &details);
   void appendDiagnosticRecord(const DiagnosticRecord &record);
+  DbCalibrationStartResult startDbCalibration(uint32_t nowMs);
+  DbCalibrationStopResult stopDbCalibration(uint32_t nowMs);
+  void updateDbCalibration(const AudioSnapshot &snapshot, uint32_t nowMs);
+  bool dbCalibrationActive() const;
+  uint32_t dbCalibrationElapsedSeconds(uint32_t nowMs) const;
+  uint32_t dbCalibrationRemainingSeconds(uint32_t nowMs) const;
+  uint16_t dbCalibrationPointCount() const;
+  String dbCalibrationStartText() const;
+  String dbCalibrationFinishText() const;
+  String dbCalibrationDownloadName() const;
+  DbCalibrationTerminalState dbCalibrationTerminalState() const;
+  bool dbCalibrationTerminalNotificationPending() const;
+  void markDbCalibrationTerminalNotificationSent();
 
  private:
   bool ready_ = false;

@@ -59,6 +59,26 @@ void DisplayView::showWifiSetupActive(const char *ssid, const char *statusText) 
   display_.display();
 }
 
+void DisplayView::showDbCalibration(uint32_t remainingSeconds, uint16_t pointCount) {
+  if (!initialized_) {
+    return;
+  }
+  display_.clearDisplay();
+  display_.setTextColor(SSD1306_WHITE);
+  display_.setTextSize(1);
+  display_.setFont(nullptr);
+  drawCenteredText(F("dB CAL REC"), 2, 2);
+  char remainingText[20];
+  snprintf(remainingText, sizeof(remainingText), "%02lu:%02lu LEFT",
+           static_cast<unsigned long>(remainingSeconds / 60UL),
+           static_cast<unsigned long>(remainingSeconds % 60UL));
+  drawCenteredText(String(remainingText), 28, 1);
+  char pointText[20];
+  snprintf(pointText, sizeof(pointText), "POINTS %u", pointCount);
+  drawCenteredText(String(pointText), 46, 1);
+  display_.display();
+}
+
 void DisplayView::nextPage() {
   currentPage_ = (currentPage_ + 1) % kPageCount;
 }

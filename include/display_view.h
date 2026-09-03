@@ -16,6 +16,7 @@ class DisplayView {
   void showBootMessage(const char *line1, const char *line2, const char *powerProfileText);
   void showWifiSetupCountdown(uint8_t secondsRemaining);
   void showWifiSetupActive(const char *ssid, const char *statusText);
+  void showDbCalibration(uint32_t remainingSeconds, uint16_t pointCount);
   void nextPage();
   void setEnabled(bool enabled);
   bool isEnabled() const;

@@ -5,6 +5,8 @@
 
 #include "controller_link_service.h"
 
+class LogService;
+
 struct BsStatusView {
   const String &ipAddress;
   int wifiRssiDbm;
@@ -41,7 +43,7 @@ class TelegramAlertService {
   void updateCommands(bool wifiConnected, bool timeSynced, int wifiRssiDbm,
                       uint8_t wifiSignalPercent, const String &wifiSsid,
                       ControllerLinkService &controllerLink,
-                      const BsStatusView &bsStatus);
+                      const BsStatusView &bsStatus, LogService &logService);
 
  private:
   static constexpr unsigned long kOnlineWarmupMs = 20000UL;
@@ -70,10 +72,14 @@ class TelegramAlertService {
                      const ControllerLinkService &controllerLink);
   bool sendHelp_();
   bool sendC3WakeReply_(ControllerWakeRequestResult result);
+  bool sendDbCalibrationReply_(const LogService &logService,
+                               const String &ipAddress);
   bool sendStatusMessage_(const String &message, const char *logLabel);
-  bool pollCommands_(ControllerLinkService &controllerLink);
+  bool pollCommands_(ControllerLinkService &controllerLink,
+                     LogService &logService);
   void processCommandUpdates_(const String &response,
-                              ControllerLinkService &controllerLink);
+                              ControllerLinkService &controllerLink,
+                              LogService &logService);
   String buildDeviceOnlineMessage_(const String &ipAddress, int wifiRssiDbm,
                                    uint8_t wifiSignalPercent, const String &wifiSsid,
                                    bool timeSynced,
@@ -109,6 +115,20 @@ class TelegramAlertService {
       ControllerWakeRequestResult::Unavailable;
   bool bsStatusReplyPending_ = false;
   bool helpReplyPending_ = false;
+  enum class DbCalibrationReply : uint8_t {
+    None,
+    Started,
+    AlreadyActive,
+    Status,
+    Stopped,
+    NotActive,
+    ClockUnavailable,
+    StorageError,
+    Completed,
+    WriteError,
+  };
+  DbCalibrationReply dbCalibrationReply_ = DbCalibrationReply::None;
+  bool dbCalibrationReplyPending_ = false;
   unsigned long wifiConnectedSinceMs_ = 0;
   unsigned long wifiLostAtMs_ = 0;
   unsigned long restoreDowntimeMs_ = 0;
@@ -121,6 +141,7 @@ class TelegramAlertService {
   unsigned long c3WakeReplyQueuedAtMs_ = 0;
   unsigned long bsStatusReplyQueuedAtMs_ = 0;
   unsigned long helpReplyQueuedAtMs_ = 0;
+  unsigned long dbCalibrationReplyQueuedAtMs_ = 0;
   unsigned long lastStatusReplyAttemptAtMs_ = 0;
   uint32_t lastCommandUpdateId_ = 0;
   Preferences commandPreferences_;

@@ -2,6 +2,7 @@
 
 #include <LittleFS.h>
 #include <WebServer.h>
+#include <time.h>
 
 #include "project_version.h"
 #include "wifi_service.h"
@@ -12,7 +13,10 @@ constexpr char kLogPath[] = "/sound_log.csv";
 constexpr char kLegacyLogPath[] = "/sound_log_legacy.csv";
 constexpr char kDiagnosticLogPath[] = "/diagnostics.log";
 constexpr char kPreviousDiagnosticLogPath[] = "/diagnostics-prev.log";
+constexpr char kDbCalibrationPath[] = "/dbcal.csv";
 constexpr size_t kDiagnosticLogMaxBytes = 128U * 1024U;
+constexpr uint32_t kDbCalibrationDurationMs = 20UL * 60UL * 1000UL;
+constexpr uint32_t kDbCalibrationBucketMs = 10000UL;
 constexpr char kLogHeader[] =
     "event,date,time_from,time_to,part,build,boot_seq,reset_reason,uptime_min,uptime_text,"
     "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_p95,p2p_min,p2p_max,p2p_stable_max,"
@@ -25,11 +29,83 @@ constexpr char kDiagnosticLogHeader[] =
     "c3_session\tc3_q\tc3_age_s\tc3_ok\tc3_dup\tc3_gap\tuart_off\tina\tsolar_mv\tsolar_ma\t"
     "battery_mv\tbattery_ma\tsoc\tload_mv\tload_ma\tcharge\tmode\tnow\thour\ttotal\t"
     "p2p\tsignal\ttemp_c\thum_pct\theap\tmin_heap\tgs_queue\tgs_ok\tgs_fail\tgs_drop\tinfo";
+constexpr char kDbCalibrationHeader[] =
+    "date,time,elapsed_s,p2p_avg,p2p_min,p2p_max,raw_min,raw_max,samples,signal,build,acoustic_rev";
 WebServer logServer(80);
 WifiService *wifiSetupService = nullptr;
 bool logClearedByWeb = false;
 String currentDateText;
 String currentTimeText;
+bool dbCalibrationRecording = false;
+uint32_t dbCalibrationStartMs = 0;
+time_t dbCalibrationStartEpoch = 0;
+uint32_t dbCalibrationBucketStartedAtMs = 0;
+uint32_t dbCalibrationP2pSum = 0;
+uint16_t dbCalibrationP2pMin = UINT16_MAX;
+uint16_t dbCalibrationP2pMax = 0;
+int32_t dbCalibrationRawMin = INT32_MAX;
+int32_t dbCalibrationRawMax = INT32_MIN;
+uint16_t dbCalibrationBucketSamples = 0;
+SignalState dbCalibrationWorstSignal = SignalState::Low;
+uint16_t dbCalibrationPoints = 0;
+String dbCalibrationDownloadFileName;
+DbCalibrationTerminalState dbCalibrationTerminal = DbCalibrationTerminalState::None;
+bool dbCalibrationTerminalPending = false;
+
+uint8_t signalRank(SignalState state) {
+  switch (state) {
+    case SignalState::Clip:
+      return 2;
+    case SignalState::Low:
+      return 1;
+    case SignalState::Ok:
+    default:
+      return 0;
+  }
+}
+
+const __FlashStringHelper *signalText(SignalState state) {
+  switch (state) {
+    case SignalState::Clip:
+      return F("CLIP");
+    case SignalState::Low:
+      return F("LOW");
+    case SignalState::Ok:
+    default:
+      return F("OK");
+  }
+}
+
+String formatLocalDateTime(time_t epoch) {
+  struct tm localTime {};
+  if (epoch < 1700000000 || localtime_r(&epoch, &localTime) == nullptr) {
+    return F("unknown");
+  }
+  char text[20];
+  strftime(text, sizeof(text), "%d-%m-%Y %H:%M:%S", &localTime);
+  return String(text);
+}
+
+String calibrationDownloadName(time_t epoch) {
+  struct tm localTime {};
+  if (epoch < 1700000000 || localtime_r(&epoch, &localTime) == nullptr) {
+    return F("dbcal.csv");
+  }
+  char text[32];
+  strftime(text, sizeof(text), "dbcal-%Y%m%d-%H%M%S.csv", &localTime);
+  return String(text);
+}
+
+void resetDbCalibrationBucket(uint32_t nowMs) {
+  dbCalibrationBucketStartedAtMs = nowMs;
+  dbCalibrationP2pSum = 0;
+  dbCalibrationP2pMin = UINT16_MAX;
+  dbCalibrationP2pMax = 0;
+  dbCalibrationRawMin = INT32_MAX;
+  dbCalibrationRawMax = INT32_MIN;
+  dbCalibrationBucketSamples = 0;
+  dbCalibrationWorstSignal = SignalState::Ok;
+}
 
 String pageStart(const String &title) {
   String body;
@@ -146,6 +222,7 @@ struct LogStorageStats {
   size_t activeLogBytes = 0;
   size_t archivedLogBytes = 0;
   size_t diagnosticLogBytes = 0;
+  size_t calibrationLogBytes = 0;
   uint16_t archivedLogCount = 0;
   uint8_t diagnosticLogCount = 0;
 };
@@ -157,6 +234,7 @@ LogStorageStats collectLogStorageStats() {
   stats.activeLogBytes = fileSizeForPath(kLogPath);
   stats.diagnosticLogBytes = fileSizeForPath(kDiagnosticLogPath) +
                              fileSizeForPath(kPreviousDiagnosticLogPath);
+  stats.calibrationLogBytes = fileSizeForPath(kDbCalibrationPath);
   stats.diagnosticLogCount = (LittleFS.exists(kDiagnosticLogPath) ? 1 : 0) +
                              (LittleFS.exists(kPreviousDiagnosticLogPath) ? 1 : 0);
 
@@ -197,6 +275,8 @@ void appendStorageSummary(String &body) {
   body += String(stats.diagnosticLogCount);
   body += F(" / ");
   body += formatBytes(stats.diagnosticLogBytes);
+  body += F("<br>dB calibration: ");
+  body += formatBytes(stats.calibrationLogBytes);
   body += F("</p>");
 }
 
@@ -360,6 +440,15 @@ void handleRoot() {
     body += formatBytes(fileSizeForPath(kPreviousDiagnosticLogPath));
     body += ')';
   }
+  if (LittleFS.exists(kDbCalibrationPath)) {
+    body += F("<br><a href=\"/dbcal.csv\" download>");
+    body += dbCalibrationDownloadFileName.isEmpty()
+                ? String(F("dbcal.csv"))
+                : dbCalibrationDownloadFileName;
+    body += F("</a> (");
+    body += formatBytes(fileSizeForPath(kDbCalibrationPath));
+    body += ')';
+  }
   body += F("</p><p>For complete analysis download all files shown above.</p>");
   body += F("<p><a href=\"/archive-log\">Archive sound log</a> | ");
   body += F("<a href=\"/clear-log\">Clear sound log</a> | ");
@@ -469,10 +558,12 @@ void handleClearAllLogsConfirm() {
   body += F("<p>Delete the active log, archives, legacy log, and diagnostics? ");
   body += F("Google Sheets data is not touched.</p>");
   body += F("<p>About ");
-  body += formatBytes(stats.activeLogBytes + stats.archivedLogBytes + stats.diagnosticLogBytes);
+  body += formatBytes(stats.activeLogBytes + stats.archivedLogBytes +
+                      stats.diagnosticLogBytes + stats.calibrationLogBytes);
   body += F(" in ");
   body += String(stats.archivedLogCount + stats.diagnosticLogCount +
-                 (stats.activeLogBytes > 0 ? 1 : 0));
+                 (stats.activeLogBytes > 0 ? 1 : 0) +
+                 (stats.calibrationLogBytes > 0 ? 1 : 0));
   body += F(" files.</p><p><a href=\"/clear-all-logs-confirm\">Confirm clear ALL</a></p>");
   pageEnd(body);
   logServer.send(200, "text/html", body);
@@ -498,6 +589,14 @@ void handleClearAllLogsAction() {
         deletedBytes += fileSize;
         deletedCount++;
       }
+    }
+  }
+
+  if (LittleFS.exists(kDbCalibrationPath)) {
+    const size_t fileSize = fileSizeForPath(kDbCalibrationPath);
+    if (LittleFS.remove(kDbCalibrationPath)) {
+      deletedBytes += fileSize;
+      deletedCount++;
     }
   }
 
@@ -576,6 +675,23 @@ void handleArchiveDownload() {
   file.close();
 }
 
+void handleDbCalibrationDownload() {
+  if (!LittleFS.exists(kDbCalibrationPath)) {
+    logServer.send(404, "text/plain", "calibration log not found\n");
+    return;
+  }
+  File file = LittleFS.open(kDbCalibrationPath, FILE_READ);
+  if (!file) {
+    logServer.send(500, "text/plain", "failed to open calibration log\n");
+    return;
+  }
+  sendCsvDownloadHeader(dbCalibrationDownloadFileName.isEmpty()
+                            ? String(F("dbcal.csv"))
+                            : dbCalibrationDownloadFileName);
+  logServer.streamFile(file, "text/csv");
+  file.close();
+}
+
 void handleDiagnosticDownload(const char *path) {
   if (!LittleFS.exists(path)) {
     logServer.send(404, "text/plain", "diagnostic log not found\n");
@@ -589,6 +705,67 @@ void handleDiagnosticDownload(const char *path) {
   sendCsvDownloadHeader(fileNameFromPath(path));
   logServer.streamFile(file, "text/plain");
   file.close();
+}
+
+bool appendDbCalibrationBucket(uint32_t nowMs) {
+  if (dbCalibrationBucketSamples == 0) {
+    resetDbCalibrationBucket(nowMs);
+    return true;
+  }
+
+  File file = LittleFS.open(kDbCalibrationPath, FILE_APPEND);
+  if (!file) {
+    return false;
+  }
+
+  const uint32_t elapsedSeconds = (nowMs - dbCalibrationStartMs) / 1000UL;
+  const time_t pointEpoch = dbCalibrationStartEpoch + elapsedSeconds;
+  struct tm localTime {};
+  char dateText[11] = "";
+  char timeText[9] = "";
+  if (localtime_r(&pointEpoch, &localTime) != nullptr) {
+    strftime(dateText, sizeof(dateText), "%d-%m-%Y", &localTime);
+    strftime(timeText, sizeof(timeText), "%H:%M:%S", &localTime);
+  }
+
+  file.print(dateText);
+  file.print(',');
+  file.print(timeText);
+  file.print(',');
+  file.print(elapsedSeconds);
+  file.print(',');
+  file.print(dbCalibrationP2pSum / dbCalibrationBucketSamples);
+  file.print(',');
+  file.print(dbCalibrationP2pMin == UINT16_MAX ? 0 : dbCalibrationP2pMin);
+  file.print(',');
+  file.print(dbCalibrationP2pMax);
+  file.print(',');
+  file.print(dbCalibrationRawMin == INT32_MAX ? 0 : dbCalibrationRawMin);
+  file.print(',');
+  file.print(dbCalibrationRawMax == INT32_MIN ? 0 : dbCalibrationRawMax);
+  file.print(',');
+  file.print(dbCalibrationBucketSamples);
+  file.print(',');
+  file.print(signalText(dbCalibrationWorstSignal));
+  file.print(',');
+  file.print(PROJECT_BUILD);
+  file.print(',');
+  file.println(PROJECT_ACOUSTIC_REV);
+  file.close();
+
+  dbCalibrationPoints++;
+  resetDbCalibrationBucket(nowMs);
+  return true;
+}
+
+void finishDbCalibration(uint32_t nowMs, DbCalibrationTerminalState state) {
+  if (!dbCalibrationRecording) {
+    return;
+  }
+  dbCalibrationRecording = false;
+  dbCalibrationTerminal = state;
+  dbCalibrationTerminalPending = true;
+  dbCalibrationBucketStartedAtMs = nowMs;
 }
 
 }  // namespace
@@ -606,6 +783,154 @@ void LogService::begin(WifiService &wifiService) {
   Serial.println(F("[LOG] LittleFS ready -> /sound_log.csv + /diagnostics.log"));
 }
 
+DbCalibrationStartResult LogService::startDbCalibration(uint32_t nowMs) {
+  if (!ready_) {
+    return DbCalibrationStartResult::StorageError;
+  }
+  if (dbCalibrationRecording) {
+    return DbCalibrationStartResult::AlreadyActive;
+  }
+
+  const time_t currentEpoch = time(nullptr);
+  if (currentEpoch < 1700000000) {
+    return DbCalibrationStartResult::ClockUnavailable;
+  }
+
+  File file = LittleFS.open(kDbCalibrationPath, FILE_WRITE);
+  if (!file) {
+    return DbCalibrationStartResult::StorageError;
+  }
+  file.println(kDbCalibrationHeader);
+  file.close();
+
+  dbCalibrationStartMs = nowMs;
+  dbCalibrationStartEpoch = currentEpoch;
+  dbCalibrationPoints = 0;
+  dbCalibrationDownloadFileName = calibrationDownloadName(currentEpoch);
+  dbCalibrationTerminal = DbCalibrationTerminalState::None;
+  dbCalibrationTerminalPending = false;
+  resetDbCalibrationBucket(nowMs);
+  dbCalibrationRecording = true;
+  appendDiagnosticEvent(F("DB_CAL_START"), F("duration_s=1200 interval_s=10"));
+  Serial.println(F("[DBCAL] started -> duration=1200s interval=10s"));
+  return DbCalibrationStartResult::Started;
+}
+
+DbCalibrationStopResult LogService::stopDbCalibration(uint32_t nowMs) {
+  if (!dbCalibrationRecording) {
+    return DbCalibrationStopResult::NotActive;
+  }
+  const bool writeOk = appendDbCalibrationBucket(nowMs);
+  finishDbCalibration(nowMs, writeOk ? DbCalibrationTerminalState::Stopped
+                                    : DbCalibrationTerminalState::WriteError);
+  appendDiagnosticEvent(writeOk ? F("DB_CAL_STOP") : F("DB_CAL_FAIL"),
+                        String(F("points=")) + dbCalibrationPoints);
+  Serial.print(F("[DBCAL] stopped -> points="));
+  Serial.println(dbCalibrationPoints);
+  return DbCalibrationStopResult::Stopped;
+}
+
+void LogService::updateDbCalibration(const AudioSnapshot &snapshot, uint32_t nowMs) {
+  if (!dbCalibrationRecording) {
+    return;
+  }
+
+  if (snapshot.statsUpdated) {
+    dbCalibrationP2pSum += snapshot.statsLevel;
+    if (snapshot.statsLevel < dbCalibrationP2pMin) {
+      dbCalibrationP2pMin = snapshot.statsLevel;
+    }
+    if (snapshot.statsLevel > dbCalibrationP2pMax) {
+      dbCalibrationP2pMax = snapshot.statsLevel;
+    }
+    if (snapshot.rawMin < dbCalibrationRawMin) {
+      dbCalibrationRawMin = snapshot.rawMin;
+    }
+    if (snapshot.rawMax > dbCalibrationRawMax) {
+      dbCalibrationRawMax = snapshot.rawMax;
+    }
+    if (signalRank(snapshot.signalState) > signalRank(dbCalibrationWorstSignal)) {
+      dbCalibrationWorstSignal = snapshot.signalState;
+    }
+    dbCalibrationBucketSamples++;
+  }
+
+  if (nowMs - dbCalibrationBucketStartedAtMs >= kDbCalibrationBucketMs) {
+    if (!appendDbCalibrationBucket(nowMs)) {
+      finishDbCalibration(nowMs, DbCalibrationTerminalState::WriteError);
+      appendDiagnosticEvent(F("DB_CAL_FAIL"),
+                            String(F("points=")) + dbCalibrationPoints);
+      Serial.println(F("[DBCAL] stopped -> write failed"));
+      return;
+    }
+  }
+
+  if (nowMs - dbCalibrationStartMs >= kDbCalibrationDurationMs) {
+    if (dbCalibrationBucketSamples > 0 && !appendDbCalibrationBucket(nowMs)) {
+      finishDbCalibration(nowMs, DbCalibrationTerminalState::WriteError);
+      appendDiagnosticEvent(F("DB_CAL_FAIL"),
+                            String(F("points=")) + dbCalibrationPoints);
+      Serial.println(F("[DBCAL] stopped -> final write failed"));
+      return;
+    }
+    finishDbCalibration(nowMs, DbCalibrationTerminalState::Completed);
+    appendDiagnosticEvent(F("DB_CAL_COMPLETE"),
+                          String(F("points=")) + dbCalibrationPoints);
+    Serial.print(F("[DBCAL] complete -> points="));
+    Serial.println(dbCalibrationPoints);
+  }
+}
+
+bool LogService::dbCalibrationActive() const {
+  return dbCalibrationRecording;
+}
+
+uint32_t LogService::dbCalibrationElapsedSeconds(uint32_t nowMs) const {
+  if (dbCalibrationStartEpoch == 0) {
+    return 0;
+  }
+  const uint32_t elapsedMs = nowMs - dbCalibrationStartMs;
+  return min(elapsedMs, kDbCalibrationDurationMs) / 1000UL;
+}
+
+uint32_t LogService::dbCalibrationRemainingSeconds(uint32_t nowMs) const {
+  if (!dbCalibrationRecording) {
+    return 0;
+  }
+  const uint32_t elapsedMs = nowMs - dbCalibrationStartMs;
+  return elapsedMs >= kDbCalibrationDurationMs
+             ? 0
+             : (kDbCalibrationDurationMs - elapsedMs + 999UL) / 1000UL;
+}
+
+uint16_t LogService::dbCalibrationPointCount() const {
+  return dbCalibrationPoints;
+}
+
+String LogService::dbCalibrationStartText() const {
+  return formatLocalDateTime(dbCalibrationStartEpoch);
+}
+
+String LogService::dbCalibrationFinishText() const {
+  return formatLocalDateTime(dbCalibrationStartEpoch + kDbCalibrationDurationMs / 1000UL);
+}
+
+String LogService::dbCalibrationDownloadName() const {
+  return dbCalibrationDownloadFileName;
+}
+
+DbCalibrationTerminalState LogService::dbCalibrationTerminalState() const {
+  return dbCalibrationTerminal;
+}
+
+bool LogService::dbCalibrationTerminalNotificationPending() const {
+  return dbCalibrationTerminalPending;
+}
+
+void LogService::markDbCalibrationTerminalNotificationSent() {
+  dbCalibrationTerminalPending = false;
+}
+
 void LogService::update(bool wifiConnected, const String &ipAddress) {
   if (!ready_) {
     return;
@@ -617,6 +942,7 @@ void LogService::update(bool wifiConnected, const String &ipAddress) {
     logServer.on("/", handleRoot);
     logServer.on("/wifi-setup", HTTP_POST, handleWifiSetupPost);
     logServer.on("/log.csv", HTTP_GET, handleLogDownload);
+    logServer.on("/dbcal.csv", HTTP_GET, handleDbCalibrationDownload);
     logServer.on("/diagnostics.log", HTTP_GET,
                  []() { handleDiagnosticDownload(kDiagnosticLogPath); });
     logServer.on("/diagnostics-prev.log", HTTP_GET,
