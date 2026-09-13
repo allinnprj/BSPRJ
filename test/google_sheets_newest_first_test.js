@@ -139,8 +139,14 @@ vm.runInNewContext(`
   ensureWritableLogSheet_ = () => ({ name: 'log' });
   sheetHasRecordKey_ = () => false;
   prependLogRow_ = (sheet, rowValues) => { state.postedRow = rowValues; };
+  this.__doGet = doGet;
   this.__doPostUnlocked = doPostUnlocked_;
 `, sandbox);
+const getResult = JSON.parse(sandbox.__doGet().text);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(getResult)),
+  { ok: true, mode: 'GET', schema: 37, dba: true }
+);
 const postResult = sandbox.__doPostUnlocked({
   postData: {
     contents: JSON.stringify({

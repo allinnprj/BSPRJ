@@ -3499,7 +3499,12 @@ function rebuildAnalytics_() {
 
 function doGet() {
   return ContentService
-    .createTextOutput(JSON.stringify({ ok: true, mode: 'GET' }))
+    .createTextOutput(JSON.stringify({
+      ok: true,
+      mode: 'GET',
+      schema: HEADERS.length,
+      dba: true
+    }))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
