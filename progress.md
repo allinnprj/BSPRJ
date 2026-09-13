@@ -39,7 +39,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 
 ## Current Baseline
 
-- Current whole-project readiness estimate: `59%`.
+- Current whole-project readiness estimate: `60%`.
 
 ## Russian Report Block
 
@@ -49,7 +49,7 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 Готовность:
 - Микрофон и механическая сборка: 80%
 - Относительная статистика шума и классификация: 60%
-- Реальная dB-калибровка: 55%
+- Реальная dB-калибровка: 70%
 - INA3221 и солнечная зарядка: 100%
 - Связь между контроллерами: 85%
 - GPS и контекст места/времени: 80%
@@ -57,14 +57,14 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 - Общее питание и автономная работа: 25%
 - Основная прошивка, логи, OTA и диагностика: 80%
 - Постоянная сборка и финальная полевая проверка: 10%
-- Общая готовность проекта: 59%
+- Общая готовность проекта: 60%
 ```
 
 | Subsystem | Readiness | Confirmed state | Main remaining work |
 | --- | ---: | --- | --- |
 | Microphone and mechanical assembly | `80%` | Protected external `INMP441` passed a multi-day build `109` field run with clear day-part separation and stable signal. Hardware geometry is accepted and will remain unchanged. | Controlled reference events and later confirmation that dB calibration works across the useful range. |
 | Relative sound statistics and classification | `60%` | Clean logs support preliminary `SILENT / NORMAL / LOUD / PEAK` boundaries and build `110` implements the accepted `P2P` thresholds in firmware and Google Sheets summary logic. The deployed Apps Script aligns `AVG P2P` readings, handles near-tied `NORMAL/LOUD` days as `MIXED NORMAL/LOUD`, and separates coverage-based `DATA CONFIDENCE` from `LEVEL DOMINANCE`. Local regressions pass, and the three rebuilt verdict tables are visually accepted. | Validate a natural mixed row and the Telegram daily summary, run `Reset for clean run`, then confirm across the multi-day run that charts, AppSheet, MQTT/Datacake, local logs, and Sheets summaries classify real windows consistently. |
-| Real dB calibration | `55%` | A build-151 A/SLOW session produced 1096 valid points and 67 point-linked FNIRSI photos. The accepted practical model for `acoustic_rev=2` is `a_slow_dbfs + 114.2 dB`; local build 152 exposes it as a separate calibration CSV value without replacing relative analytics. | Upload build 152 manually, validate the frozen offset on an independent photo/CSV set, record the accepted error range, then add the estimate to normal logs, Sheets and Telegram while retaining P2P. |
+| Real dB calibration | `70%` | The frozen `a_slow_dbfs + 114.2 dB` model passed an independent build-152 session with 50 photo pairs. Across 45 stable pairs, bias was `-0.06 dB`, MAE `1.13 dB`, RMSE `1.43 dB`, and `84.4%` were within `±2 dB` over `53.2..65.9 dB(A)`. Local build 153 publishes current A16/SLOW to OLED and Telegram plus energetic ten-minute `DBA LEQ EST` to the local log and Sheets, while P2P analytics remain separate. | Manually upload build 153, deploy the updated Apps Script, verify one live `/bssts`, OLED value, local ten-minute row and Sheets row, then repeat measurements across wider environmental conditions before the final seven-day acceptance run. |
 | INA3221 and solar battery charging | `100%` | The separate `ESP32-C3 SuperMini + INA3221` solar-charge and power-management controller has completed its full standalone test. | No standalone INA3221/solar work remains. Its later link to BSPRJ and shared-power validation are tracked as separate integration subsystems. |
 | Communication between controllers | `85%` | UART power/GPS telemetry, WQTT/Telegram delivery, ACK/deduplication, saved GPS relay, and repeated `SLEEP/SACK -> WAIT -> OK` recovery are physically proven. C3 build `205+` owns its Wi-Fi, bot, cloud delivery, and OTA; the Gateway/Service experiment is retired. Uploaded C3 build `207` and BS build `141`, powered-off wiring checks, one `C3 already awake` guard, three independent GPIO wake cycles, preserved timer wake, and post-wake `Link: OK / Data: Fresh / INA3221: OK` are physically proven without changing `/c3sts` or UART frames. | Keep scheduled-restart-during-`SLP`, controlled true missing-link behavior, physical cooldown timing, and STATUS reliability (`4/8` fresh, `4/8` bounded timeout) as explicit non-blocking acceptance debt during later long runs. |
 | GPS and location/time context | `80%` | GPS is integrated and tested on C3 with manual Current/Fixed handling. Uploaded builds `134/195` physically relayed the saved FIX to a BS Google Maps card with `9` satellites, HDOP `2.4`, and truthful age. | Confirm diagnostic/WQTT evidence, decide final location refresh policy without adding unwanted automatic acquisition, and include the result in final system validation. |
@@ -73,4 +73,4 @@ Use this exact Russian format for full progress reviews and in new-chat status s
 | Core firmware, logging, OTA, and health diagnostics | `80%` | Build `128` physically proved the bounded TSV v2 journal and rotation. Uploaded build `129` produced approximately `21 h` of parseable diagnostics, `127` analytical windows reconciled with Sheets, `GS_DROP=0`, and stable heap. Uploaded BS `135` / C3 `197` physically prove strict sleep acknowledgement and recovery; BS `141` / C3 `207` additionally prove dedicated hardware wake without regressing normal telemetry, INA3221, or timer wake. | Collect scheduled-restart-during-`SLP` evidence and improve STATUS reliability during later long runs; keep C3 Wi-Fi, bot, and OTA independently owned by C3. |
 | Permanent assembly and end-to-end field validation | `10%` | Current breadboard system has accumulated useful field evidence inside the enclosure. | Replace temporary contacts where required, complete integrated assembly, weather/power validation, and final multi-day acceptance test. |
 
-The overall estimate is now `59%`: the real calibration dataset and practical A16/SLOW offset are accepted and implemented ready for independent device validation. Standalone INA3221/solar work, routine C3-to-BS telemetry, C3-owned OTA, repeated sleep-handshake recovery, saved-GPS Maps output, and the dedicated BS-to-C3 GPIO wake path remain physically proven. GSM, integrated autonomous power, permanent assembly, final dB publication, and complete system validation remain substantial dependencies. The estimate is weighted rather than a simple average.
+The overall estimate is now `60%`: an independent photo/CSV session confirms the frozen practical A16/SLOW offset, and local build 153 carries the estimate into ordinary user surfaces without replacing P2P analytics. Standalone INA3221/solar work, routine C3-to-BS telemetry, C3-owned OTA, repeated sleep-handshake recovery, saved-GPS Maps output, and the dedicated BS-to-C3 GPIO wake path remain physically proven. Device/Sheets validation of build 153, GSM, integrated autonomous power, permanent assembly, wider dB validation, and complete system validation remain substantial dependencies. The estimate is weighted rather than a simple average.

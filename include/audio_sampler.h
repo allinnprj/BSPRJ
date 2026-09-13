@@ -19,6 +19,7 @@ struct AudioSnapshot {
   uint16_t sessionMaxPeakToPeak = 0;
   uint16_t sessionStableMaxPeakToPeak = 0;
   uint16_t statsLevel = 0;
+  float currentDbaEstimate = 0.0f;
   uint8_t currentPercent = 0;
   uint8_t hourPercent = 0;
   uint8_t totalPercent = 0;
@@ -28,6 +29,7 @@ struct AudioSnapshot {
   bool lowSignalWarning = false;
   bool clipSignalWarning = false;
   bool statsUpdated = false;
+  bool dbaAvailable = false;
   SignalState signalState = SignalState::Low;
 };
 

@@ -58,9 +58,9 @@ function createSheet(name, headers) {
 }
 
 const sheetDefinitions = [
-  ['log', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP']],
-  ['08-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP']],
-  ['09-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP']],
+  ['log', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP', 'DBA LEQ EST']],
+  ['08-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP', 'DBA LEQ EST']],
+  ['09-08-2026', ['DEV ID', 'VER', 'BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %', 'WIN MIN', 'UPTIME', 'FREE HEAP', 'DBA LEQ EST']],
   ['clean_summary_10m', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %']],
   ['summary_health', ['DEV ID', 'DATE', 'HAS LOG ROWS']],
   ['daily_verdict_table', ['DEV ID', 'DATE', 'VERDICT']],
@@ -199,7 +199,7 @@ assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, true)
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('notes').hidden, false);
 const logSheet = spreadsheet.getSheetByName('log');
-['DEV ID', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'AVG P2P', 'SIG IN', 'TEMP C', 'HUM %']
+['DEV ID', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'AVG P2P', 'DBA LEQ EST', 'SIG IN', 'TEMP C', 'HUM %']
   .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), false, `${header} must stay visible in User mode.`));
 ['VER', 'BUILD', 'RAW MIN', 'RAW MAX', 'WIN MIN', 'UPTIME', 'FREE HEAP']
   .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), true, `${header} must be hidden in User mode.`));

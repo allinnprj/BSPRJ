@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Ordinary dB(A) A16 publication - 0.1.99-EXP build 153 - 2026-09-13
+
+1. Confirmed the frozen `dB(A) A16 est = a_slow_dbfs + 114.2` model on the independent build-152 run: `110` CSV rows, `109` valid, `audio_faults=0`, and `50` FNIRSI A/SLOW photos. The `45` stable pairs have bias `-0.06 dB`, MAE `1.13 dB`, RMSE `1.43 dB`, and `84.4%` within `±2 dB` over `53.2..65.9 dB(A)`; five rapid-transition frames remain timing-limited comparisons, not refit input.
+2. Added the current A16/SLOW estimate to the normal OLED sound page and `/bssts`. The OLED now gives the dBA estimate the large primary row while retaining Wi-Fi/ECO status, relative H/M, environment, and the separate P2P debug/range pages.
+3. Added energetic ten-minute `DBA LEQ EST` to `/log.csv` and the Google Sheets raw `log` schema. The value is computed from accumulated A16 energy, never by arithmetically averaging dB; warmup, audio faults, or clipping leave it blank. Apps Script expands the raw schema safely to `37` columns and keeps the new field visible in User mode.
+4. Preserved relative `P2P`, `Now/H/M`, `LEVEL`, thresholds, day-part analytics, MQTT/Datacake, UART/C3, network services and timings. Updated the bilingual data dictionaries, calibration evidence, tasks and progress. No C3 change, upload, Apps Script deployment, or publication was performed.
+5. Validation: dB publication/DSP/calibration, controller-command, Wi-Fi provisioning and five Google Sheets regressions pass; `git diff --check` passes. One compiling `pio run -e esp32dev` succeeds after the sandbox-only lock attempt stopped before compilation: RAM `66,524 / 327,680` (20.3%), Flash `1,402,059 / 1,572,864` (89.1%), OTA reserve `170,805` bytes, binary `1,402,464` bytes, SHA-256 `08AD50000CD1C345E0A626FAFC85DA210ECE2C38EC5B0A884434FA0ACC6F56AD`.
+
 ## Calibrated A16/SLOW candidate - 0.1.98-EXP build 152 - 2026-09-13
 
 1. Accepted the build-151 FNIRSI FDM01 `A/SLOW` dataset: `1097` CSV points, `1096` valid points, `audio_faults=0`, `96.9..100.0%` valid coverage, and `67` point-linked photos. The robust fitted offset is `+114.2 dB`; after excluding four visibly transitional comparisons, MAE is about `1.0 dB` and `87.3%` of pairs are within `±2 dB` over the stable reference range `53.2..65.5 dB(A)`.

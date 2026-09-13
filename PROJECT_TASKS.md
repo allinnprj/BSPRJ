@@ -72,10 +72,10 @@
 42. [x] Collect paired quiet, normal, loud, and peak readings.
 43. [ ] Repeat calibration readings across multiple times and relevant environmental conditions.
 44. [x] Calculate and implement the accepted `+114.2 dB` A/SLOW calibration offset for `acoustic_rev=2`.
-45. [ ] Validate the model against measurements not used for fitting.
-46. [ ] Record the accepted error range and all limitations.
-47. [ ] Add the calibrated dB metric to local logs, Sheets, and Telegram.
-48. [ ] Preserve `AVG P2P` as a separate diagnostic metric.
+45. [x] Validate the frozen model on the independent build-152 session: 50 photo pairs, 45 stable pairs, stable MAE `1.13 dB`, RMSE `1.43 dB`, and `84.4%` within `±2 dB`.
+46. [x] Record the accepted practical range `53.2..65.9 dB(A)` and the A16/SLOW, 16 kHz, transition-timing and non-certified limitations.
+47. [x] LOCAL SOURCE READY; DEVICE/SHEETS VALIDATION PENDING: add current A16/SLOW to OLED and `/bssts`, and energetic ten-minute `DBA LEQ EST` to local logs and Sheets.
+48. [x] Preserve `AVG P2P`, `Now/H/M`, `LEVEL`, thresholds and the P2P debug display as separate unchanged relative metrics.
 49. [ ] Run the final seven-day sound acceptance test.
 50. [ ] Mark the complete sound subsystem finished only after the dB acceptance test passes.
 

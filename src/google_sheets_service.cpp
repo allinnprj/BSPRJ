@@ -116,6 +116,12 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   payload += record.resetReason;
   payload += F("\",\"acoustic_rev\":");
   payload += String(PROJECT_ACOUSTIC_REV);
+  payload += F(",\"dba_leq_est\":");
+  if (record.dbaAvailable) {
+    payload += String(static_cast<double>(record.dbaLeqEstimate), 1);
+  } else {
+    payload += F("null");
+  }
   payload += '}';
 
   int httpCode = http.POST(payload);

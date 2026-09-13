@@ -4,9 +4,11 @@ This document explains the names used in Google Sheets, Telegram messages, AppSh
 
 ## Core Principle
 
-The project currently measures relative sound behavior, not calibrated `dB`.
+The project now exposes a practical `dB(A) A16` estimate while keeping the
+validated relative `P2P` analytics separate.
 
-The main question is not "how many decibels?" yet. The main question is:
+The dB estimate answers “what is the current or window level?”, while the
+relative analytics continue to answer:
 
 - when was it quiet?
 - when was the usual background active?
@@ -14,13 +16,15 @@ The main question is not "how many decibels?" yet. The main question is:
 - when were the strongest peaks?
 - how reliable is the data for that conclusion?
 
-After the `INMP441` migration, the most important raw sound clue is usually `AVG P2P`, while `NOW %`, `H %`, and `M %` are the human-readable scaled values.
+`DBA LEQ EST` is a calibrated practical estimate, not a certified sound-level
+meter. `AVG P2P`, `NOW %`, `H %`, `M %`, and `LEVEL` remain separate for
+day-part comparisons and compatibility with accumulated statistics.
 
 ## Raw Table Views
 
-`User mode` keeps the everyday reading set visible: `DEV ID`, date/time, `PART`, `LEVEL`, `NOW %`, `H %`, `M %`, `AVG P2P`, `SIG IN`, `TEMP C`, and `HUM %`.
+`User mode` keeps the everyday reading set visible: `DEV ID`, date/time, `PART`, `LEVEL`, `NOW %`, `H %`, `M %`, `AVG P2P`, `DBA LEQ EST`, `SIG IN`, `TEMP C`, and `HUM %`.
 
-`Technical mode` shows the complete 36-column raw schema. The additional columns are not discarded: they remain available for exported-log analysis, signal and sensor diagnostics, restart and memory checks, acoustic-revision separation, and later dB calibration.
+`Technical mode` shows the complete 37-column raw schema. The additional columns are not discarded: they remain available for exported-log analysis, signal and sensor diagnostics, restart and memory checks, and acoustic-revision separation.
 
 ## Remote Diagnostic Journal
 
@@ -175,6 +179,21 @@ Practical current anchors from the balcony run:
 - around `2900`: observed high peak in that run
 
 Possible future simplification: `AVG P2P` may remain a technical column while `NOW %` and `LEVEL` become the normal user-facing values.
+
+### `DBA LEQ EST`
+
+Practical estimate of the average A-weighted level across the complete
+ten-minute window. It is calculated from mean A16 energy as energetic `Leq`,
+never as an arithmetic average of individual dB values. The accepted correction
+for `acoustic_rev=2` is `a_slow_dbfs + 114.2 dB`.
+
+OLED and `/bssts` show the current `A16/SLOW` value; the ordinary local log and
+Google Sheets show window `DBA LEQ EST`. A blank cell means that a truthful value
+was unavailable because of filter warmup, an audio-stream fault, or clipping.
+
+This is a validated practical estimate over roughly `53.2..65.9 dB(A)`, not an
+IEC-certified meter or a metrological guarantee. High-frequency or rapidly
+changing sound may have larger error.
 
 ### `P2P P95`
 

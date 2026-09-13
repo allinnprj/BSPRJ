@@ -251,6 +251,12 @@ AudioSnapshot AudioSampler::sample() {
       hourSamplesCollected_ == 0 ? 0 : rollingHourSum_ / hourSamplesCollected_;
   snapshot.totalAverage =
       totalLevelCount_ == 0 ? 0 : static_cast<uint32_t>(totalLevelSum_ / totalLevelCount_);
+  snapshot.dbaAvailable = snapshot.acoustic.warm && snapshot.acoustic.slowEnergy > 0.0f &&
+                          detectedSignalState != SignalState::Clip;
+  if (snapshot.dbaAvailable) {
+    snapshot.currentDbaEstimate =
+        acousticDbaEstimate(acousticDbfs(snapshot.acoustic.slowEnergy));
+  }
   snapshot.currentPercent = percentFromLevel(snapshot.currentLevel);
   snapshot.hourPercent = percentFromLevel(snapshot.hourAverage);
   snapshot.totalPercent = percentFromLevel(snapshot.totalAverage);

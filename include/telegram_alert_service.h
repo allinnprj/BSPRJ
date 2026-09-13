@@ -17,6 +17,8 @@ struct BsStatusView {
   uint32_t buildNumber;
   const String &uptimeText;
   uint16_t currentLevel;
+  float currentDbaEstimate;
+  bool dbaAvailable;
   uint32_t hourAverage;
   uint32_t totalAverage;
   uint32_t hourSamplesCollected;

@@ -99,6 +99,9 @@ struct GoogleSheetsAccumulator {
   uint32_t environmentSampleCount = 0;
   uint32_t environmentFailCount = 0;
   uint32_t sampleCount = 0;
+  AcousticReading acousticStart;
+  AcousticReading acousticEnd;
+  bool acousticStarted = false;
   SignalState worstSignalState = SignalState::Low;
   bool lowSignalWarning = false;
   bool clipSignalWarning = false;
@@ -426,6 +429,9 @@ void resetGoogleSheetsAccumulator(GoogleSheetsAccumulator &window, const TimeSer
   window.environmentSampleCount = 0;
   window.environmentFailCount = 0;
   window.sampleCount = 0;
+  window.acousticStart = AcousticReading{};
+  window.acousticEnd = AcousticReading{};
+  window.acousticStarted = false;
   window.worstSignalState = SignalState::Low;
   window.lowSignalWarning = false;
   window.clipSignalWarning = false;
@@ -452,6 +458,19 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
+  if (window.acousticStarted && window.acousticStart.warm && window.acousticEnd.warm &&
+      window.acousticEnd.samples > window.acousticStart.samples &&
+      window.acousticEnd.energySum >= window.acousticStart.energySum &&
+      window.acousticEnd.faults == window.acousticStart.faults &&
+      window.acousticEnd.clipped == window.acousticStart.clipped) {
+    const double energyDelta = window.acousticEnd.energySum - window.acousticStart.energySum;
+    const uint64_t sampleDelta = window.acousticEnd.samples - window.acousticStart.samples;
+    const double meanEnergy = energyDelta / static_cast<double>(sampleDelta);
+    if (meanEnergy > 0.0) {
+      record.dbaLeqEstimate = acousticDbaEstimate(acousticDbfs(meanEnergy));
+      record.dbaAvailable = std::isfinite(record.dbaLeqEstimate);
+    }
+  }
   record.levelText = noiseLevelText(record.averagePeakToPeak);
   record.peakToPeakP95 = percentile95(window.levelSamples, window.levelSampleCount);
   record.minPeakToPeak = window.minPeakToPeak == UINT16_MAX ? 0 : window.minPeakToPeak;
@@ -598,6 +617,11 @@ void updateGoogleSheetsWindow(const AudioSnapshot &snapshot, const TimeService &
   activeSheetsWindow.lowSignalWarning = activeSheetsWindow.lowSignalWarning || snapshot.lowSignalWarning;
   activeSheetsWindow.clipSignalWarning =
       activeSheetsWindow.clipSignalWarning || snapshot.clipSignalWarning;
+  if (!activeSheetsWindow.acousticStarted) {
+    activeSheetsWindow.acousticStart = snapshot.acoustic;
+    activeSheetsWindow.acousticStarted = true;
+  }
+  activeSheetsWindow.acousticEnd = snapshot.acoustic;
   activeSheetsWindow.sampleCount++;
 }
 
@@ -1317,6 +1341,8 @@ void loop() {
       PROJECT_BUILD,
       bsUptimeText,
       latestSnapshot.currentLevel,
+      latestSnapshot.currentDbaEstimate,
+      latestSnapshot.dbaAvailable,
       latestSnapshot.hourAverage,
       latestSnapshot.totalAverage,
       latestSnapshot.hourSamplesCollected,

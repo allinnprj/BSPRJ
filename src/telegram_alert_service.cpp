@@ -1310,7 +1310,15 @@ String TelegramAlertService::buildBsStatusMessage_(
                                                     : status.ipAddress);
   message += F("</code>\nTime: <b>");
   message += status.timeSynced ? F("Synced") : F("Waiting");
-  message += F("</b>\n\nSound (relative): Now <b>");
+  message += F("</b>\n\nSound: ");
+  if (status.dbaAvailable) {
+    message += F("<b>");
+    message += String(status.currentDbaEstimate, 1);
+    message += F(" dB(A) A16 est</b>");
+  } else {
+    message += F("<b>Warming up</b>");
+  }
+  message += F("\nRelative P2P: Now <b>");
   message += String(status.currentLevel);
   message += F("</b> · H ");
   if (status.hourSamplesCollected >= 3600U) {
@@ -1382,7 +1390,8 @@ String TelegramAlertService::buildHelpMessage_() const {
   message += F("State — состояние BS / operating state\n");
   message += F("Version, Uptime — прошивка и время работы / firmware and uptime\n");
   message += F("Wi-Fi, IP, Time — сеть и синхронизация / network and time\n");
-  message += F("Now, H, M — текущий, часовой, общий относительный шум / current, hourly, total relative sound (not dB)\n");
+  message += F("dB(A) A16 est — текущая практическая оценка / current practical estimate\n");
+  message += F("Relative P2P: Now, H, M — текущий, часовой, общий относительный шум / current, hourly, total relative sound\n");
   message += F("Period, Level, Signal — период, уровень и микрофон / period, level and microphone health\n");
   message += F("Environment — температура и влажность / temperature and humidity\n");
   message += F("Cloud — WQTT и очередь Sheets / WQTT and Sheets queue\n");

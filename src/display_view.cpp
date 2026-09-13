@@ -127,41 +127,25 @@ void DisplayView::drawCenteredText(const String &text, int16_t topY, uint8_t tex
 void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Reading &sht31Reading,
                                   bool timeSynced, bool wifiConnected, uint8_t wifiPercent,
                                   const char *powerProfileText) {
-  static constexpr int kTopBarMaxWidth = 31;
-  static constexpr int kTopBarX = 46;
-  static constexpr int kTopBarWidth = 33;
-  int topBarWidth = map(snapshot.currentPercent, 0, 100, 0, kTopBarMaxWidth);
-  topBarWidth = constrain(topBarWidth, 0, kTopBarMaxWidth);
-
   display_.setFont(nullptr);
   display_.setTextColor(SSD1306_WHITE);
-  display_.setTextSize(2);
-  char currentLine[8];
-  snprintf(currentLine, sizeof(currentLine), "%u%%", snapshot.currentPercent);
-  display_.setCursor(0, 0);
-  display_.print(currentLine);
-
-  display_.drawRect(kTopBarX, 0, kTopBarWidth, 16, SSD1306_WHITE);
-  if (topBarWidth > 0) {
-    display_.fillRect(kTopBarX + 1, 1, topBarWidth, 14, SSD1306_WHITE);
-  }
-
-  char wifiLine[10];
-  if (wifiConnected) {
-    snprintf(wifiLine, sizeof(wifiLine), "%u%%", wifiPercent);
-  } else {
-    snprintf(wifiLine, sizeof(wifiLine), "--");
-  }
-  int16_t wifiX = 89;
-  if (wifiConnected && wifiPercent >= 100) {
-    wifiX = 79;
-  }
-  display_.setCursor(wifiX + 1, 0);
-  display_.print(wifiLine);
-
   display_.setTextSize(1);
-  display_.setCursor(108, 20);
-  display_.print(powerProfileText);
+  char statusLine[24];
+  if (wifiConnected) {
+    snprintf(statusLine, sizeof(statusLine), "A16 EST  W%u %s", wifiPercent,
+             powerProfileText);
+  } else {
+    snprintf(statusLine, sizeof(statusLine), "A16 EST  W-- %s", powerProfileText);
+  }
+  drawCenteredText(String(statusLine), 0, 1);
+
+  char dbaLine[14];
+  if (snapshot.dbaAvailable) {
+    snprintf(dbaLine, sizeof(dbaLine), "%.1f dBA", snapshot.currentDbaEstimate);
+  } else {
+    snprintf(dbaLine, sizeof(dbaLine), "--.- dBA");
+  }
+  drawCenteredText(String(dbaLine), 9, 2);
 
   display_.setFont(&FreeSans9pt7b);
   display_.setTextSize(1);
@@ -174,7 +158,7 @@ void DisplayView::renderSoundPage(const AudioSnapshot &snapshot, const Sht31Read
     snprintf(secondLine, sizeof(secondLine), "H %u%%  M %u%%", snapshot.hourPercent,
              snapshot.totalPercent);
   }
-  drawCenteredText(String(secondLine), 35, 1);
+  drawCenteredText(String(secondLine), 39, 1);
 
   char environmentLine[24];
   if (!timeSynced) {

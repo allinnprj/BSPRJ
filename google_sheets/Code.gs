@@ -50,7 +50,8 @@ const HEADERS = [
   'MIN FREE HEAP',
   'BOOT SEQ',
   'RESET REASON',
-  'ACOUSTIC REV'
+  'ACOUSTIC REV',
+  'DBA LEQ EST'
 ];
 
 const RAW_LOG_USER_HEADERS = [
@@ -64,6 +65,7 @@ const RAW_LOG_USER_HEADERS = [
   'H %',
   'M %',
   'AVG P2P',
+  'DBA LEQ EST',
   'SIG IN',
   'TEMP C',
   'HUM %'
@@ -523,6 +525,7 @@ const HEADER_WIDTH_OVERRIDES = {
   'BOOT SEQ': 90,
   'RESET REASON': 115,
   'ACOUSTIC REV': 115,
+  'DBA LEQ EST': 110,
   'MAIN LEVEL': 115,
   'MAIN SHARE %': 110,
   'READING': 260
@@ -541,7 +544,7 @@ const HEADER_COLORS = [
   '#f9cb9c', '#f9cb9c', '#f9cb9c',
   '#b7ead7', '#b7ead7',
   '#d9d9d9', '#d9d9d9',
-  '#d9d2e9', '#d9d2e9', '#d9ead3'
+  '#d9d2e9', '#d9d2e9', '#d9ead3', '#cfe2f3'
 ];
 const DATA_COLORS_ODD = [
   '#eef7f1', '#eef7f1', '#eef7f1',
@@ -557,7 +560,7 @@ const DATA_COLORS_ODD = [
   '#fef5ec', '#fef5ec', '#fef5ec',
   '#eefaf5', '#eefaf5',
   '#f5f5f5', '#f5f5f5',
-  '#f5f3fb', '#f5f3fb', '#eef7f1'
+  '#f5f3fb', '#f5f3fb', '#eef7f1', '#f2f8fd'
 ];
 const DATA_COLORS_EVEN = [
   '#f7fbf8', '#f7fbf8', '#f7fbf8',
@@ -573,7 +576,7 @@ const DATA_COLORS_EVEN = [
   '#fff9f4', '#fff9f4', '#fff9f4',
   '#f6fcf9', '#f6fcf9',
   '#fafafa', '#fafafa',
-  '#faf8fd', '#faf8fd', '#f7fbf8'
+  '#faf8fd', '#faf8fd', '#f7fbf8', '#f8fbfe'
 ];
 
 function buildDataBackgrounds_(rowCount) {
@@ -626,6 +629,7 @@ function migrateRawSheetLevelColumnIfNeeded_(sheet) {
 
 function ensureHeaderRowValues_(sheet) {
   migrateRawSheetLevelColumnIfNeeded_(sheet);
+  ensureMinColumnCount_(sheet, HEADERS.length);
   const headerRange = sheet.getRange(1, 1, 1, HEADERS.length);
   const currentHeaders = headerRange.getValues()[0];
   const headersMatch = HEADERS.every((header, index) => currentHeaders[index] === header);
@@ -678,6 +682,7 @@ function ensureHeaderFormatting_(sheet) {
   sheet.setColumnWidth(19, 70);  // QUIET
   sheet.setColumnWidth(20, 70);  // LOUD
   sheet.setColumnWidth(21, 80);  // SAMPLES
+  sheet.setColumnWidth(37, 110); // DBA LEQ EST
   applyAdaptiveHeaderLayout_(sheet, HEADERS);
 
   const lastRow = Math.max(sheet.getLastRow(), 2);
@@ -690,6 +695,7 @@ function ensureHeaderFormatting_(sheet) {
 
   sheet.getRange(2, 4, Math.max(lastRow - 1, 1), 1).setNumberFormat('dd-mm-yyyy');
   sheet.getRange(2, 5, Math.max(lastRow - 1, 1), 2).setNumberFormat('hh:mm:ss');
+  sheet.getRange(2, 37, Math.max(lastRow - 1, 1), 1).setNumberFormat('0.0');
 
   if (lastRow > 1) {
     sheet.setRowHeights(2, lastRow - 1, 28);
@@ -3549,7 +3555,8 @@ function doPostUnlocked_(e) {
     valueOrBlank(data.min_free_heap),
     valueOrBlank(data.boot_seq),
     valueOrBlank(data.reset_reason),
-    valueOrBlank(data.acoustic_rev)
+    valueOrBlank(data.acoustic_rev),
+    valueOrBlank(data.dba_leq_est)
   ];
   prependLogRow_(sheet, rowValues);
 

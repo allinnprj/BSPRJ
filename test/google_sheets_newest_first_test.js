@@ -88,7 +88,7 @@ const prependSheet = {
     prependState.lastRow++;
   },
   getRange(row, column, rowCount, columnCount) {
-    assert.deepStrictEqual([row, column, rowCount, columnCount], [2, 1, 1, 36]);
+    assert.deepStrictEqual([row, column, rowCount, columnCount], [2, 1, 1, 37]);
     return {
       setValues(values) {
         prependState.values = values;
@@ -100,7 +100,7 @@ const prependSheet = {
     prependState.maxRows--;
   }
 };
-const newRow = Array.from({ length: 36 }, (_, index) => `value-${index}`);
+const newRow = Array.from({ length: 37 }, (_, index) => `value-${index}`);
 assert.strictEqual(sandbox.__prependLogRow(prependSheet, newRow), 2);
 assert.strictEqual(prependState.insertedBefore, 2);
 assert.strictEqual(prependState.deletedRow, 11);
@@ -149,14 +149,16 @@ const postResult = sandbox.__doPostUnlocked({
       time_from: '12:00:00',
       time_to: '12:09:59',
       part: 'DAY',
-      avg_peak_to_peak: 400
+      avg_peak_to_peak: 400,
+      dba_leq_est: 58.7
     })
   }
 });
 assert.strictEqual(JSON.parse(postResult.text).ok, true);
-assert.strictEqual(state.postedRow.length, 36);
+assert.strictEqual(state.postedRow.length, 37);
 assert.strictEqual(state.postedRow[0], 'device');
 assert.strictEqual(state.postedRow[3], '2026-08-12');
+assert.strictEqual(state.postedRow[36], 58.7);
 
 const doPostStart = source.indexOf('function doPostUnlocked_(');
 const doPostEnd = source.indexOf('\nfunction doPost(', doPostStart);

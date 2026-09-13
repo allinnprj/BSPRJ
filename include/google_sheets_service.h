@@ -17,6 +17,8 @@ struct GoogleSheetsWindowRecord {
   int32_t minRaw = 0;
   int32_t maxRaw = 0;
   uint16_t averagePeakToPeak = 0;
+  float dbaLeqEstimate = 0.0f;
+  bool dbaAvailable = false;
   uint16_t peakToPeakP95 = 0;
   uint16_t minPeakToPeak = 0;
   uint16_t maxPeakToPeak = 0;
