@@ -19,8 +19,8 @@ function functionBody(text, signature, nextSignature) {
   return text.slice(start, end);
 }
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.96-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 150\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.97-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 151\b/);
 assert.match(logSource, /kDbCalibrationDurationMs = 20UL \* 60UL \* 1000UL/);
 assert.match(logSource, /kDbCalibrationBucketMs = 1000UL/);
 assert.match(logSource, /kDbCalibrationPath\[\] = "\/dbcal\.csv"/);
@@ -58,10 +58,11 @@ assert.match(telegram, /State: <b>Started<\/b>/);
 assert.match(telegram, /State: <b>Complete<\/b>/);
 assert.ok(telegram.includes('dbcal.csv\\">Download '),
   'Completion replies must include the dedicated CSV download link.');
-assert.match(display, /dB CAL REC/);
-assert.match(display, /drawCenteredText\(String\(remainingText\), 12, 2\)/);
+assert.doesNotMatch(display, /dB CAL REC|TIME LEFT/);
+assert.match(display, /"TL %02lu:%02lu"/);
+assert.match(display, /drawCenteredText\(String\(remainingText\), 7, 2\)/);
 assert.match(display, /POINT %u/);
-assert.match(display, /drawCenteredText\(String\(pointText\), 46, 2\)/);
+assert.match(display, /drawCenteredText\(String\(pointText\), 39, 2\)/);
 assert.match(main, /latestSnapshot = audioSampler\.sample\(\);[\s\S]*logService\.updateDbCalibration\(latestSnapshot, millis\(\)\);/);
 assert.match(main, /updateGoogleSheetsWindow\(latestSnapshot, timeService\)/,
   'Normal Google Sheets aggregation must remain active.');

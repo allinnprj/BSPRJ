@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Photo-readable calibration OLED - 0.1.97-EXP build 151 - 2026-09-13
+
+1. Simplified the active calibration screen to two large centered rows: `TL MM:SS` and `POINT N`. Removed the small title and `TIME LEFT` caption that reduced photographic readability.
+2. Kept the precise one-second calibration point/CSV relationship unchanged. A displayed point remains the exact CSV row reference; A16/SLOW processing, session duration, ordinary sound statistics, commands, network services and C3 are unchanged. No upload or publication was performed.
+3. Validation: dB/DSP, controller-command and Wi-Fi provisioning contracts pass; `git diff --check` passes. `pio run -e esp32dev`: SUCCESS; RAM `66,380 / 327,680` (20.3%), Flash `1,401,067 / 1,572,864` (89.1%), OTA reserve `171,797` bytes, binary `1,401,472` bytes, SHA-256 `6924CEB0B702AA9EA545C2ADA58E47B4023CB0D3171E0E2481CFF94F69F72C51`.
+
 ## Larger dB calibration OLED values - 0.1.96-EXP build 150 - 2026-09-13
 
 1. Enlarged only the active calibration OLED countdown and point number to text size 2. The compact header and a separate `TIME LEFT` caption preserve clarity within the 128x64 display.
