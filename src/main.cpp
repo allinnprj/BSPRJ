@@ -1295,7 +1295,7 @@ void loop() {
   }
   latestSht31Reading = sht31Service.update();
   latestSnapshot = audioSampler.sample();
-  logService.updateDbCalibration(latestSnapshot, nowMs);
+  logService.updateDbCalibration(latestSnapshot, millis());
   updateSht31Health(latestSnapshot);
   updateDayPartStats(latestSnapshot, timeService);
   updateGoogleSheetsWindow(latestSnapshot, timeService);

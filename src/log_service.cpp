@@ -16,7 +16,7 @@ constexpr char kPreviousDiagnosticLogPath[] = "/diagnostics-prev.log";
 constexpr char kDbCalibrationPath[] = "/dbcal.csv";
 constexpr size_t kDiagnosticLogMaxBytes = 128U * 1024U;
 constexpr uint32_t kDbCalibrationDurationMs = 20UL * 60UL * 1000UL;
-constexpr uint32_t kDbCalibrationBucketMs = 10000UL;
+constexpr uint32_t kDbCalibrationBucketMs = 1000UL;
 constexpr char kLogHeader[] =
     "event,date,time_from,time_to,part,build,boot_seq,reset_reason,uptime_min,uptime_text,"
     "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_p95,p2p_min,p2p_max,p2p_stable_max,"
@@ -30,7 +30,8 @@ constexpr char kDiagnosticLogHeader[] =
     "battery_mv\tbattery_ma\tsoc\tload_mv\tload_ma\tcharge\tmode\tnow\thour\ttotal\t"
     "p2p\tsignal\ttemp_c\thum_pct\theap\tmin_heap\tgs_queue\tgs_ok\tgs_fail\tgs_drop\tinfo";
 constexpr char kDbCalibrationHeader[] =
-    "date,time,elapsed_s,p2p_avg,p2p_min,p2p_max,raw_min,raw_max,samples,signal,build,acoustic_rev";
+    "date,time,elapsed_s,p2p_avg,p2p_min,p2p_max,raw_min,raw_max,samples,signal,build,acoustic_rev,"
+    "point,capture_elapsed_ms,a_rms_dbfs,a_slow_dbfs,audio_samples,coverage_pct,audio_faults,valid,sample_rate_hz";
 WebServer logServer(80);
 WifiService *wifiSetupService = nullptr;
 bool logClearedByWeb = false;
@@ -51,6 +52,9 @@ uint16_t dbCalibrationPoints = 0;
 String dbCalibrationDownloadFileName;
 DbCalibrationTerminalState dbCalibrationTerminal = DbCalibrationTerminalState::None;
 bool dbCalibrationTerminalPending = false;
+AcousticReading dbAcousticEnd;
+AcousticReading dbAcousticPrevious;
+bool dbAcousticBaseline = false;
 
 uint8_t signalRank(SignalState state) {
   switch (state) {
@@ -718,7 +722,8 @@ bool appendDbCalibrationBucket(uint32_t nowMs) {
     return false;
   }
 
-  const uint32_t elapsedSeconds = (nowMs - dbCalibrationStartMs) / 1000UL;
+  const uint32_t capturedElapsedMs = dbAcousticEnd.capturedAtMs - dbCalibrationStartMs;
+  const uint32_t elapsedSeconds = capturedElapsedMs / 1000UL;
   const time_t pointEpoch = dbCalibrationStartEpoch + elapsedSeconds;
   struct tm localTime {};
   char dateText[11] = "";
@@ -728,30 +733,41 @@ bool appendDbCalibrationBucket(uint32_t nowMs) {
     strftime(timeText, sizeof(timeText), "%H:%M:%S", &localTime);
   }
 
-  file.print(dateText);
-  file.print(',');
-  file.print(timeText);
-  file.print(',');
-  file.print(elapsedSeconds);
-  file.print(',');
-  file.print(dbCalibrationP2pSum / dbCalibrationBucketSamples);
-  file.print(',');
-  file.print(dbCalibrationP2pMin == UINT16_MAX ? 0 : dbCalibrationP2pMin);
-  file.print(',');
-  file.print(dbCalibrationP2pMax);
-  file.print(',');
-  file.print(dbCalibrationRawMin == INT32_MAX ? 0 : dbCalibrationRawMin);
-  file.print(',');
-  file.print(dbCalibrationRawMax == INT32_MIN ? 0 : dbCalibrationRawMax);
-  file.print(',');
-  file.print(dbCalibrationBucketSamples);
-  file.print(',');
-  file.print(signalText(dbCalibrationWorstSignal));
-  file.print(',');
-  file.print(PROJECT_BUILD);
-  file.print(',');
-  file.println(PROJECT_ACOUSTIC_REV);
+  const uint64_t audioSamples = dbAcousticEnd.samples - dbAcousticPrevious.samples;
+  const uint32_t spanMs = dbAcousticEnd.capturedAtMs - dbAcousticPrevious.capturedAtMs;
+  const double energy = dbAcousticEnd.energySum - dbAcousticPrevious.energySum;
+  const float coverage = spanMs == 0 ? 0 :
+      static_cast<float>(audioSamples * 100000.0 / (AcousticEnergy::kSampleRate * double(spanMs)));
+  const bool valid = dbAcousticBaseline && dbAcousticEnd.warm &&
+      nowMs - dbAcousticEnd.capturedAtMs <= 100 &&
+      dbAcousticEnd.faults == dbAcousticPrevious.faults &&
+      dbAcousticEnd.clipped == dbAcousticPrevious.clipped &&
+      coverage >= 95.0f && coverage <= 105.0f && audioSamples > 0 && energy > 0;
+  char row[384];
+  const int length = snprintf(row, sizeof(row),
+      "%s,%s,%lu,%lu,%u,%u,%ld,%ld,%u,%s,%u,%u,%u,%lu,%.3f,%.3f,%llu,%.1f,%lu,%u,%lu\n",
+      dateText, timeText, static_cast<unsigned long>(elapsedSeconds),
+      static_cast<unsigned long>(dbCalibrationP2pSum / dbCalibrationBucketSamples),
+      dbCalibrationP2pMin == UINT16_MAX ? 0 : dbCalibrationP2pMin,
+      dbCalibrationP2pMax,
+      static_cast<long>(dbCalibrationRawMin == INT32_MAX ? 0 : dbCalibrationRawMin),
+      static_cast<long>(dbCalibrationRawMax == INT32_MIN ? 0 : dbCalibrationRawMax),
+      dbCalibrationBucketSamples, reinterpret_cast<const char *>(signalText(dbCalibrationWorstSignal)),
+      PROJECT_BUILD, PROJECT_ACOUSTIC_REV, dbCalibrationPoints + 1,
+      static_cast<unsigned long>(capturedElapsedMs),
+      acousticDbfs(audioSamples ? energy / audioSamples : 0),
+      acousticDbfs(dbAcousticEnd.slowEnergy), static_cast<unsigned long long>(audioSamples),
+      coverage, static_cast<unsigned long>(dbAcousticEnd.faults), valid ? 1 : 0,
+      static_cast<unsigned long>(AcousticEnergy::kSampleRate));
+  // File::write does not reliably set Print::getWriteError on short writes.
+  const bool writeOk = length > 0 && static_cast<size_t>(length) < sizeof(row) &&
+      file.write(reinterpret_cast<const uint8_t *>(row), length) == static_cast<size_t>(length);
+  file.flush();
   file.close();
+  if (!writeOk) return false;
+
+  dbAcousticPrevious = dbAcousticEnd;
+  dbAcousticBaseline = true;
 
   dbCalibrationPoints++;
   resetDbCalibrationBucket(nowMs);
@@ -800,8 +816,9 @@ DbCalibrationStartResult LogService::startDbCalibration(uint32_t nowMs) {
   if (!file) {
     return DbCalibrationStartResult::StorageError;
   }
-  file.println(kDbCalibrationHeader);
+  const bool headerOk = file.println(kDbCalibrationHeader) == strlen(kDbCalibrationHeader) + 2;
   file.close();
+  if (!headerOk) return DbCalibrationStartResult::StorageError;
 
   dbCalibrationStartMs = nowMs;
   dbCalibrationStartEpoch = currentEpoch;
@@ -809,10 +826,13 @@ DbCalibrationStartResult LogService::startDbCalibration(uint32_t nowMs) {
   dbCalibrationDownloadFileName = calibrationDownloadName(currentEpoch);
   dbCalibrationTerminal = DbCalibrationTerminalState::None;
   dbCalibrationTerminalPending = false;
+  dbAcousticBaseline = false;
+  dbAcousticPrevious = AcousticReading{};
+  dbAcousticEnd = AcousticReading{};
   resetDbCalibrationBucket(nowMs);
   dbCalibrationRecording = true;
-  appendDiagnosticEvent(F("DB_CAL_START"), F("duration_s=1200 interval_s=10"));
-  Serial.println(F("[DBCAL] started -> duration=1200s interval=10s"));
+  appendDiagnosticEvent(F("DB_CAL_START"), F("duration_s=1200 interval_s=1 A16_SLOW_UNCAL"));
+  Serial.println(F("[DBCAL] started -> duration=1200s interval=1s A16_SLOW_UNCAL"));
   return DbCalibrationStartResult::Started;
 }
 
@@ -835,6 +855,16 @@ void LogService::updateDbCalibration(const AudioSnapshot &snapshot, uint32_t now
     return;
   }
 
+  // Never timestamp an old pre-start capture as part of the new session.
+  if (static_cast<int32_t>(snapshot.acoustic.capturedAtMs - dbCalibrationStartMs) < 0 ||
+      snapshot.acoustic.samples == 0) {
+    if (nowMs - dbCalibrationStartMs >= kDbCalibrationDurationMs) {
+      finishDbCalibration(nowMs, DbCalibrationTerminalState::WriteError);
+      appendDiagnosticEvent(F("DB_CAL_FAIL"), F("audio_unavailable"));
+    }
+    return;
+  }
+  dbAcousticEnd = snapshot.acoustic;
   if (snapshot.statsUpdated) {
     dbCalibrationP2pSum += snapshot.statsLevel;
     if (snapshot.statsLevel < dbCalibrationP2pMin) {

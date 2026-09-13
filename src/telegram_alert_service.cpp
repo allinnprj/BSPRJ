@@ -731,7 +731,7 @@ bool TelegramAlertService::sendDbCalibrationReply_(
       message += htmlEscape_(logService.dbCalibrationStartText());
       message += F("</code>\nFinish: <code>");
       message += htmlEscape_(logService.dbCalibrationFinishText());
-      message += F("</code>\nInterval: <b>10 s</b>\nTake 10–30 timestamped photos now.");
+      message += F("</code>\nCapture: <b>A16 / SLOW · uncalibrated</b>\nInterval: <b>1 s</b> (network gaps marked)\nWait 10 s. Take 10–30 photos with the meter and BS POINTS visible together.");
       break;
     case DbCalibrationReply::AlreadyActive:
       message += F("State: <b>Already running</b>\n");

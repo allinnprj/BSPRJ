@@ -5,7 +5,7 @@
 namespace {
 
 constexpr i2s_port_t kI2sPort = I2S_NUM_0;
-constexpr uint32_t kI2sSampleRate = 16000;
+constexpr uint32_t kI2sSampleRate = AcousticEnergy::kSampleRate;
 constexpr size_t kI2sReadSampleCount = 256;
 constexpr int32_t kI2sClipThreshold = 30000;
 constexpr uint8_t kClipPercentThreshold = 15;
@@ -20,49 +20,67 @@ struct RawWindow {
   uint16_t clippedSampleCount;
 };
 
-int32_t normalizeI2sSample(int32_t rawSample) {
-  return rawSample >> 16;
-}
+portMUX_TYPE captureMux = portMUX_INITIALIZER_UNLOCKED;
+QueueHandle_t captureEvents = nullptr;
+RawWindow latestWindow{0, 0, 0, 0};
+AcousticReading latestAcoustic;
 
-RawWindow readWindow(uint16_t sampleWindowMs) {
+// Only this task reads I2S. No network, filesystem, String or audio backlog.
+void captureAudio(void *) {
+  AcousticEnergy filter;
+  AcousticReading reading;
   RawWindow window{32767, -32768, 0, 0};
-  unsigned long startMs = millis();
-  int32_t sampleBuffer[kI2sReadSampleCount];
-  bool captured = false;
-
-  while (millis() - startMs < sampleWindowMs) {
+  int32_t buffer[kI2sReadSampleCount];
+  uint32_t lastReadAt = millis();
+  uint32_t healthySamples = 0;
+  for (;;) {
     size_t bytesRead = 0;
-    esp_err_t readResult =
-        i2s_read(kI2sPort, sampleBuffer, sizeof(sampleBuffer), &bytesRead, pdMS_TO_TICKS(5));
-    if (readResult != ESP_OK || bytesRead == 0) {
-      delay(0);
-      continue;
+    const esp_err_t result = i2s_read(kI2sPort, buffer, sizeof(buffer), &bytesRead,
+                                    pdMS_TO_TICKS(40));
+    const uint32_t capturedAt = millis();
+    bool fault = result != ESP_OK || bytesRead != sizeof(buffer) ||
+                 capturedAt - lastReadAt > 40;
+    lastReadAt = capturedAt;
+    i2s_event_t event;
+    while (xQueueReceive(captureEvents, &event, 0) == pdTRUE) {
+      if (event.type == I2S_EVENT_RX_Q_OVF || event.type == I2S_EVENT_DMA_ERROR) {
+        fault = true;
+      }
     }
-
-    size_t sampleCount = bytesRead / sizeof(sampleBuffer[0]);
-    for (size_t index = 0; index < sampleCount; ++index) {
-      int32_t sample = normalizeI2sSample(sampleBuffer[index]);
-      if (sample < window.minValue) {
-        window.minValue = sample;
-      }
-      if (sample > window.maxValue) {
-        window.maxValue = sample;
-      }
-      if (sample <= -kI2sClipThreshold || sample >= kI2sClipThreshold) {
-        window.clippedSampleCount++;
-      }
-      window.sampleCount++;
-      captured = true;
+    if (fault) {
+      ++reading.faults;
+      filter.reset();
+      healthySamples = 0;
     }
-
-    delay(0);
+    double blockEnergy = 0;
+    const size_t count = bytesRead / sizeof(buffer[0]);
+    for (size_t i = 0; i < count; ++i) {
+      blockEnergy += filter.process(buffer[i]);
+      const int32_t value = buffer[i] >> 16;
+      if (value < window.minValue) window.minValue = value;
+      if (value > window.maxValue) window.maxValue = value;
+      if (value <= -kI2sClipThreshold || value >= kI2sClipThreshold) {
+        ++window.clippedSampleCount;
+        ++reading.clipped;
+      }
+      ++window.sampleCount;
+    }
+    reading.energySum += blockEnergy;
+    reading.samples += count;
+    if (healthySamples < 5 * kI2sSampleRate) healthySamples += count;
+    reading.warm = healthySamples >= 5 * kI2sSampleRate;
+    reading.capturedAtMs = capturedAt;
+    reading.slowEnergy = filter.slowEnergy();
+    portENTER_CRITICAL(&captureMux);
+    latestAcoustic = reading;
+    // Two blocks = 32 ms, close to the former 25 ms read window.
+    if (window.sampleCount >= 512) {
+      latestWindow = window;
+    }
+    portEXIT_CRITICAL(&captureMux);
+    if (window.sampleCount >= 512) window = RawWindow{32767, -32768, 0, 0};
+    if (count == 0) vTaskDelay(pdMS_TO_TICKS(1));
   }
-
-  if (!captured) {
-    return RawWindow{0, 0, 0, 0};
-  }
-
-  return window;
 }
 
 SignalState detectSignalState(const RawWindow &window, uint16_t peakToPeak) {
@@ -116,7 +134,7 @@ bool AudioSampler::begin(uint8_t bclkPin, uint8_t wsPin, uint8_t dataPin) {
       .data_in_num = static_cast<int>(dataPin),
   };
 
-  if (i2s_driver_install(kI2sPort, &config, 0, nullptr) != ESP_OK) {
+  if (i2s_driver_install(kI2sPort, &config, 8, &captureEvents) != ESP_OK) {
     started_ = false;
     return false;
   }
@@ -126,6 +144,12 @@ bool AudioSampler::begin(uint8_t bclkPin, uint8_t wsPin, uint8_t dataPin) {
     return false;
   }
   i2s_zero_dma_buffer(kI2sPort);
+
+  if (xTaskCreatePinnedToCore(captureAudio, "bs_audio", 4096, nullptr, 2, nullptr, 1) != pdPASS) {
+    i2s_driver_uninstall(kI2sPort);
+    started_ = false;
+    return false;
+  }
 
   started_ = true;
   smoothedLevel_ = 0;
@@ -157,7 +181,16 @@ AudioSnapshot AudioSampler::sample() {
     return snapshot;
   }
 
-  RawWindow window = readWindow(kSampleWindowMs);
+  RawWindow window;
+  portENTER_CRITICAL(&captureMux);
+  window = latestWindow;
+  snapshot.acoustic = latestAcoustic;
+  portEXIT_CRITICAL(&captureMux);
+  // Preserve the relative consumer's approximate acquisition budget.
+  delay(kSampleWindowMs);
+  if (millis() - snapshot.acoustic.capturedAtMs > 100 || window.sampleCount == 0) {
+    return snapshot;
+  }
   uint16_t peakToPeak =
       static_cast<uint16_t>(constrain(window.maxValue - window.minValue, 0, 65535));
   uint16_t level = peakToPeak * kLevelGain;

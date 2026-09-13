@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## Larger dB calibration OLED values - 0.1.96-EXP build 150 - 2026-09-13
+
+1. Enlarged only the active calibration OLED countdown and point number to text size 2. The compact header and a separate `TIME LEFT` caption preserve clarity within the 128x64 display.
+2. Calibration capture, A16/SLOW processing, P2P/statistics, commands, CSV schema, network services and C3 behavior are unchanged. No upload or publication was performed.
+
+## Continuous A16/SLOW calibration preparation - 0.1.95-EXP build 149 - 2026-09-13
+
+1. Added one I2S acquisition task (priority 2/core 1, 4096-byte runtime stack), three lightweight A-weighting biquads and a 1-second exponential SLOW energy detector. Processing uses the microphone's 24-bit samples, without audio storage, FFT, new libraries, or C3 changes. Existing 16 kHz rate is retained: this is limited-band `A16`, not calibrated/full-band dBA; approximately ±2 dB is the user's practical target, not a verified guarantee.
+2. Preserved P2P scaling, smoothing, H/M formulas, level thresholds and ordinary log/Sheets schemas. P2P is now read from the latest continuous 512-sample/32-ms capture window instead of the loop-owned 25-ms read; real relative-statistics equivalence and battery overhead need field verification. Detected DMA/read gaps reset filter warmup and increment a fault counter.
+3. `/dbstart`, `/dbsts`, `/dbstop` retain the 20-minute separate-file session. CSV cadence is now nominally one second; added capture-time milliseconds, A-RMS/SLOW dBFS (not SPL), sample coverage, validity, fault counter, sample rate and point ID. Network-delayed rows are not fabricated; energy is accumulated across them. Invalid/first/warmup/clipped/stale/gapped intervals are excluded from calibration. CSV/header short writes are checked explicitly; the main log need not be cleared. Start guidance requests original photos with the existing OLED POINTS visible where possible.
+4. Added `DB_CALIBRATION.md` with the precise test procedure, time matching, numeric field meanings, 16-kHz limitations and physical acceptance gates. No upload, publishing or remote pull was performed.
+5. Validation: focused dB contract plus float32 DSP simulation, controller-command contract, Wi-Fi provisioning contract and `git diff --check` pass. First build invocation was blocked before compilation by PlatformIO lock-file permissions; authorized local build succeeded, followed by one incremental rebuild for robust CSV short-write detection. Final `pio run -e esp32dev`: SUCCESS; RAM `66,380 / 327,680` (20.3%), Flash `1,401,139 / 1,572,864` (89.1%), OTA reserve `171,725` bytes, binary `1,401,536` bytes. Versus documented build 148: +200 static RAM / +3296 linked Flash bytes; runtime task stack/driver queue are additional heap allocations. Deprecated legacy I2S warnings remain; no driver migration in this stage.
+
 ## Dedicated real-dB calibration capture - 0.1.94-EXP build 148 - 2026-09-03
 
 1. Added the authorized Telegram commands `/dbstart`, `/dbsts`, and `/dbstop` for one bounded `20 min` calibration session. The start response states the exact local start/finish time, the OLED shows the active countdown and point count, and completion produces a Telegram notice with the local download link.

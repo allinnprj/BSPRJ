@@ -67,15 +67,16 @@ void DisplayView::showDbCalibration(uint32_t remainingSeconds, uint16_t pointCou
   display_.setTextColor(SSD1306_WHITE);
   display_.setTextSize(1);
   display_.setFont(nullptr);
-  drawCenteredText(F("dB CAL REC"), 2, 2);
+  drawCenteredText(F("dB CAL REC"), 0, 1);
   char remainingText[20];
-  snprintf(remainingText, sizeof(remainingText), "%02lu:%02lu LEFT",
+  snprintf(remainingText, sizeof(remainingText), "%02lu:%02lu",
            static_cast<unsigned long>(remainingSeconds / 60UL),
            static_cast<unsigned long>(remainingSeconds % 60UL));
-  drawCenteredText(String(remainingText), 28, 1);
+  drawCenteredText(String(remainingText), 12, 2);
+  drawCenteredText(F("TIME LEFT"), 32, 1);
   char pointText[20];
-  snprintf(pointText, sizeof(pointText), "POINTS %u", pointCount);
-  drawCenteredText(String(pointText), 46, 1);
+  snprintf(pointText, sizeof(pointText), "POINT %u", pointCount);
+  drawCenteredText(String(pointText), 46, 2);
   display_.display();
 }
 

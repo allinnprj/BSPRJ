@@ -1,6 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
+#include "acoustic_energy.h"
 
 enum class SignalState : uint8_t {
   Ok,
@@ -9,6 +10,7 @@ enum class SignalState : uint8_t {
 };
 
 struct AudioSnapshot {
+  AcousticReading acoustic;
   uint16_t currentLevel = 0;
   int32_t rawMin = 0;
   int32_t rawMax = 0;

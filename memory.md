@@ -4,6 +4,10 @@ This file is the quick context bridge for a new chat. When the user writes `Пр
 
 ## Current Snapshot
 
+- 2026-09-13: latest local BS is `0.1.96-EXP` build `150`, not uploaded by the agent. It differs from build 149 only by the calibration OLED layout: the time and `POINT N` values use text size 2, while the header/caption remain compact. The user's partially completed build-149 calibration may still be saved and analyzed; after manually uploading build 150, only a brief visual confirmation is needed before the final calibration run.
+
+- 2026-09-13: latest local BS is `0.1.95-EXP` build `149`, NOT uploaded by the agent. User supplied build-148 calibration capture/photos; the current decision is to collect A-weighted energy/SLOW rather than install the old P2P-to-dB fit. User accepts a practical target near ±2 dB, not a guarantee. Build 149 adds a single continuous I2S task (4 KiB runtime stack), A16/SLOW processing and one-second calibration rows with acquisition timestamps, coverage/faults/validity. Keep 16 kHz limitation explicit; no SPL offset is installed. Relative formulas/thresholds remain, but capture timing changed and needs physical regression. C3 untouched. Tests and final local build pass: RAM 66,380, Flash 1,401,139, OTA reserve 171,725, firmware 1,401,536 bytes. Build required permission recovery then one incremental CSV-write-check rebuild. Next: user manually uploads BS, runs `/dbstart`, takes 10–30 original A/SLOW FNIRSI photos (preferably with BS POINTS), sends CSV/photos; match capture time, exclude invalid/stale pairs, fit offset and validate independently before enabling estimated dBA. Instructions: `DB_CALIBRATION.md`. No main-log clearing needed. dB readiness remains 0%, overall 57%; older snapshots below are historical.
+
 - Project: `BSPRJ`, the main ESP32 noise-monitoring firmware project.
 - Repository: `https://github.com/allinnprj/BSPRJ`.
 - Branch model: `main` is release/stable, `devlop` is test/development.
