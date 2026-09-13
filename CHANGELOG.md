@@ -4,6 +4,7 @@
 
 1. Enlarged only the active calibration OLED countdown and point number to text size 2. The compact header and a separate `TIME LEFT` caption preserve clarity within the 128x64 display.
 2. Calibration capture, A16/SLOW processing, P2P/statistics, commands, CSV schema, network services and C3 behavior are unchanged. No upload or publication was performed.
+3. Validation: dB/DSP, controller-command and Wi-Fi provisioning contracts pass; `git diff --check` passes. `pio run -e esp32dev`: SUCCESS; RAM `66,380 / 327,680` (20.3%), Flash `1,401,191 / 1,572,864` (89.1%), OTA reserve `171,673` bytes, binary `1,401,600` bytes, SHA-256 `073C7CA0F6F2BB4E02052C9C7E299ECB0282E3D5D904654085A05699BF0D0251`.
 
 ## Continuous A16/SLOW calibration preparation - 0.1.95-EXP build 149 - 2026-09-13
 
