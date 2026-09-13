@@ -51,3 +51,11 @@ struct AcousticReading {
 inline float acousticDbfs(double energy) {
   return energy > 0 ? static_cast<float>(10.0 * std::log10(energy)) : -120.0f;
 }
+
+// Practical A/SLOW offset fitted against FNIRSI FDM01 for acoustic revision 2.
+// A16 remains a limited-band estimate, not an IEC-certified sound level.
+constexpr float kAcousticDbaOffset = 114.2f;
+
+inline float acousticDbaEstimate(float dbfs) {
+  return dbfs + kAcousticDbaOffset;
+}

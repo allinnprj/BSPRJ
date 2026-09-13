@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Calibrated A16/SLOW candidate - 0.1.98-EXP build 152 - 2026-09-13
+
+1. Accepted the build-151 FNIRSI FDM01 `A/SLOW` dataset: `1097` CSV points, `1096` valid points, `audio_faults=0`, `96.9..100.0%` valid coverage, and `67` point-linked photos. The robust fitted offset is `+114.2 dB`; after excluding four visibly transitional comparisons, MAE is about `1.0 dB` and `87.3%` of pairs are within `±2 dB` over the stable reference range `53.2..65.5 dB(A)`.
+2. Added the explicit engineering conversion `dB(A) A16 est = a_slow_dbfs + 114.2` and a separate `a_slow_dba_est` column to `/dbcal.csv`. The raw `a_slow_dbfs` value remains available.
+3. Kept ordinary relative `P2P`, `Now/H/M`, thresholds, local analytical log, Sheets, Telegram, display behavior, UART/C3, network services and timings unchanged. The estimated dB value will not replace user-facing relative metrics until a new independent photo/CSV control passes.
+4. Validation: dB/DSP, controller-command and Wi-Fi provisioning contracts pass; `git diff --check` passes. One `pio run -e esp32dev` build succeeds: RAM `66,380 / 327,680` (20.3%), Flash `1,401,107 / 1,572,864` (89.1%), OTA reserve `171,757` bytes, binary `1,401,504` bytes, SHA-256 `D9FDC38AE30A01ED63C53F172CCA4AEB85877BD3B2D1624D184E8D1D3D57E39A`. No upload or publication was performed.
+
 ## Photo-readable calibration OLED - 0.1.97-EXP build 151 - 2026-09-13
 
 1. Simplified the active calibration screen to two large centered rows: `TL MM:SS` and `POINT N`. Removed the small title and `TIME LEFT` caption that reduced photographic readability.

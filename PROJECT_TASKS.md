@@ -64,14 +64,14 @@
 
 ## E. Real dB Calibration
 
-37. [ ] Define whether the target is indicative dB or a validated `Leq` measurement.
-38. [ ] Add an RMS/Leq acoustic metric instead of converting `AVG P2P` directly to dB.
-39. [ ] Document the usable INMP441 frequency-response and weighting limitations.
-40. [ ] Add a calibration mode without weakening normal logging.
-41. [ ] Define fixed microphone and reference sound-level-meter placement.
-42. [ ] Collect paired quiet, normal, loud, and peak readings.
+37. [x] Define the target as an indicative calibrated `dB(A) A16` estimate, not a certified full-band meter.
+38. [x] Add A16 RMS/SLOW energy metrics instead of converting `AVG P2P` directly to dB.
+39. [x] Document the 16 kHz INMP441 weighting and frequency-response limitations.
+40. [x] Add a calibration mode without weakening normal logging.
+41. [x] Define fixed adjacent microphone and reference sound-level-meter placement.
+42. [x] Collect paired quiet, normal, loud, and peak readings.
 43. [ ] Repeat calibration readings across multiple times and relevant environmental conditions.
-44. [ ] Calculate and implement the accepted calibration offset or model.
+44. [x] Calculate and implement the accepted `+114.2 dB` A/SLOW calibration offset for `acoustic_rev=2`.
 45. [ ] Validate the model against measurements not used for fitting.
 46. [ ] Record the accepted error range and all limitations.
 47. [ ] Add the calibrated dB metric to local logs, Sheets, and Telegram.

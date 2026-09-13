@@ -19,8 +19,8 @@ function functionBody(text, signature, nextSignature) {
   return text.slice(start, end);
 }
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.97-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 151\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.98-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 152\b/);
 assert.match(logSource, /kDbCalibrationDurationMs = 20UL \* 60UL \* 1000UL/);
 assert.match(logSource, /kDbCalibrationBucketMs = 1000UL/);
 assert.match(logSource, /kDbCalibrationPath\[\] = "\/dbcal\.csv"/);
@@ -84,9 +84,13 @@ assert.match(logSource, /dbAcousticEnd\.faults == dbAcousticPrevious\.faults/);
 assert.match(logSource, /dbAcousticEnd\.clipped == dbAcousticPrevious\.clipped/);
 assert.match(logSource, /file\.write\([\s\S]*== static_cast<size_t>\(length\)/);
 assert.match(logSource, /if \(!headerOk\) return DbCalibrationStartResult::StorageError/);
-assert.match(logSource, /point,capture_elapsed_ms,a_rms_dbfs,a_slow_dbfs/);
+assert.match(logSource, /point,capture_elapsed_ms,a_rms_dbfs,a_slow_dbfs,a_slow_dba_est/);
 assert.match(logSource, /audio_unavailable/);
 assert.match(dsp, /raw >> 8/);
+assert.match(dsp, /kAcousticDbaOffset = 114\.2f/);
+assert.match(dsp, /return dbfs \+ kAcousticDbaOffset/);
+assert.match(logSource, /acousticDbaEstimate\(aSlowDbfs\)/);
+assert.match(logSource, /A16_SLOW_CAL_114\.2/);
 
 // Float32 numerical simulation of the coefficients actually shipped in the header.
 // Firmware compilation separately checks the C++ implementation.

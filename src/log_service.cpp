@@ -31,7 +31,7 @@ constexpr char kDiagnosticLogHeader[] =
     "p2p\tsignal\ttemp_c\thum_pct\theap\tmin_heap\tgs_queue\tgs_ok\tgs_fail\tgs_drop\tinfo";
 constexpr char kDbCalibrationHeader[] =
     "date,time,elapsed_s,p2p_avg,p2p_min,p2p_max,raw_min,raw_max,samples,signal,build,acoustic_rev,"
-    "point,capture_elapsed_ms,a_rms_dbfs,a_slow_dbfs,audio_samples,coverage_pct,audio_faults,valid,sample_rate_hz";
+    "point,capture_elapsed_ms,a_rms_dbfs,a_slow_dbfs,a_slow_dba_est,audio_samples,coverage_pct,audio_faults,valid,sample_rate_hz";
 WebServer logServer(80);
 WifiService *wifiSetupService = nullptr;
 bool logClearedByWeb = false;
@@ -743,9 +743,11 @@ bool appendDbCalibrationBucket(uint32_t nowMs) {
       dbAcousticEnd.faults == dbAcousticPrevious.faults &&
       dbAcousticEnd.clipped == dbAcousticPrevious.clipped &&
       coverage >= 95.0f && coverage <= 105.0f && audioSamples > 0 && energy > 0;
+  const float aRmsDbfs = acousticDbfs(audioSamples ? energy / audioSamples : 0);
+  const float aSlowDbfs = acousticDbfs(dbAcousticEnd.slowEnergy);
   char row[384];
   const int length = snprintf(row, sizeof(row),
-      "%s,%s,%lu,%lu,%u,%u,%ld,%ld,%u,%s,%u,%u,%u,%lu,%.3f,%.3f,%llu,%.1f,%lu,%u,%lu\n",
+      "%s,%s,%lu,%lu,%u,%u,%ld,%ld,%u,%s,%u,%u,%u,%lu,%.3f,%.3f,%.1f,%llu,%.1f,%lu,%u,%lu\n",
       dateText, timeText, static_cast<unsigned long>(elapsedSeconds),
       static_cast<unsigned long>(dbCalibrationP2pSum / dbCalibrationBucketSamples),
       dbCalibrationP2pMin == UINT16_MAX ? 0 : dbCalibrationP2pMin,
@@ -754,9 +756,8 @@ bool appendDbCalibrationBucket(uint32_t nowMs) {
       static_cast<long>(dbCalibrationRawMax == INT32_MIN ? 0 : dbCalibrationRawMax),
       dbCalibrationBucketSamples, reinterpret_cast<const char *>(signalText(dbCalibrationWorstSignal)),
       PROJECT_BUILD, PROJECT_ACOUSTIC_REV, dbCalibrationPoints + 1,
-      static_cast<unsigned long>(capturedElapsedMs),
-      acousticDbfs(audioSamples ? energy / audioSamples : 0),
-      acousticDbfs(dbAcousticEnd.slowEnergy), static_cast<unsigned long long>(audioSamples),
+      static_cast<unsigned long>(capturedElapsedMs), aRmsDbfs, aSlowDbfs,
+      acousticDbaEstimate(aSlowDbfs), static_cast<unsigned long long>(audioSamples),
       coverage, static_cast<unsigned long>(dbAcousticEnd.faults), valid ? 1 : 0,
       static_cast<unsigned long>(AcousticEnergy::kSampleRate));
   // File::write does not reliably set Print::getWriteError on short writes.
@@ -831,8 +832,8 @@ DbCalibrationStartResult LogService::startDbCalibration(uint32_t nowMs) {
   dbAcousticEnd = AcousticReading{};
   resetDbCalibrationBucket(nowMs);
   dbCalibrationRecording = true;
-  appendDiagnosticEvent(F("DB_CAL_START"), F("duration_s=1200 interval_s=1 A16_SLOW_UNCAL"));
-  Serial.println(F("[DBCAL] started -> duration=1200s interval=1s A16_SLOW_UNCAL"));
+  appendDiagnosticEvent(F("DB_CAL_START"), F("duration_s=1200 interval_s=1 A16_SLOW_CAL_114.2"));
+  Serial.println(F("[DBCAL] started -> duration=1200s interval=1s A16_SLOW_CAL_114.2"));
   return DbCalibrationStartResult::Started;
 }
 
