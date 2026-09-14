@@ -188,12 +188,21 @@ never as an arithmetic average of individual dB values. The accepted correction
 for `acoustic_rev=2` is `a_slow_dbfs + 114.2 dB`.
 
 OLED and `/bssts` show the current `A16/SLOW` value; the ordinary local log and
-Google Sheets show window `DBA LEQ EST`. A blank cell means that a truthful value
-was unavailable because of filter warmup, an audio-stream fault, or clipping.
+Google Sheets show window `DBA LEQ EST`. Build 154 calculates it from warmed,
+fault-free, non-clipped audio blocks when they cover at least `95%` of the
+window. A blank cell means that less than `95%` of the window was usable or no
+valid energy was available.
 
 This is a validated practical estimate over roughly `53.2..65.9 dB(A)`, not an
 IEC-certified meter or a metrological guarantee. High-frequency or rapidly
 changing sound may have larger error.
+
+### `DBA VALID %`, `DBA FAULTS`, `DBA CLIPS`
+
+Technical dB-window evidence. `DBA VALID %` is the share of audio samples used
+for energetic `DBA LEQ EST`; `DBA FAULTS` is the I2S/DMA/timing fault count;
+`DBA CLIPS` is the number of clipped audio samples. These columns are hidden in
+normal User mode and remain available for diagnostics.
 
 ### `P2P P95`
 

@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoOTA.h>
+#include <algorithm>
 #include <esp_system.h>
 #include <limits.h>
 #include <Wire.h>
@@ -33,6 +34,7 @@ static constexpr uint16_t DISPLAY_DEBUG_REFRESH_MS = 1000;
 static constexpr uint16_t DISPLAY_NORMAL_REFRESH_MS = 2000;
 static constexpr uint16_t SERIAL_LOG_INTERVAL_MS = 30000;
 static constexpr uint8_t GOOGLE_SHEETS_WINDOW_MINUTES = 10;
+static constexpr uint8_t DBA_MIN_VALID_COVERAGE_PERCENT = 95;
 static constexpr unsigned long GOOGLE_SHEETS_RETRY_INTERVAL_MS = 30000UL;
 static constexpr uint8_t GOOGLE_SHEETS_QUEUE_SIZE = 6;
 static constexpr unsigned long MEAN_PERSIST_INTERVAL_MS = 600000UL;
@@ -458,17 +460,28 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.maxRaw = window.maxRaw;
   record.averagePeakToPeak =
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
-  if (window.acousticStarted && window.acousticStart.warm && window.acousticEnd.warm &&
-      window.acousticEnd.samples > window.acousticStart.samples &&
-      window.acousticEnd.energySum >= window.acousticStart.energySum &&
-      window.acousticEnd.faults == window.acousticStart.faults &&
-      window.acousticEnd.clipped == window.acousticStart.clipped) {
-    const double energyDelta = window.acousticEnd.energySum - window.acousticStart.energySum;
+  if (window.acousticStarted && window.acousticEnd.samples > window.acousticStart.samples) {
     const uint64_t sampleDelta = window.acousticEnd.samples - window.acousticStart.samples;
-    const double meanEnergy = energyDelta / static_cast<double>(sampleDelta);
-    if (meanEnergy > 0.0) {
-      record.dbaLeqEstimate = acousticDbaEstimate(acousticDbfs(meanEnergy));
-      record.dbaAvailable = std::isfinite(record.dbaLeqEstimate);
+    if (window.acousticEnd.validSamples >= window.acousticStart.validSamples &&
+        window.acousticEnd.validEnergySum >= window.acousticStart.validEnergySum) {
+      const uint64_t validSampleDelta =
+          window.acousticEnd.validSamples - window.acousticStart.validSamples;
+      const double validEnergyDelta =
+          window.acousticEnd.validEnergySum - window.acousticStart.validEnergySum;
+      record.dbaValidPercent = static_cast<uint8_t>(
+          std::min<uint64_t>(100, (validSampleDelta * 100ULL) / sampleDelta));
+      if (validSampleDelta > 0 && validEnergyDelta > 0.0 &&
+          record.dbaValidPercent >= DBA_MIN_VALID_COVERAGE_PERCENT) {
+        const double meanEnergy = validEnergyDelta / static_cast<double>(validSampleDelta);
+        record.dbaLeqEstimate = acousticDbaEstimate(acousticDbfs(meanEnergy));
+        record.dbaAvailable = std::isfinite(record.dbaLeqEstimate);
+      }
+    }
+    if (window.acousticEnd.faults >= window.acousticStart.faults) {
+      record.dbaFaultCount = window.acousticEnd.faults - window.acousticStart.faults;
+    }
+    if (window.acousticEnd.clipped >= window.acousticStart.clipped) {
+      record.dbaClippedSamples = window.acousticEnd.clipped - window.acousticStart.clipped;
     }
   }
   record.levelText = noiseLevelText(record.averagePeakToPeak);

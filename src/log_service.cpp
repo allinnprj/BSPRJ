@@ -22,7 +22,7 @@ constexpr char kLogHeader[] =
     "now_avg_pct,hour_pct,total_pct,p2p_avg,p2p_p95,p2p_min,p2p_max,p2p_stable_max,"
     "session_p2p_min,session_p2p_max,session_p2p_stable_max,raw_min,raw_max,signal,"
     "temp_c,hum_pct,env_ok_count,env_fail_count,samples,quiet_count,loud_count,"
-    "free_heap,min_free_heap,wifi_dbm,acoustic_rev,dba_leq_est";
+    "free_heap,min_free_heap,wifi_dbm,acoustic_rev,dba_leq_est,dba_valid_pct,dba_faults,dba_clips";
 constexpr char kDiagnosticLogHeader[] =
     "date\ttime\tuptime_s\tpower_uptime_min\tbuild\tboot_seq\treset\tevent\ttime_state\t"
     "wifi\tssid\twifi_pct\trssi_dbm\tip\twqtt\tdc_ok\tdc_fail\tuart\tc3_build\t"
@@ -1113,6 +1113,12 @@ void LogService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
   if (record.dbaAvailable) {
     file.print(record.dbaLeqEstimate, 1);
   }
+  file.print(',');
+  file.print(record.dbaValidPercent);
+  file.print(',');
+  file.print(record.dbaFaultCount);
+  file.print(',');
+  file.print(record.dbaClippedSamples);
   file.println();
   file.close();
 

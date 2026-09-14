@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Resilient dB windows and lighter Sheets ingestion - 0.1.100-EXP build 154 - 2026-09-14
+
+1. Analyzed the T4 run: `148` consecutive ten-minute windows, no gaps or resets, stable heap, `GS_DROP=0`, and exact local-to-Sheets equality. `139/148` dB windows were populated; the other `9` were rejected by build 153 after any isolated audio fault or clipped sample despite otherwise useful coverage.
+2. Added a separate cumulative stream of warmed, fault-free, non-clipped A16 energy. Ordinary `DBA LEQ EST` now remains available when valid audio covers at least `95%` of the ten-minute window; lower-quality windows stay honestly blank. The accepted `+114.2 dB` offset, live A16/SLOW value, calibration capture, P2P/Now/H/M, LEVEL thresholds, UART/C3, timings, logs, and notifications are otherwise unchanged.
+3. Added technical `DBA VALID %`, `DBA FAULTS`, and `DBA CLIPS` fields to `/log.csv` and the Google Sheets raw schema. They remain hidden in normal User mode and expose the exact reason/coverage needed to interpret future blanks.
+4. Reduced Apps Script work on every accepted POST: the raw header still self-heals and newest-first/zebra presentation is preserved, but only the newly prepended row is formatted instead of the entire growing table. This targets the T4 retry pattern (`129/148` rows needed retry, all eventually delivered) without changing device retry intervals or queue behavior.
+5. No C3 source, UART protocol, Wi-Fi provisioning, SIM800L work, upload, Apps Script deployment, or publication was performed.
+6. Validation: all nine firmware/Apps Script contract suites pass and `git diff --check` passes. One `pio run -e esp32dev` succeeds: RAM `66,692 / 327,680` (20.4%), linked Flash `1,402,827 / 1,572,864` (89.2%), OTA reserve `170,037` bytes, binary `1,403,232` bytes, SHA-256 `D126ACAA4EF5BF9DA4A41F8F87C88CCD5A739398365C04B609C3880979D73549`.
+
 ## Ordinary dB(A) A16 publication - 0.1.99-EXP build 153 - 2026-09-13
 
 1. Confirmed the frozen `dB(A) A16 est = a_slow_dbfs + 114.2` model on the independent build-152 run: `110` CSV rows, `109` valid, `audio_faults=0`, and `50` FNIRSI A/SLOW photos. The `45` stable pairs have bias `-0.06 dB`, MAE `1.13 dB`, RMSE `1.43 dB`, and `84.4%` within `±2 dB` over `53.2..65.9 dB(A)`; five rapid-transition frames remain timing-limited comparisons, not refit input.

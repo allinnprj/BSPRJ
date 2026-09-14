@@ -22,22 +22,37 @@ assert.match(sampler, /acousticDbaEstimate\(acousticDbfs\(snapshot\.acoustic\.sl
 assert.match(sampler, /snapshot\.acoustic\.warm[\s\S]*detectedSignalState != SignalState::Clip/);
 
 assert.match(sheetsHeader, /float dbaLeqEstimate = 0\.0f/);
-assert.match(main, /energySum - window\.acousticStart\.energySum/);
-assert.match(main, /energyDelta \/ static_cast<double>\(sampleDelta\)/,
+assert.match(sheetsHeader, /uint8_t dbaValidPercent = 0/);
+assert.match(sheetsHeader, /uint32_t dbaFaultCount = 0/);
+assert.match(sheetsHeader, /uint32_t dbaClippedSamples = 0/);
+assert.match(sampler, /!fault && filterWasWarm && !blockClipped/,
+  'Only warmed, fault-free, non-clipped blocks may enter window dB energy.');
+assert.match(sampler, /reading\.validEnergySum \+= blockEnergy/);
+assert.match(sampler, /reading\.validSamples \+= count/);
+assert.match(main, /validEnergySum - window\.acousticStart\.validEnergySum/);
+assert.match(main, /validEnergyDelta \/ static_cast<double>\(validSampleDelta\)/,
   'Window dB must be calculated from mean energy, never by averaging dB values.');
 assert.match(main, /acousticDbaEstimate\(acousticDbfs\(meanEnergy\)\)/);
-assert.match(main, /acousticStart\.warm[\s\S]*acousticEnd\.warm/);
-assert.match(main, /acousticEnd\.faults == window\.acousticStart\.faults/);
-assert.match(main, /acousticEnd\.clipped == window\.acousticStart\.clipped/);
+assert.match(main, /DBA_MIN_VALID_COVERAGE_PERCENT = 95/);
+assert.match(main, /record\.dbaValidPercent >= DBA_MIN_VALID_COVERAGE_PERCENT/);
+assert.doesNotMatch(main, /acousticEnd\.faults == window\.acousticStart\.faults/);
+assert.doesNotMatch(main, /acousticEnd\.clipped == window\.acousticStart\.clipped/);
 assert.match(main, /record\.levelText = noiseLevelText\(record\.averagePeakToPeak\)/,
   'Existing P2P classification remains authoritative.');
 
-assert.match(log, /wifi_dbm,acoustic_rev,dba_leq_est/);
+assert.match(log, /dba_leq_est,dba_valid_pct,dba_faults,dba_clips/);
 assert.match(log, /record\.dbaAvailable[\s\S]*file\.print\(record\.dbaLeqEstimate, 1\)/);
 assert.match(sheets, /dba_leq_est/);
 assert.match(sheets, /record\.dbaAvailable[\s\S]*record\.dbaLeqEstimate/);
+assert.match(sheets, /dba_valid_pct/);
+assert.match(sheets, /dba_faults/);
+assert.match(sheets, /dba_clips/);
 assert.match(codeGs, /'DBA LEQ EST'/);
+assert.match(codeGs, /'DBA VALID %'/);
+assert.match(codeGs, /'DBA FAULTS'/);
+assert.match(codeGs, /'DBA CLIPS'/);
 assert.match(codeGs, /valueOrBlank\(data\.dba_leq_est\)/);
+assert.match(codeGs, /valueOrBlank\(data\.dba_valid_pct\)/);
 assert.match(codeGs, /ensureMinColumnCount_\(sheet, HEADERS\.length\)/);
 
 assert.match(telegramHeader, /float currentDbaEstimate/);
@@ -54,5 +69,12 @@ const leq = energeticLeq([1, 100]);
 assert.ok(Math.abs(leq - 17.0329) < 0.001);
 assert.ok(Math.abs(leq - arithmeticDb([0, 20])) > 7,
   'Energetic Leq must differ from an invalid arithmetic dB average.');
+
+const acceptedCoverage = (validSamples, totalSamples) =>
+  Math.floor(validSamples * 100 / totalSamples) >= 95;
+assert.strictEqual(acceptedCoverage(595, 600), true,
+  'A short recovered fault must not discard an otherwise useful ten-minute window.');
+assert.strictEqual(acceptedCoverage(560, 600), false,
+  'A window with more than five percent invalid audio must remain blank.');
 
 console.log('dB publication contracts passed');

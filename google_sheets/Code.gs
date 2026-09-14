@@ -51,7 +51,10 @@ const HEADERS = [
   'BOOT SEQ',
   'RESET REASON',
   'ACOUSTIC REV',
-  'DBA LEQ EST'
+  'DBA LEQ EST',
+  'DBA VALID %',
+  'DBA FAULTS',
+  'DBA CLIPS'
 ];
 
 const RAW_LOG_USER_HEADERS = [
@@ -526,6 +529,9 @@ const HEADER_WIDTH_OVERRIDES = {
   'RESET REASON': 115,
   'ACOUSTIC REV': 115,
   'DBA LEQ EST': 110,
+  'DBA VALID %': 105,
+  'DBA FAULTS': 100,
+  'DBA CLIPS': 95,
   'MAIN LEVEL': 115,
   'MAIN SHARE %': 110,
   'READING': 260
@@ -544,7 +550,8 @@ const HEADER_COLORS = [
   '#f9cb9c', '#f9cb9c', '#f9cb9c',
   '#b7ead7', '#b7ead7',
   '#d9d9d9', '#d9d9d9',
-  '#d9d2e9', '#d9d2e9', '#d9ead3', '#cfe2f3'
+  '#d9d2e9', '#d9d2e9', '#d9ead3', '#cfe2f3',
+  '#d9d9d9', '#d9d9d9', '#d9d9d9'
 ];
 const DATA_COLORS_ODD = [
   '#eef7f1', '#eef7f1', '#eef7f1',
@@ -560,7 +567,8 @@ const DATA_COLORS_ODD = [
   '#fef5ec', '#fef5ec', '#fef5ec',
   '#eefaf5', '#eefaf5',
   '#f5f5f5', '#f5f5f5',
-  '#f5f3fb', '#f5f3fb', '#eef7f1', '#f2f8fd'
+  '#f5f3fb', '#f5f3fb', '#eef7f1', '#f2f8fd',
+  '#f5f5f5', '#f5f5f5', '#f5f5f5'
 ];
 const DATA_COLORS_EVEN = [
   '#f7fbf8', '#f7fbf8', '#f7fbf8',
@@ -576,7 +584,8 @@ const DATA_COLORS_EVEN = [
   '#fff9f4', '#fff9f4', '#fff9f4',
   '#f6fcf9', '#f6fcf9',
   '#fafafa', '#fafafa',
-  '#faf8fd', '#faf8fd', '#f7fbf8', '#f8fbfe'
+  '#faf8fd', '#faf8fd', '#f7fbf8', '#f8fbfe',
+  '#fafafa', '#fafafa', '#fafafa'
 ];
 
 function buildDataBackgrounds_(rowCount) {
@@ -683,6 +692,9 @@ function ensureHeaderFormatting_(sheet) {
   sheet.setColumnWidth(20, 70);  // LOUD
   sheet.setColumnWidth(21, 80);  // SAMPLES
   sheet.setColumnWidth(37, 110); // DBA LEQ EST
+  sheet.setColumnWidth(38, 105); // DBA VALID %
+  sheet.setColumnWidth(39, 100); // DBA FAULTS
+  sheet.setColumnWidth(40, 95);  // DBA CLIPS
   applyAdaptiveHeaderLayout_(sheet, HEADERS);
 
   const lastRow = Math.max(sheet.getLastRow(), 2);
@@ -728,6 +740,7 @@ function applyLogRowFormatting_(sheet, startRow, rowCount) {
 
   sheet.getRange(startRow, 4, rowCount, 1).setNumberFormat('dd-mm-yyyy');
   sheet.getRange(startRow, 5, rowCount, 2).setNumberFormat('hh:mm:ss');
+  sheet.getRange(startRow, 37, rowCount, 1).setNumberFormat('0.0');
 
   [3, 7, 11, 14, 15, 17].forEach((col) => {
     sheet.getRange(startRow, col, rowCount, 1)
@@ -929,7 +942,14 @@ function prependLogRow_(sheet, rowValues) {
   }
 
   ensureRawHeaderFormatting_(sheet);
-  applyLogRowFormatting_(sheet, 2, Math.max(sheet.getLastRow() - 1, 1));
+  applyLogRowFormatting_(sheet, 2, 1);
+  if (sheet.getLastRow() >= 3) {
+    const followingColor = String(sheet.getRange(3, 1, 1, 1).getBackground()).toLowerCase();
+    const newRowColors = followingColor === String(DATA_COLORS_ODD[0]).toLowerCase()
+      ? DATA_COLORS_EVEN
+      : DATA_COLORS_ODD;
+    sheet.getRange(2, 1, 1, HEADERS.length).setBackgrounds([newRowColors.slice()]);
+  }
   return 2;
 }
 
@@ -3561,7 +3581,10 @@ function doPostUnlocked_(e) {
     valueOrBlank(data.boot_seq),
     valueOrBlank(data.reset_reason),
     valueOrBlank(data.acoustic_rev),
-    valueOrBlank(data.dba_leq_est)
+    valueOrBlank(data.dba_leq_est),
+    valueOrBlank(data.dba_valid_pct),
+    valueOrBlank(data.dba_faults),
+    valueOrBlank(data.dba_clips)
   ];
   prependLogRow_(sheet, rowValues);
 

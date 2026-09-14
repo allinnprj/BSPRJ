@@ -122,6 +122,12 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   } else {
     payload += F("null");
   }
+  payload += F(",\"dba_valid_pct\":");
+  payload += String(record.dbaValidPercent);
+  payload += F(",\"dba_faults\":");
+  payload += String(record.dbaFaultCount);
+  payload += F(",\"dba_clips\":");
+  payload += String(record.dbaClippedSamples);
   payload += '}';
 
   int httpCode = http.POST(payload);

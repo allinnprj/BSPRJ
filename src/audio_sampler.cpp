@@ -53,6 +53,8 @@ void captureAudio(void *) {
       healthySamples = 0;
     }
     double blockEnergy = 0;
+    bool blockClipped = false;
+    const bool filterWasWarm = healthySamples >= 5 * kI2sSampleRate;
     const size_t count = bytesRead / sizeof(buffer[0]);
     for (size_t i = 0; i < count; ++i) {
       blockEnergy += filter.process(buffer[i]);
@@ -62,11 +64,16 @@ void captureAudio(void *) {
       if (value <= -kI2sClipThreshold || value >= kI2sClipThreshold) {
         ++window.clippedSampleCount;
         ++reading.clipped;
+        blockClipped = true;
       }
       ++window.sampleCount;
     }
     reading.energySum += blockEnergy;
     reading.samples += count;
+    if (!fault && filterWasWarm && !blockClipped) {
+      reading.validEnergySum += blockEnergy;
+      reading.validSamples += count;
+    }
     if (healthySamples < 5 * kI2sSampleRate) healthySamples += count;
     reading.warm = healthySamples >= 5 * kI2sSampleRate;
     reading.capturedAtMs = capturedAt;

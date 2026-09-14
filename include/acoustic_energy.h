@@ -41,6 +41,8 @@ class AcousticEnergy {
 struct AcousticReading {
   double energySum = 0;
   uint64_t samples = 0;
+  double validEnergySum = 0;
+  uint64_t validSamples = 0;
   uint32_t capturedAtMs = 0;
   uint32_t faults = 0;
   uint32_t clipped = 0;

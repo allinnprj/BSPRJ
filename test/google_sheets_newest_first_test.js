@@ -73,7 +73,8 @@ const prependState = {
   lastRow: 3,
   insertedBefore: null,
   deletedRow: null,
-  values: null
+  values: null,
+  backgrounds: null
 };
 const prependSheet = {
   getMaxRows() {
@@ -88,10 +89,20 @@ const prependSheet = {
     prependState.lastRow++;
   },
   getRange(row, column, rowCount, columnCount) {
-    assert.deepStrictEqual([row, column, rowCount, columnCount], [2, 1, 1, 37]);
+    if (row === 3 && column === 1 && rowCount === 1 && columnCount === 1) {
+      return {
+        getBackground() {
+          return sandbox.__dataColorsOdd[0];
+        }
+      };
+    }
+    assert.deepStrictEqual([row, column, rowCount, columnCount], [2, 1, 1, 40]);
     return {
       setValues(values) {
         prependState.values = values;
+      },
+      setBackgrounds(backgrounds) {
+        prependState.backgrounds = backgrounds;
       }
     };
   },
@@ -100,14 +111,19 @@ const prependSheet = {
     prependState.maxRows--;
   }
 };
-const newRow = Array.from({ length: 37 }, (_, index) => `value-${index}`);
+const newRow = Array.from({ length: 40 }, (_, index) => `value-${index}`);
 assert.strictEqual(sandbox.__prependLogRow(prependSheet, newRow), 2);
 assert.strictEqual(prependState.insertedBefore, 2);
 assert.strictEqual(prependState.deletedRow, 11);
 assert.strictEqual(prependState.maxRows, 10, 'Prepending must not consume blank-sheet capacity.');
 assert.deepStrictEqual(JSON.parse(JSON.stringify(prependState.values)), [newRow]);
 assert.strictEqual(state.headerChecks, 1, 'Every accepted raw row must self-heal the header formatting.');
-assert.deepStrictEqual(JSON.parse(JSON.stringify(state.formattedRows.at(-1))), [2, 3]);
+assert.deepStrictEqual(JSON.parse(JSON.stringify(state.formattedRows.at(-1))), [2, 1]);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(prependState.backgrounds)),
+  [JSON.parse(JSON.stringify(sandbox.__dataColorsEven))],
+  'The new first row must be formatted opposite the shifted former first row.'
+);
 
 const dateSheet = {
   getLastRow() {
@@ -145,7 +161,7 @@ vm.runInNewContext(`
 const getResult = JSON.parse(sandbox.__doGet().text);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(getResult)),
-  { ok: true, mode: 'GET', schema: 37, dba: true }
+  { ok: true, mode: 'GET', schema: 40, dba: true }
 );
 const postResult = sandbox.__doPostUnlocked({
   postData: {
@@ -156,15 +172,21 @@ const postResult = sandbox.__doPostUnlocked({
       time_to: '12:09:59',
       part: 'DAY',
       avg_peak_to_peak: 400,
-      dba_leq_est: 58.7
+      dba_leq_est: 58.7,
+      dba_valid_pct: 99,
+      dba_faults: 1,
+      dba_clips: 2
     })
   }
 });
 assert.strictEqual(JSON.parse(postResult.text).ok, true);
-assert.strictEqual(state.postedRow.length, 37);
+assert.strictEqual(state.postedRow.length, 40);
 assert.strictEqual(state.postedRow[0], 'device');
 assert.strictEqual(state.postedRow[3], '2026-08-12');
 assert.strictEqual(state.postedRow[36], 58.7);
+assert.strictEqual(state.postedRow[37], 99);
+assert.strictEqual(state.postedRow[38], 1);
+assert.strictEqual(state.postedRow[39], 2);
 
 const doPostStart = source.indexOf('function doPostUnlocked_(');
 const doPostEnd = source.indexOf('\nfunction doPost(', doPostStart);
@@ -203,6 +225,8 @@ assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /setFrozenRows\(1\
 assert.match(getFunctionSource('ensureRawHeaderFormatting_'), /setFrozenColumns\(0\)/);
 assert.match(getFunctionSource('ensureHeaderFormatting_'), /ensureRawHeaderFormatting_/);
 assert.match(getFunctionSource('prependLogRow_'), /ensureRawHeaderFormatting_/);
+assert.match(getFunctionSource('prependLogRow_'), /applyLogRowFormatting_\(sheet, 2, 1\)/);
+assert.doesNotMatch(getFunctionSource('prependLogRow_'), /applyLogRowFormatting_\(sheet, 2, Math\.max/);
 const rawBodyBackgrounds = JSON.parse(JSON.stringify(sandbox.__buildDataBackgrounds(3)));
 assert.notDeepStrictEqual(rawBodyBackgrounds[0], rawBodyBackgrounds[1]);
 assert.deepStrictEqual(rawBodyBackgrounds[0], rawBodyBackgrounds[2]);
