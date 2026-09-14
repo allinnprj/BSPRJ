@@ -8,6 +8,7 @@
 4. Reduced Apps Script work on every accepted POST: the raw header still self-heals and newest-first/zebra presentation is preserved, but only the newly prepended row is formatted instead of the entire growing table. This targets the T4 retry pattern (`129/148` rows needed retry, all eventually delivered) without changing device retry intervals or queue behavior.
 5. No C3 source, UART protocol, Wi-Fi provisioning, SIM800L work, upload, Apps Script deployment, or publication was performed.
 6. Validation: all nine firmware/Apps Script contract suites pass and `git diff --check` passes. One `pio run -e esp32dev` succeeds: RAM `66,692 / 327,680` (20.4%), linked Flash `1,402,827 / 1,572,864` (89.2%), OTA reserve `170,037` bytes, binary `1,403,232` bytes, SHA-256 `D126ACAA4EF5BF9DA4A41F8F87C88CCD5A739398365C04B609C3880979D73549`.
+7. Later user evidence physically confirms build `154` uploaded and online. This is boot/network proof only; dB-window completeness and Sheets retry behavior remain under a `12..24 h` acceptance run. The post-test finalization sequence is fixed in tasks `106-108`: production dB semantics, three simple user-facing Sheets views with hidden diagnostics, then a separate removal of calibration and obsolete relative test code before the final seven-day run.
 
 ## Ordinary dB(A) A16 publication - 0.1.99-EXP build 153 - 2026-09-13
 
