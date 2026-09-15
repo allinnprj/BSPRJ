@@ -17,7 +17,8 @@ void GoogleSheetsService::begin() {
 
 bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &record,
                                                 const char *versionText,
-                                                uint32_t buildNumber) {
+                                                uint32_t buildNumber, String &httpResult) {
+  httpResult = F("not_sent");
   if (!configured_ || record.windowKey.isEmpty() || record.sampleCount == 0 ||
       record.windowKey == lastWindowKey_) {
     return false;
@@ -28,6 +29,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
 
   HTTPClient http;
   if (!http.begin(client, GOOGLE_SHEETS_SCRIPT_URL)) {
+    httpResult = F("begin_failed");
     Serial.println(F("[GS] HTTP begin failed"));
     return false;
   }
@@ -131,6 +133,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
   payload += '}';
 
   int httpCode = http.POST(payload);
+  httpResult = String(httpCode);
   if (httpCode > 0) {
     Serial.print(F("[GS] POST -> "));
     Serial.println(httpCode);
@@ -140,6 +143,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
       Serial.println(response);
     }
     if (httpCode >= 200 && httpCode < 300) {
+      httpResult += F(" accepted=2xx");
       lastWindowKey_ = record.windowKey;
       http.end();
       return true;
@@ -148,15 +152,20 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
       String location = http.header("Location");
       if (location.indexOf("script.googleusercontent.com") >= 0 ||
           response.indexOf("Moved Temporarily") >= 0) {
+        httpResult += F(" accepted=redirect");
         Serial.println(F("[GS] redirect accepted as delivered"));
         lastWindowKey_ = record.windowKey;
         http.end();
         return true;
       }
     }
+    httpResult += F(" unaccepted");
   } else {
+    const String errorText = http.errorToString(httpCode);
+    httpResult += F(" error=");
+    httpResult += errorText;
     Serial.print(F("[GS] POST failed -> "));
-    Serial.println(http.errorToString(httpCode));
+    Serial.println(errorText);
   }
 
   http.end();

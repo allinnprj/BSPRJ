@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Google Sheets HTTP delivery diagnostics - 0.1.101-EXP build 155 - 2026-09-15
+
+1. T5 physically confirms build `154` produced `135` consecutive ten-minute windows with `135/135` dB values, at least `99%` valid audio coverage, two isolated audio faults, no clips, and exact equality with the `112` live plus `23` archived Google Sheets rows. All rows were delivered with `GS_DROP=0`, but `129/135` windows needed retry and BS counted `203` failed HTTP attempts; the intended retry reduction was not observed.
+2. The user-confirmed BS78 web-app deployment shows six completed `doPost` executions around `2026-09-15 13:00..13:02` for a window that BS accepted only on its sixth attempt. This narrows the issue to missing or unaccepted client-side HTTP confirmation for that sample; the exact HTTP status/error is not present in build-154 downloadable diagnostics.
+3. Build `155` appends the numeric HTTP result and, on a negative result, its short error text to the existing first-failure `GS_RETRY` and terminal `GS_UPLOAD` events. No additional diagnostic event per retry is emitted. The POST payload, success/redirect acceptance rules, 30-second retry interval, six-window queue, measurement, UART, C3, and Apps Script code are unchanged.
+4. Validation: the focused HTTP-diagnostics contract and three version-dependent contracts pass; `git diff --check` passes. One `pio run -e esp32dev` succeeds: RAM `66,692 / 327,680` (20.4%), linked Flash `1,403,155 / 1,572,864` (89.2%), OTA reserve `169,709` bytes, binary `1,403,552` bytes, SHA-256 `B27EA71CD5DE60540B9645FC0C98FF9CAD772FF72F48C41E66A2246076A102C5`.
+5. This is a local artifact only. No BS OTA/upload, Google Apps Script deployment, Git publication, C3 change, or claim of physically reduced retries was made. The user can manually OTA BS and send a short build-155 diagnostic run for a targeted decision.
+
 ## Resilient dB windows and lighter Sheets ingestion - 0.1.100-EXP build 154 - 2026-09-14
 
 1. Analyzed the T4 run: `148` consecutive ten-minute windows, no gaps or resets, stable heap, `GS_DROP=0`, and exact local-to-Sheets equality. `139/148` dB windows were populated; the other `9` were rejected by build 153 after any isolated audio fault or clipped sample despite otherwise useful coverage.

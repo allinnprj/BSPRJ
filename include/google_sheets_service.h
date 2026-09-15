@@ -51,7 +51,7 @@ class GoogleSheetsService {
  public:
   void begin();
   bool appendWindowAggregate(const GoogleSheetsWindowRecord &record, const char *versionText,
-                             uint32_t buildNumber);
+                             uint32_t buildNumber, String &httpResult);
 
   bool isConfigured() const;
 

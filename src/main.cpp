@@ -658,7 +658,9 @@ void uploadPendingGoogleSheetsWindow() {
   }
   currentSheetsWindowAttempts++;
   sheetsAttemptCount++;
-  if (googleSheetsService.appendWindowAggregate(nextRecord, PROJECT_VERSION, PROJECT_BUILD)) {
+  String httpResult;
+  if (googleSheetsService.appendWindowAggregate(nextRecord, PROJECT_VERSION, PROJECT_BUILD,
+                                                 httpResult)) {
     sheetsSuccessCount++;
     String details = F("window=");
     details += nextRecord.windowKey;
@@ -668,6 +670,8 @@ void uploadPendingGoogleSheetsWindow() {
     details += (nowMs - currentSheetsFirstAttemptAt) / 1000U;
     details += F(" queue_before=");
     details += pendingSheetsCount;
+    details += F(" http=");
+    details += httpResult;
     logService.appendDiagnosticEvent(F("GS_UPLOAD"), details);
     Serial.print(F("[GS] uploaded window -> "));
     Serial.print(nextRecord.timeFromText);
@@ -689,6 +693,8 @@ void uploadPendingGoogleSheetsWindow() {
       details += nextRecord.windowKey;
       details += F(" queue=");
       details += pendingSheetsCount;
+      details += F(" http=");
+      details += httpResult;
       logService.appendDiagnosticEvent(F("GS_RETRY"), details);
     }
   }
