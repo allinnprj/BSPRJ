@@ -6,6 +6,8 @@
 #include "project_version.h"
 #include "secrets.h"
 
+static constexpr uint16_t GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS = 12000;
+
 void GoogleSheetsService::begin() {
   configured_ = strlen(GOOGLE_SHEETS_SCRIPT_URL) > 0;
   if (configured_) {
@@ -33,6 +35,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
     Serial.println(F("[GS] HTTP begin failed"));
     return false;
   }
+  http.setTimeout(GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS);
 
   const char *headerKeys[] = {"Location"};
   http.collectHeaders(headerKeys, 1);

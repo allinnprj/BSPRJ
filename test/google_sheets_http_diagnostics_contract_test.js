@@ -11,9 +11,13 @@ const version = read('include/project_version.h');
 const upload = main.slice(main.indexOf('void uploadPendingGoogleSheetsWindow()'),
   main.indexOf('void updateDayPartStats('));
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.101-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 155\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.102-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 156\b/);
 assert.match(header, /appendWindowAggregate\([^;]*String &httpResult\)/s);
+assert.match(sheets, /GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS = 12000/);
+assert.match(sheets, /http\.setTimeout\(GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS\)/);
+assert.ok(sheets.indexOf('http.setTimeout(GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS)') <
+  sheets.indexOf('http.POST(payload)'), 'Read timeout must be configured before POST.');
 assert.match(sheets, /httpResult = F\("not_sent"\)/);
 assert.match(sheets, /httpResult = F\("begin_failed"\)/);
 assert.match(sheets, /httpResult = String\(httpCode\)/);

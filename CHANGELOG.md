@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Bounded Google Sheets response wait - 0.1.102-EXP build 156 - 2026-09-16
+
+1. T6 physically confirms uploaded build `155`: `133/133` consecutive local ten-minute windows have dB values and exact matching raw Sheets rows, with no duplicates or `GS_DROP`. Among the `133` confirmed uploads, `108` needed a retry; every logged first failure was `http=-11 error=read Timeout`, while every terminal success was `http=302 accepted=redirect`. The workbook also contains the next `19:30` window while BS still logged its first read timeout, proving at least one server write succeeded without client confirmation.
+2. The installed HTTPClient defaults to a `5 s` TCP read timeout, while the Google Apps Script can answer later. Build `156` sets only the Google Sheets POST read timeout to a bounded `12 s`. It does not change connection timeout, POST payload, 30-second retry spacing, queue size, success/redirect rules, microphone processing, UART/C3, or `Code.gs`.
+3. Validation: Google Sheets HTTP diagnostics, dB publication/calibration, Wi-Fi provisioning, and controller-command contracts pass; `git diff --check` passes. One `pio run -e esp32dev` succeeds: RAM `66,692 / 327,680` (20.4%), linked Flash `1,403,171 / 1,572,864` (89.2%), OTA reserve `169,693` bytes, binary `1,403,568` bytes, SHA-256 `63AA2F1454B2167A78CB2C7F88F11041C960F54ABCBF0593E7BA842766F9E77D`.
+4. This is a local candidate only. No firmware upload, Apps Script deployment, C3 change, or Git publication was performed. A manual BS OTA and a short field log must confirm that retries fall without reducing window sample counts or increasing queue/drop counters.
+
 ## Google Sheets HTTP delivery diagnostics - 0.1.101-EXP build 155 - 2026-09-15
 
 1. T5 physically confirms build `154` produced `135` consecutive ten-minute windows with `135/135` dB values, at least `99%` valid audio coverage, two isolated audio faults, no clips, and exact equality with the `112` live plus `23` archived Google Sheets rows. All rows were delivered with `GS_DROP=0`, but `129/135` windows needed retry and BS counted `203` failed HTTP attempts; the intended retry reduction was not observed.
