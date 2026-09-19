@@ -82,7 +82,7 @@ bool GoogleSheetsService::appendWindowAggregate(const GoogleSheetsWindowRecord &
     payload += F("\",\"avg_temperature_c\":null,\"avg_humidity_pct\":null");
   }
   payload += F(",\"window_minutes\":");
-  payload += String(record.windowMinutes);
+  payload += String(record.windowMinutes, 2);
   payload += F(",\"quiet_count\":");
   payload += String(record.quietCount);
   payload += F(",\"loud_count\":");

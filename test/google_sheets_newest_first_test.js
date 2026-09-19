@@ -172,6 +172,8 @@ const postResult = sandbox.__doPostUnlocked({
       time_to: '12:09:59',
       part: 'DAY',
       avg_peak_to_peak: 400,
+      acoustic_rev: 2,
+      window_minutes: 10,
       dba_leq_est: 58.7,
       dba_valid_pct: 99,
       dba_faults: 1,
@@ -184,6 +186,7 @@ assert.strictEqual(state.postedRow.length, 40);
 assert.strictEqual(state.postedRow[0], 'device');
 assert.strictEqual(state.postedRow[3], '2026-08-12');
 assert.strictEqual(state.postedRow[36], 58.7);
+assert.strictEqual(state.postedRow[7], 'NORMAL');
 assert.strictEqual(state.postedRow[37], 99);
 assert.strictEqual(state.postedRow[38], 1);
 assert.strictEqual(state.postedRow[39], 2);

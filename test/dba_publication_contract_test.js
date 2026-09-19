@@ -37,8 +37,11 @@ assert.match(main, /DBA_MIN_VALID_COVERAGE_PERCENT = 95/);
 assert.match(main, /record\.dbaValidPercent >= DBA_MIN_VALID_COVERAGE_PERCENT/);
 assert.doesNotMatch(main, /acousticEnd\.faults == window\.acousticStart\.faults/);
 assert.doesNotMatch(main, /acousticEnd\.clipped == window\.acousticStart\.clipped/);
-assert.match(main, /record\.levelText = noiseLevelText\(record\.averagePeakToPeak\)/,
-  'Existing P2P classification remains authoritative.');
+assert.match(main, /record\.levelText = dbaLevelText\(record\.dbaLeqEstimate, record\.dbaAvailable\)/,
+  'The ten-minute level must follow valid dB(A), not P2P.');
+assert.match(main, /sampleDelta\) \/ \(AcousticEnergy::kSampleRate \* 60\.0f\)/,
+  'Measured window duration must follow raw I2S samples, not the main-loop snapshot count.');
+assert.match(main, /dbaLevelText\(latestSnapshot\.currentDbaEstimate, latestSnapshot\.dbaAvailable\)/);
 
 assert.match(log, /dba_leq_est,dba_valid_pct,dba_faults,dba_clips/);
 assert.match(log, /record\.dbaAvailable[\s\S]*file\.print\(record\.dbaLeqEstimate, 1\)/);

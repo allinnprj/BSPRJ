@@ -53,6 +53,9 @@ static constexpr uint32_t CONTROLLER_SLEEP_RTC_MAX_SECONDS = 86400UL;
 static constexpr uint16_t NOISE_LEVEL_SILENT_MAX = 350;
 static constexpr uint16_t NOISE_LEVEL_NORMAL_MAX = 650;
 static constexpr uint16_t NOISE_LEVEL_LOUD_MAX = 850;
+static constexpr float DBA_LEVEL_SILENT_MAX = 56.0f;
+static constexpr float DBA_LEVEL_NORMAL_MAX = 62.0f;
+static constexpr float DBA_LEVEL_LOUD_MAX = 66.0f;
 
 RTC_NOINIT_ATTR uint32_t rtcPowerSessionMagic;
 RTC_NOINIT_ATTR uint32_t rtcBootSequence;
@@ -214,6 +217,18 @@ const char *noiseLevelText(uint32_t level) {
   if (level <= NOISE_LEVEL_LOUD_MAX) {
     return "LOUD";
   }
+  return "PEAK";
+}
+
+const char *dbaLevelText(float dba, bool available) {
+  if (!available || !std::isfinite(dba)) {
+    return "NO DATA";
+  }
+  // Classify the same one-decimal value shown in the log and Telegram.
+  const float reportedDba = std::round(dba * 10.0f) / 10.0f;
+  if (reportedDba < DBA_LEVEL_SILENT_MAX) return "SILENT";
+  if (reportedDba < DBA_LEVEL_NORMAL_MAX) return "NORMAL";
+  if (reportedDba < DBA_LEVEL_LOUD_MAX) return "LOUD";
   return "PEAK";
 }
 
@@ -462,6 +477,9 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
       static_cast<uint16_t>(window.peakToPeakSum / window.sampleCount);
   if (window.acousticStarted && window.acousticEnd.samples > window.acousticStart.samples) {
     const uint64_t sampleDelta = window.acousticEnd.samples - window.acousticStart.samples;
+    record.windowMinutes = std::min<float>(
+        GOOGLE_SHEETS_WINDOW_MINUTES,
+        static_cast<float>(sampleDelta) / (AcousticEnergy::kSampleRate * 60.0f));
     if (window.acousticEnd.validSamples >= window.acousticStart.validSamples &&
         window.acousticEnd.validEnergySum >= window.acousticStart.validEnergySum) {
       const uint64_t validSampleDelta =
@@ -484,7 +502,7 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
       record.dbaClippedSamples = window.acousticEnd.clipped - window.acousticStart.clipped;
     }
   }
-  record.levelText = noiseLevelText(record.averagePeakToPeak);
+  record.levelText = dbaLevelText(record.dbaLeqEstimate, record.dbaAvailable);
   record.peakToPeakP95 = percentile95(window.levelSamples, window.levelSampleCount);
   record.minPeakToPeak = window.minPeakToPeak == UINT16_MAX ? 0 : window.minPeakToPeak;
   record.maxPeakToPeak = window.maxPeakToPeak;
@@ -503,7 +521,6 @@ GoogleSheetsWindowRecord buildGoogleSheetsRecord(const GoogleSheetsAccumulator &
   record.quietCount = window.quietCount;
   record.loudCount = window.loudCount;
   record.sampleCount = window.sampleCount;
-  record.windowMinutes = GOOGLE_SHEETS_WINDOW_MINUTES;
   record.uptimeMinutes = powerUptimeMinutes();
   record.uptimeText = formatCompactUptime(powerUptimeMs());
   record.freeHeap = ESP.getFreeHeap();
@@ -721,7 +738,7 @@ void updateDayPartStats(const AudioSnapshot &snapshot, const TimeService &timeSe
 void updateMqttState(const AudioSnapshot &snapshot) {
   MqttRuntimeState state{};
   state.snapshot = snapshot;
-  state.signalText = noiseLevelText(snapshot.currentLevel);
+  state.signalText = dbaLevelText(snapshot.currentDbaEstimate, snapshot.dbaAvailable);
   state.timeSynced = timeService.isSynced();
   state.wifiStatus = wifiService.statusTextCStr();
   state.wifiSignalPercent = wifiService.signalPercent();
@@ -1366,7 +1383,7 @@ void loop() {
       latestSnapshot.totalAverage,
       latestSnapshot.hourSamplesCollected,
       bsDayPartText,
-      noiseLevelText(latestSnapshot.currentLevel),
+      dbaLevelText(latestSnapshot.currentDbaEstimate, latestSnapshot.dbaAvailable),
       signalStateText(latestSnapshot.signalState),
       latestSht31Reading.available,
       latestSht31Reading.temperatureC,

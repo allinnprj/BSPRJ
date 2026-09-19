@@ -11,8 +11,8 @@ const version = read('include/project_version.h');
 const upload = main.slice(main.indexOf('void uploadPendingGoogleSheetsWindow()'),
   main.indexOf('void updateDayPartStats('));
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.102-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 156\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.103-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 157\b/);
 assert.match(header, /appendWindowAggregate\([^;]*String &httpResult\)/s);
 assert.match(sheets, /GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS = 12000/);
 assert.match(sheets, /http\.setTimeout\(GOOGLE_SHEETS_HTTP_READ_TIMEOUT_MS\)/);

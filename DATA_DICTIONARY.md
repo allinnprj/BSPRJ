@@ -4,8 +4,8 @@ This document explains the names used in Google Sheets, Telegram messages, AppSh
 
 ## Core Principle
 
-The project now exposes a practical `dB(A) A16` estimate while keeping the
-validated relative `P2P` analytics separate.
+The project now exposes a practical `dB(A) A16` estimate while retaining
+relative `P2P` metrics for diagnostics and historical comparison.
 
 The dB estimate answers “what is the current or window level?”, while the
 relative analytics continue to answer:
@@ -17,14 +17,14 @@ relative analytics continue to answer:
 - how reliable is the data for that conclusion?
 
 `DBA LEQ EST` is a calibrated practical estimate, not a certified sound-level
-meter. `AVG P2P`, `NOW %`, `H %`, `M %`, and `LEVEL` remain separate for
-day-part comparisons and compatibility with accumulated statistics.
+meter. Starting with local candidate build `157`, `LEVEL` uses dB(A), while
+`AVG P2P`, `NOW %`, `H %`, and `M %` remain relative diagnostics for now.
 
 ## Raw Table Views
 
 `User mode` keeps the everyday reading set visible: `DEV ID`, date/time, `PART`, `LEVEL`, `NOW %`, `H %`, `M %`, `AVG P2P`, `DBA LEQ EST`, `SIG IN`, `TEMP C`, and `HUM %`.
 
-`Technical mode` shows the complete 37-column raw schema. The additional columns are not discarded: they remain available for exported-log analysis, signal and sensor diagnostics, restart and memory checks, and acoustic-revision separation.
+`Technical mode` shows the complete 40-column raw schema. The additional columns are not discarded: they remain available for exported-log analysis, signal and sensor diagnostics, restart and memory checks, and acoustic-revision separation.
 
 ## Remote Diagnostic Journal
 
@@ -106,7 +106,7 @@ Use it to avoid mixing measurements from mechanically different microphone layou
 
 The current relative sound level for the window, scaled to a human-readable percentage.
 
-After build `95`, this is based on the `INMP441` `P2P` scale. It is meant to be the main simple number for "how loud was this window?"
+After build `95`, this is based on the `INMP441` `P2P` scale. It remains a relative diagnostic; from build `157`, use `DBA LEQ EST` and `LEVEL` for the ordinary sound conclusion.
 
 How to read it:
 
@@ -116,7 +116,7 @@ How to read it:
 
 Why useful: this is the easiest number to show on OLED, MQTT, Datacake, Telegram, and dashboards.
 
-Possible future simplification: if `LEVEL` becomes reliable enough, you may look at labels more often than raw `NOW %`.
+After physical acceptance of build `157`, the main user view can be simplified to dB(A) and `LEVEL`.
 
 ### `H %`
 
@@ -148,7 +148,7 @@ Useful mostly for technical diagnostics:
 - is the input stuck?
 - are there suspicious extreme values?
 
-For everyday noise interpretation, `RAW MIN` is less useful than `AVG P2P`.
+For everyday noise interpretation, `RAW MIN` is less useful than `DBA LEQ EST` and `LEVEL`.
 
 ### `RAW MAX`
 
@@ -178,12 +178,12 @@ Practical current anchors from the balcony run:
 - around `2300+`: strong activity
 - around `2900`: observed high peak in that run
 
-Possible future simplification: `AVG P2P` may remain a technical column while `NOW %` and `LEVEL` become the normal user-facing values.
+`AVG P2P` remains a technical column; ordinary conclusions from build `157` use `DBA LEQ EST` and `LEVEL`.
 
 ### `DBA LEQ EST`
 
-Practical estimate of the average A-weighted level across the complete
-ten-minute window. It is calculated from mean A16 energy as energetic `Leq`,
+Practical estimate of the average A-weighted level across the measured part
+of a ten-minute window. It is calculated from mean A16 energy as energetic `Leq`,
 never as an arithmetic average of individual dB values. The accepted correction
 for `acoustic_rev=2` is `a_slow_dbfs + 114.2 dB`.
 
@@ -192,6 +192,9 @@ Google Sheets show window `DBA LEQ EST`. Build 154 calculates it from warmed,
 fault-free, non-clipped audio blocks when they cover at least `95%` of the
 window. A blank cell means that less than `95%` of the window was usable or no
 valid energy was available.
+
+DAY/EVE/NGT averages combine window dB by energy, weighted by actual measured
+minutes (`WIN MIN` and `DBA VALID %`), not by arithmetic dB averages.
 
 This is a validated practical estimate over roughly `53.2..65.9 dB(A)`, not an
 IEC-certified meter or a metrological guarantee. High-frequency or rapidly
@@ -224,7 +227,8 @@ Boot-session range context. These values help distinguish normal window behavior
 
 ### `LEVEL`
 
-Human-readable relative noise level derived from the window average `AVG P2P`.
+Human-readable level derived from the ten-minute `DBA LEQ EST`. `/bssts` uses
+the current A16/SLOW estimate for its live `LEVEL`.
 
 Current values:
 
@@ -235,14 +239,16 @@ Current values:
 
 This is what the project ultimately wants: simple human language instead of raw numbers.
 
-Current rule in firmware and Google Sheets for `acoustic_rev=2`:
+Trial build-`157` boundaries for `acoustic_rev=2`:
 
-- `AVG P2P <= 350`: `SILENT`
-- `AVG P2P <= 650`: `NORMAL`
-- `AVG P2P <= 850`: `LOUD`
-- above `850`: `PEAK`
+- below `56 dB(A)`: `SILENT`
+- `56` to below `62 dB(A)`: `NORMAL`
+- `62` to below `66 dB(A)`: `LOUD`
+- `66 dB(A)` or more: `PEAK`
 
-Important: these are relative `INMP441` thresholds from the protected external microphone field run. They are not real `dB` values.
+If usable dB is unavailable, the level is `NO DATA`; P2P is not substituted.
+`PEAK` means a high average across the whole window, not a brief sound spike.
+The upper boundaries remain trial values because T7 had no windows above `62 dB(A)`.
 
 ## Signal Quality Terms
 
@@ -320,17 +326,21 @@ Useful during the breadboard stage because it can point to I2C, power, contact, 
 
 ### `WIN MIN`
 
-Window length in minutes.
+Actual measured portion of the window in minutes starting with build `157`.
 
-Usually `10`, because the firmware aggregates readings into 10-minute windows for Google Sheets.
+A full window is about `10`; the first window after boot may be shorter. Older
+builds always recorded `10`, including for partial first windows.
 
 ### `SAMPLES`
 
-Number of internal samples/updates included in the window.
+Number of main-loop snapshots in the window, not raw I2S audio samples.
 
-A normal 10-minute window should have enough samples. Google Sheets currently treats a row as valid when `SAMPLES >= 100`.
+HTTP response waits can lower this count without stopping the separate dB
+capture task. dB validity uses populated `DBA LEQ EST`, `DBA VALID % >= 95`,
+and `acoustic_rev=2`, not `SAMPLES`.
 
-If samples are too low, the row may be incomplete.
+If snapshots are low, check `WIN MIN` and dB quality: the slot may start after
+a reboot, or the main loop may have waited on a network response.
 
 ### `QUIET`
 
@@ -458,7 +468,7 @@ Usually:
 
 Flag showing whether the row is valid enough for analytics.
 
-Currently based mainly on sample count:
+From build `157`, this requires `DBA LEQ EST`, `DBA VALID % >= 95`, `ACOUSTIC REV = 2`, and positive `WIN MIN`, not a minimum main-loop `SAMPLES` count:
 
 - `1`: valid
 - `0`: not valid
@@ -471,17 +481,9 @@ Useful for detecting power loss, Wi-Fi upload gaps, or device downtime.
 
 ### `QUALITY`
 
-Compact technical quality label for the row.
-
-Examples:
-
-- `OK`
-- `DUPLICATED`
-- `LOW_SAMPLES`
-- `GAP_BEFORE`
-- combinations such as `LOW_SAMPLES+GAP_BEFORE`
-
-This helps decide whether to trust the row.
+Simple dB quality label: `OK` for a usable measurement, otherwise `NO DATA`.
+Duplicates, gaps, low snapshot counts, and input issues remain separate
+technical columns and in `summary_health`.
 
 ## Day-Part Summary Terms
 
@@ -524,14 +526,14 @@ How complete the data is.
 Formula idea:
 
 ```text
-WINDOWS VALID / EXPECTED WINDOWS * 100
+usable measured dB minutes / expected minutes in the day-part * 100
 ```
 
 How to read it:
 
-- `80%+`: good
-- `40..79%`: partial
-- below `40%`: weak
+- `80%+`: `OK`
+- above `0` but below `80%`: `PARTIAL`
+- `0%`: `NO DATA`
 
 This is a trust score for the summary. A loud/quiet conclusion with low coverage should be treated carefully.
 
@@ -539,7 +541,7 @@ This is a trust score for the summary. A loud/quiet conclusion with low coverage
 
 Average `NOW %` for that day-part.
 
-This is a legacy/simple percent-scale view. For current build `110` level conclusions, prefer `AVG P2P` and `LEVEL`.
+This is a legacy relative percent view. For build-`157` conclusions, use dB(A) and `LEVEL`.
 
 ### `AVG H %`
 
@@ -557,7 +559,7 @@ This is usually less useful for immediate day-part conclusions because it change
 
 Average `AVG P2P` for the day-part.
 
-For `INMP441`, this is the main numeric summary for current relative `SILENT / NORMAL / LOUD / PEAK` conclusions.
+This remains a relative technical metric; starting with build `157` it does not determine `LEVEL`.
 
 ### `AVG TEMP C`
 
@@ -706,9 +708,9 @@ Trust label based on coverage.
 
 Current values:
 
-- `GOOD`: enough coverage
-- `PARTIAL`: usable but incomplete
-- `WEAK`: too little data for a strong conclusion
+- `OK`: usable dB covers at least `80%` of the day-part
+- `PARTIAL`: some usable dB, but coverage is below `80%`
+- `NO DATA`: no usable dB
 
 Important: `DATA CONFIDENCE` does not mean "the microphone is correct." It means "we have enough windows to trust this summary."
 
@@ -733,7 +735,7 @@ Human-readable sentence summarizing the row.
 Example:
 
 ```text
-NGT: typical SILENT, avg 219 P2P, top share 90.5%, data good, dominance strong
+NGT: typical SILENT, avg 53.9 dB(A), top share 90.5%, data ok, dominance strong
 ```
 
 This is meant to be read directly by a person or shown in AppSheet.
@@ -845,11 +847,11 @@ It includes:
 
 1. Check `summary_health`.
 
-Look at `COVERAGE %`, `LOW SAMPLE WIN`, and `MISSING WIN`. If coverage is weak, conclusions are weak.
+Look at `COVERAGE %`, `WINDOWS VALID`, and `MISSING WIN`. `LOW SAMPLE WIN` separately diagnoses P2P snapshot counts, not dB validity. Weak coverage weakens conclusions.
 
 2. Check `summary_daypart`.
 
-Compare `AVG NOW %`, `AVG P2P`, `QUIET %`, and `LOUD %` for `DAY`, `EVE`, and `NGT`.
+Compare energetic `DBA LEQ EST`, `COVERAGE %`, and `MAIN LEVEL` for `DAY`, `EVE`, and `NGT`. Relative `AVG NOW %`, `AVG P2P`, `QUIET %`, and `LOUD %` are technical context.
 
 3. Check `summary_levels`.
 
@@ -884,8 +886,7 @@ These columns are likely to remain important:
 - `T FROM`
 - `T TO`
 - `PART`
-- `NOW %`
-- `AVG P2P`
+- `DBA LEQ EST`
 - `LEVEL`
 - `WINDOWS VALID`
 - `EXPECTED WINDOWS`

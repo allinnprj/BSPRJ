@@ -1334,7 +1334,7 @@ String TelegramAlertService::buildBsStatusMessage_(
   message += String(status.totalAverage);
   message += F("</b>\nPeriod: <b>");
   message += htmlEscape_(String(status.dayPartText));
-  message += F("</b> · Level: <b>");
+  message += F("</b> · dB Level: <b>");
   message += htmlEscape_(String(status.noiseLevelText));
   message += F("</b>\nSignal: <b>");
   message += htmlEscape_(String(status.signalStateText));
@@ -1392,7 +1392,7 @@ String TelegramAlertService::buildHelpMessage_() const {
   message += F("Wi-Fi, IP, Time — сеть и синхронизация / network and time\n");
   message += F("dB(A) A16 est — текущая практическая оценка / current practical estimate\n");
   message += F("Relative P2P: Now, H, M — текущий, часовой, общий относительный шум / current, hourly, total relative sound\n");
-  message += F("Period, Level, Signal — период, уровень и микрофон / period, level and microphone health\n");
+  message += F("Period, Level, Signal — период, уровень по dB(A) и микрофон / period, dB(A) level and microphone health\n");
   message += F("Environment — температура и влажность / temperature and humidity\n");
   message += F("Cloud — WQTT и очередь Sheets / WQTT and Sheets queue\n");
   message += F("C3 link — связь с C3 / C3 connection\n");

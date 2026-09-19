@@ -122,6 +122,10 @@ const USER_INTERFACE_MODE_TECHNICAL = 'TECHNICAL';
 const DIAGNOSTICS_STATE_CACHE_PROPERTY = 'BS_DIAGNOSTICS_STATE_CACHE';
 const DIAGNOSTICS_STATE_UNKNOWN = 'CHECK';
 const MIN_VALID_SAMPLES = 100;
+const DBA_MIN_VALID_COVERAGE_PERCENT = 95;
+const DBA_LEVEL_SILENT_MAX = 56;
+const DBA_LEVEL_NORMAL_MAX = 62;
+const DBA_LEVEL_LOUD_MAX = 66;
 const PART_ORDER = ['DAY', 'EVE', 'NGT'];
 const LEVEL_ORDER = ['SILENT', 'NORMAL', 'LOUD', 'PEAK'];
 const MIXED_NORMAL_LOUD_MAX_GAP_PCT = 10;
@@ -164,7 +168,8 @@ const CLEAN_SUMMARY_HEADERS = [
   'IS DUPLICATED',
   'IS VALID',
   'GAP BEFORE',
-  'QUALITY'
+  'QUALITY',
+  'DBA LEQ EST'
 ];
 const DAYPART_SUMMARY_HEADERS = [
   'DEV ID',
@@ -186,7 +191,8 @@ const DAYPART_SUMMARY_HEADERS = [
   'NORMAL WIN',
   'LOUD WIN',
   'PEAK WIN',
-  'MISSING WIN'
+  'MISSING WIN',
+  'DBA LEQ EST'
 ];
 const TIMELINE_SUMMARY_HEADERS = [
   'DEV ID',
@@ -238,7 +244,7 @@ const CONCLUSION_SUMMARY_HEADERS = [
   'DEV ID',
   'DATE',
   'PART',
-  'AVG P2P',
+  'DBA LEQ EST',
   'MAIN LEVEL',
   'MAIN SHARE %',
   'VALID WINDOWS',
@@ -299,14 +305,14 @@ const SHEET_STYLE_PROFILES = {
       '#d9d2e9', '#ead1dc', '#f4cccc', '#d9d9d9', '#d9d9d9',
       '#e8eaed', '#e8eaed', '#e8eaed',
       '#d0e0e3', '#d0e0e3', '#d0e0e3',
-      '#fce5cd', '#f4cccc'
+      '#fce5cd', '#f4cccc', '#cfe2f3'
     ],
     bodyOdd: '#f8fafc',
     bodyEven: '#f1f5f9',
     accentCols: [4, 7, 8, 18, 21, 27, 29],
     accentColor: '#eef4ff',
     hideFromCol: 23,
-    hideCount: 8,
+    hideCount: 9,
     freezeCols: 7
   },
   summaryDaypart: {
@@ -322,11 +328,11 @@ const SHEET_STYLE_PROFILES = {
       '#b7ead7', '#b7ead7',
       '#ead1dc', '#f4cccc',
       '#d5f5e3', '#fff2cc', '#f9cb9c', '#ea9999',
-      '#f4cccc'
+      '#f4cccc', '#cfe2f3'
     ],
     bodyOdd: '#fbfdf8',
     bodyEven: '#f3f8ec',
-    accentCols: [3, 7, 8, 9, 10, 20],
+    accentCols: [3, 7, 8, 9, 10, 20, 21],
     accentColor: '#fff7d6',
     freezeCols: 3
   },
@@ -630,8 +636,7 @@ function migrateRawSheetLevelColumnIfNeeded_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow > 1) {
     const rowCount = lastRow - 1;
-    const avgP2pValues = sheet.getRange(2, 14, rowCount, 1).getValues();
-    const levelValues = avgP2pValues.map((row) => [noiseLevelFromMaybeP2p_(row[0])]);
+    const levelValues = Array.from({ length: rowCount }, () => ['NO DATA']);
     sheet.getRange(2, 8, rowCount, 1).setValues(levelValues);
   }
 }
@@ -1409,6 +1414,40 @@ function noiseLevelFromP2p_(value) {
   return 'PEAK';
 }
 
+function numericDbaOrBlank_(value) {
+  if (!hasDisplayValue_(value)) {
+    return '';
+  }
+  const parsed = Number(String(value).replace(',', '.').trim());
+  return Number.isFinite(parsed) && parsed > 0 ? roundValue_(parsed, 1) : '';
+}
+
+function noiseLevelFromDba_(value) {
+  const dba = numericDbaOrBlank_(value);
+  if (dba === '') return 'NO DATA';
+  if (dba < DBA_LEVEL_SILENT_MAX) return 'SILENT';
+  if (dba < DBA_LEVEL_NORMAL_MAX) return 'NORMAL';
+  if (dba < DBA_LEVEL_LOUD_MAX) return 'LOUD';
+  return 'PEAK';
+}
+
+function validDbaWindow_(dba, validPct, acousticRevision, windowMinutes) {
+  return numericDbaOrBlank_(dba) !== '' &&
+    toNumber_(validPct) >= DBA_MIN_VALID_COVERAGE_PERCENT &&
+    toNumber_(acousticRevision) === 2 &&
+    toNumber_(windowMinutes) > 0;
+}
+
+function dbaWeightMinutes_(record) {
+  const measuredMinutes = Math.min(10, Math.max(0, toNumber_(record.windowMinutes)));
+  const validFraction = Math.min(1, Math.max(0, toNumber_(record.dbaValidPct) / 100));
+  return measuredMinutes * validFraction;
+}
+
+function energeticDbaAverage_(energyMinutes, validMinutes) {
+  return validMinutes > 0 ? roundValue_(10 * Math.log10(energyMinutes / validMinutes), 1) : '';
+}
+
 function compareTextDescending_(leftValue, rightValue) {
   const left = String(leftValue || '');
   const right = String(rightValue || '');
@@ -1969,24 +2008,7 @@ function timeToMinutes_(timeText) {
 }
 
 function buildQualityText_(record, isValid, gapBefore) {
-  const flags = [];
-  if (record.duplicateCount > 1) {
-    flags.push('DUPLICATED');
-  }
-  if (record.samples < MIN_VALID_SAMPLES) {
-    flags.push('LOW_SAMPLES');
-  }
-  const signalText = String(record.signalText || '').trim().toUpperCase();
-  if (signalText && signalText !== 'OK') {
-    flags.push(`SIGNAL_${signalText}`);
-  }
-  if (toNumber_(record.environmentFailCount) > 0) {
-    flags.push('ENV_FAIL');
-  }
-  if (gapBefore > 0) {
-    flags.push('GAP_BEFORE');
-  }
-  return flags.length > 0 ? flags.join('+') : 'OK';
+  return isValid ? 'OK' : 'NO DATA';
 }
 
 // === Telegram reports ===
@@ -2102,7 +2124,8 @@ function getLatestValidCleanRecord_() {
     samples: row[20],
     uptimeText: row[21],
     qualityText: row[29],
-    isValid: toNumber_(row[27]) === 1
+    isValid: toNumber_(row[27]) === 1,
+    dbaLeqEstimate: row[30]
   };
 }
 
@@ -2217,13 +2240,7 @@ function getCoverageQualityLabel_(coveragePct) {
   if (!hasDisplayValue_(coveragePct)) {
     return 'no data';
   }
-  if (coveragePct >= 80) {
-    return 'good';
-  }
-  if (coveragePct >= 40) {
-    return 'partial';
-  }
-  return 'weak';
+  return getCoverageConfidence_(toNumber_(coveragePct)).toLowerCase();
 }
 
 function getMainLevelForPart_(dateText, partText) {
@@ -2268,7 +2285,7 @@ function buildDayPartTelegramBlock_(targetDate, partText) {
 
   return [
     `${partIcon_(partText)} <b>${partText}</b>`,
-    `Avg P2P: ${formatMaybeNumber_(row[10], '')}`,
+    `Avg: ${formatMaybeNumber_(row[20], ' dB(A)')}`,
     `Main: ${getMainLevelForPart_(targetDate, partText)}`,
     `Valid windows: ${formatMaybeFraction_(row[4], row[5])}`
   ].join('\n');
@@ -2280,7 +2297,7 @@ function buildLatestTelegramStatus_() {
     return buildTelegramNoDataMessage_('BS Noise Latest', 'No clean summary data yet. Run Refresh latest data first.');
   }
 
-  const qualityLabel = record.isValid ? 'valid' : String(record.qualityText || 'raw');
+  const qualityLabel = String(record.qualityText || (record.isValid ? 'OK' : 'NO DATA'));
   return [
     '📟 <b>BS Noise Latest</b>',
     `Device: <code>${htmlEscape_(record.deviceId || 'n/a')}</code>`,
@@ -2293,7 +2310,7 @@ function buildLatestTelegramStatus_() {
     `🔊 Now: <b>${formatMaybePct_(record.nowPct)}</b>`,
     `🟡 H: ${formatMaybePct_(record.hourPct)}`,
     `🔵 M: ${formatMaybePct_(record.totalPct)}`,
-    `📏 Avg P2P: <b>${formatMaybeNumber_(record.avgPeakToPeak, '')}</b>`,
+    `📏 Sound: <b>${formatMaybeNumber_(record.dbaLeqEstimate, ' dB(A)')}</b>`,
     `🏷️ Level: <b>${htmlEscape_(record.levelText || 'n/a')}</b>`,
     '',
     `🌡️ Temp: ${formatMaybeNumber_(record.temperatureC, ' C')}`,
@@ -2329,10 +2346,10 @@ function buildDailyTelegramSummary_(dateText) {
   const overallDayRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'DAY');
   const overallNightRow = findRowByDateAndPart_(DAYPART_SUMMARY_SHEET_NAME, targetDate, 'NGT');
   const resultLines = [];
-  if (overallDayRow && toNumber_(overallDayRow[10]) > 0) {
+  if (overallDayRow && hasDisplayValue_(overallDayRow[20])) {
     resultLines.push(`Day looks mostly ${getMainLevelForPart_(targetDate, 'DAY').toLowerCase()}.`);
   }
-  if (overallNightRow && toNumber_(overallNightRow[10]) > 0) {
+  if (overallNightRow && hasDisplayValue_(overallNightRow[20])) {
     resultLines.push(`Night looks mostly ${getMainLevelForPart_(targetDate, 'NGT').toLowerCase()}.`);
   }
   resultLines.push(`Data quality is ${qualityLabel}.`);
@@ -2646,6 +2663,10 @@ function collectRawRecords_() {
         bootSequence: toNumber_(row[33]),
         resetReason: String(row[34] || ''),
         acousticRevision: toNumber_(row[35]),
+        dbaLeqEstimate: numericDbaOrBlank_(row[36]),
+        dbaValidPct: toNumber_(row[37]),
+        dbaFaults: toNumber_(row[38]),
+        dbaClips: toNumber_(row[39]),
         sourceSheet: sheet.getName(),
         dayState: sheet.getName() === ACTIVE_LOG_SHEET_NAME ? 'CURRENT' : 'ARCHIVE',
         recordKey
@@ -2697,11 +2718,10 @@ function buildCleanSummaryData_(records) {
 
     previousByDeviceDate[previousKey] = record;
     record.gapBefore = gapBefore;
-    record.levelText = noiseLevelFromP2p_(record.avgPeakToPeak);
     record.isDuplicated = record.duplicateCount > 1;
-    const normalizedSignalText = String(record.signalText || '').trim().toUpperCase();
-    const signalIsHealthy = !normalizedSignalText || normalizedSignalText === 'OK';
-    record.isValid = record.samples >= MIN_VALID_SAMPLES && signalIsHealthy;
+    record.isValid = validDbaWindow_(record.dbaLeqEstimate, record.dbaValidPct,
+                                     record.acousticRevision, record.windowMinutes);
+    record.levelText = record.isValid ? noiseLevelFromDba_(record.dbaLeqEstimate) : 'NO DATA';
     record.qualityText = buildQualityText_(record, record.isValid, gapBefore);
 
     cleanRows.push([
@@ -2734,7 +2754,8 @@ function buildCleanSummaryData_(records) {
       record.isDuplicated ? 1 : 0,
       record.isValid ? 1 : 0,
       gapBefore,
-      record.qualityText
+      record.qualityText,
+      record.dbaLeqEstimate
     ]);
     uniqueRecords.push(record);
   });
@@ -2764,6 +2785,8 @@ function buildDayPartSummaryRows_(records) {
       sumHour: 0,
       sumTotal: 0,
       sumP2P: 0,
+      dbaEnergyMinutes: 0,
+      dbaValidMinutes: 0,
       sumTemp: 0,
       tempCount: 0,
       sumHum: 0,
@@ -2792,6 +2815,9 @@ function buildDayPartSummaryRows_(records) {
     bucket.sumHour += record.hourPct;
     bucket.sumTotal += record.totalPct;
     bucket.sumP2P += record.avgPeakToPeak;
+    const dbaMinutes = dbaWeightMinutes_(record);
+    bucket.dbaEnergyMinutes += Math.pow(10, record.dbaLeqEstimate / 10) * dbaMinutes;
+    bucket.dbaValidMinutes += dbaMinutes;
     bucket.quietSum += record.quietCount;
     bucket.loudSum += record.loudCount;
     bucket.sampleSum += record.samples;
@@ -2819,7 +2845,9 @@ function buildDayPartSummaryRows_(records) {
       bucket.windowsTotal,
       bucket.windowsValid,
       expectedWindows,
-      expectedWindows > 0 ? roundValue_(bucket.windowsValid * 100 / expectedWindows, 1) : '',
+      expectedWindows > 0
+        ? roundValue_(Math.min(100, bucket.dbaValidMinutes * 100 / (expectedWindows * 10)), 1)
+        : '',
       bucket.windowsValid > 0 ? roundValue_(bucket.sumNow / bucket.windowsValid, 1) : '',
       bucket.windowsValid > 0 ? roundValue_(bucket.sumHour / bucket.windowsValid, 1) : '',
       bucket.windowsValid > 0 ? roundValue_(bucket.sumTotal / bucket.windowsValid, 1) : '',
@@ -2832,7 +2860,8 @@ function buildDayPartSummaryRows_(records) {
       bucket.levelCounts.NORMAL || 0,
       bucket.levelCounts.LOUD || 0,
       bucket.levelCounts.PEAK || 0,
-      Math.max(expectedWindows - bucket.windowsTotal, 0)
+      Math.max(expectedWindows - bucket.windowsTotal, 0),
+      energeticDbaAverage_(bucket.dbaEnergyMinutes, bucket.dbaValidMinutes)
     ];
   });
 
@@ -2967,12 +2996,12 @@ function getMainLevelStats_(levelCounts) {
 
 function getCoverageConfidence_(coveragePct) {
   if (coveragePct >= 80) {
-    return 'GOOD';
+    return 'OK';
   }
-  if (coveragePct >= 40) {
+  if (coveragePct > 0) {
     return 'PARTIAL';
   }
-  return 'WEAK';
+  return 'NO DATA';
 }
 
 function levelToVerdictScore_(levelText) {
@@ -2983,9 +3012,9 @@ function levelToVerdictScore_(levelText) {
   return index >= 0 ? index + 1 : '';
 }
 
-function buildConclusionReading_(partText, avgPeakToPeak, mainLevel, mainSharePct,
+function buildConclusionReading_(partText, dbaLeqEstimate, mainLevel, mainSharePct,
                                  dataConfidence, levelDominance) {
-  const avgText = avgPeakToPeak === '' ? 'n/a' : `${avgPeakToPeak} P2P`;
+  const avgText = dbaLeqEstimate === '' ? 'n/a' : `${dbaLeqEstimate} dB(A)`;
   const shareText = mainSharePct === '' ? 'n/a' : `${mainSharePct}%`;
   return `${partText}: typical ${mainLevel}, avg ${avgText}, top share ${shareText}, ` +
     `data ${dataConfidence.toLowerCase()}, dominance ${levelDominance.toLowerCase()}`;
@@ -3001,7 +3030,8 @@ function buildConclusionSummaryRows_(records) {
       dateText: record.dateText,
       partText: record.partText,
       validWindows: 0,
-      sumP2P: 0,
+      dbaEnergyMinutes: 0,
+      dbaValidMinutes: 0,
       levelCounts: {
         SILENT: 0,
         NORMAL: 0,
@@ -3015,7 +3045,9 @@ function buildConclusionSummaryRows_(records) {
     }
 
     bucket.validWindows++;
-    bucket.sumP2P += record.avgPeakToPeak;
+    const dbaMinutes = dbaWeightMinutes_(record);
+    bucket.dbaEnergyMinutes += Math.pow(10, record.dbaLeqEstimate / 10) * dbaMinutes;
+    bucket.dbaValidMinutes += dbaMinutes;
     bucket.levelCounts[record.levelText] = (bucket.levelCounts[record.levelText] || 0) + 1;
   });
 
@@ -3023,10 +3055,11 @@ function buildConclusionSummaryRows_(records) {
     const bucket = buckets[key];
     const expectedWindows = EXPECTED_WINDOWS_PER_PART[bucket.partText] || 0;
     const coveragePct = expectedWindows > 0
-      ? roundValue_(bucket.validWindows * 100 / expectedWindows, 1)
+      ? roundValue_(Math.min(100, bucket.dbaValidMinutes * 100 / (expectedWindows * 10)), 1)
       : '';
     const mainLevelStats = getMainLevelStats_(bucket.levelCounts);
-    const avgPeakToPeak = bucket.validWindows > 0 ? roundValue_(bucket.sumP2P / bucket.validWindows, 1) : '';
+    const dbaLeqEstimate = energeticDbaAverage_(bucket.dbaEnergyMinutes,
+                                                bucket.dbaValidMinutes);
     const mainSharePct = bucket.validWindows > 0 ? mainLevelStats.sharePct : '';
     const dataConfidence = getCoverageConfidence_(toNumber_(coveragePct));
     const levelDominance = bucket.validWindows > 0 ? mainLevelStats.dominance : 'NO DATA';
@@ -3035,7 +3068,7 @@ function buildConclusionSummaryRows_(records) {
       bucket.deviceId,
       bucket.dateText,
       bucket.partText,
-      avgPeakToPeak,
+      dbaLeqEstimate,
       bucket.validWindows > 0 ? mainLevelStats.level : 'NO DATA',
       mainSharePct,
       bucket.validWindows,
@@ -3044,7 +3077,7 @@ function buildConclusionSummaryRows_(records) {
       dataConfidence,
       levelDominance,
       bucket.validWindows > 0
-        ? buildConclusionReading_(bucket.partText, avgPeakToPeak, mainLevelStats.level,
+        ? buildConclusionReading_(bucket.partText, dbaLeqEstimate, mainLevelStats.level,
                                   mainSharePct, dataConfidence, levelDominance)
         : `${bucket.partText}: no valid windows yet`
     ];
@@ -3150,6 +3183,7 @@ function buildHealthSummaryRows_(records) {
       dateText: record.dateText,
       uniqueWindows: 0,
       validWindows: 0,
+      validMinutes: 0,
       duplicateExtraRows: 0,
       lowSampleWindows: 0,
       firstTime: '',
@@ -3194,6 +3228,7 @@ function buildHealthSummaryRows_(records) {
     }
     if (record.isValid) {
       bucket.validWindows++;
+      bucket.validMinutes += dbaWeightMinutes_(record);
     }
   });
 
@@ -3210,7 +3245,7 @@ function buildHealthSummaryRows_(records) {
       bucket.firstTime,
       bucket.lastTime,
       bucket.hasLogRows,
-      roundValue_(bucket.validWindows * 100 / 144, 1),
+      roundValue_(Math.min(100, bucket.validMinutes * 100 / 1440), 1),
       bucket.signalIssueWindows,
       bucket.environmentFailWindows,
       bucket.environmentFailSamples,
@@ -3534,7 +3569,10 @@ function doPostUnlocked_(e) {
   const normalizedDate = normalizeDateText_(valueOrBlank(data.date));
   const normalizedTimeFrom = normalizeTimeText_(valueOrBlank(data.time_from));
   const normalizedTimeTo = normalizeTimeText_(valueOrBlank(data.time_to));
-  const levelText = valueOrBlank(data.level) || noiseLevelFromMaybeP2p_(data.avg_peak_to_peak);
+  const levelText = validDbaWindow_(data.dba_leq_est, data.dba_valid_pct,
+                                    data.acoustic_rev, data.window_minutes)
+    ? noiseLevelFromDba_(data.dba_leq_est)
+    : 'NO DATA';
   const sheet = ensureWritableLogSheet_(normalizedDate);
   const recordKey = buildRecordKeyFromPayload_(data);
 
