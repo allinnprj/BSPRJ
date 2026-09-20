@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## Clear Technical Log - live acceptance - 2026-09-20
+
+1. Live confirmation proves Technical mode presents exactly `Summary`, `Measurements`, `Charts`, and `Technical Log`, while User mode returns to the three ordinary views.
+2. Diagnostics successfully restores and re-hides the canonical raw `log` and internal calculation sheets. No diagnostic evidence or AppSheet-compatible source was deleted.
+3. `BOOT NUMBER / BOOT REASON` are live, and the newest-first derived rows show healthy current audio evidence: `100%` valid audio, zero errors/clips, and signal `OK`. The repeated `PANIC` value is one boot-session reason with continuously increasing uptime, not a repeated ten-minute crash.
+4. Task `110` is closed. Raw schemas, payloads, firmware, dB calculations, archives, and triggers remain unchanged; the next stage is a dependency audit before any deletion or task `108` cleanup.
+
 ## Clear Technical Log - Apps Script candidate - 2026-09-20
 
 1. Added a derived `Technical Log` with fifteen understandable fields for ten-minute diagnostics, including `AVG SOUND DB(A)`, `VALID AUDIO %`, `AUDIO ERRORS`, `MIC OVERLOADS`, `MIC SIGNAL`, runtime, restart count, and restart reason. The raw 40-column `log` and its canonical header names remain unchanged.

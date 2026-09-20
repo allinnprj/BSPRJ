@@ -40,6 +40,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 ## Current Baseline
 
 - Current whole-project readiness estimate: `60%`.
+- Live task `110` evidence accepts the four-view Technical layout, the three-view User layout, and Diagnostics recovery of raw/internal sheets. This improves usability without changing the cautious readiness estimate because no measurement, autonomous-power, or final-field gate was closed.
 
 ## Russian Report Block
 
