@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Clear Technical Log - Apps Script candidate - 2026-09-20
+
+1. Added a derived `Technical Log` with fifteen understandable fields for ten-minute diagnostics, including `AVG SOUND DB(A)`, `VALID AUDIO %`, `AUDIO ERRORS`, `MIC OVERLOADS`, `MIC SIGNAL`, runtime, restart count, and restart reason. The raw 40-column `log` and its canonical header names remain unchanged.
+2. Technical mode now defaults to `Summary`, `Measurements`, `Charts`, and `Technical Log`; raw/internal calculation sheets and dated archives remain hidden until explicitly restored through Diagnostics. Technical `Measurements` uses clearer microphone labels: `MICROPHONE`, `MIC RANGE AVG`, `MIC RAW MIN`, `MIC RAW MAX`, and `MIC OVERLOADS`.
+3. Seven focused Apps Script/dB regressions pass locally. No firmware, POST schema, archives, AppSheet source, trigger, live workbook, Apps Script deployment, OTA, or Git publication was changed. Manual deployment, one `Refresh latest data`, and visual/recovery checks remain required.
+
 ## Compact Sheets presentation - live acceptance - 2026-09-20
 
 1. Live User-mode screenshots confirm `BUILD`, combined `DATA = confidence · coverage`, newest-first dB(A) measurements, hidden microphone diagnostics, and Charts still using numeric valid-minute coverage.

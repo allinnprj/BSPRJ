@@ -1318,7 +1318,7 @@ function showDiagnosticsStatus_() {
   const state = refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast(
-    `Diagnostics status: technical columns ${state.technicalColumns}, ` +
+    `Diagnostics status: diagnostic columns ${state.technicalColumns}, ` +
       `archive sheets ${state.archiveSheets}, internal sheets ${state.analyticsSheets}.`,
     'BS Noise',
     8
@@ -1358,7 +1358,7 @@ function addBsMenuToUi_() {
       diagnosticsMenu,
       'Diagnostic columns',
       diagnosticsState.technicalColumns,
-      'Hide technical columns',
+      'Hide diagnostic columns',
       'hideTechnicalColumns_',
       'Show all columns',
       'showAllColumns_'

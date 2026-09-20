@@ -298,7 +298,7 @@ assert.deepStrictEqual(
   diagnosticsMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
   [
     '● Diagnostic columns: SHOWN',
-    'Hide technical columns',
+    'Hide diagnostic columns',
     '● Archive sheets: HIDDEN',
     'Show archive sheets',
     '● Internal sheets: HIDDEN',
@@ -350,7 +350,7 @@ assert.deepStrictEqual(
   diagnosticsMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
   [
     '● Diagnostic columns: MIXED',
-    'Hide technical columns',
+    'Hide diagnostic columns',
     'Show all columns',
     '● Archive sheets: MIXED',
     'Hide archive sheets',
@@ -376,7 +376,7 @@ assert.deepStrictEqual(
   })),
   visibilityBeforeStatusClick
 );
-assert.match(state.toasts.at(-1), /technical columns MIXED, archive sheets MIXED, internal sheets MIXED/);
+assert.match(state.toasts.at(-1), /diagnostic columns MIXED, archive sheets MIXED, internal sheets MIXED/);
 
 assert.deepStrictEqual(
   Array.from(sandbox.__technicalLogHeaders),

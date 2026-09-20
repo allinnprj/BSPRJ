@@ -28,7 +28,7 @@ meter. Starting with local candidate build `157`, `LEVEL` uses dB(A), while
 - `Measurements`: newest-first ten-minute dB(A), level, quality, temperature, and humidity.
 - `Charts`: dB(A)-based day-part overview, level mix, coverage, and daily verdict history.
 
-`Technical mode` restores the raw `log`, internal analytics, health tables, and all diagnostic columns. `Measurements` also expands with `MIC`, `AVG P2P`, `RAW MIN`, `RAW MAX`, and `DBA CLIPS`. Nothing is deleted: the raw `SIG IN`, dB validity/fault/clip fields, build/reset/heap/uptime evidence, dated archives, and `daily_verdict_table` remain available for troubleshooting and AppSheet sources.
+`Technical mode` keeps the same three views and adds a compact `Technical Log`. Its clear headings include `AVG SOUND DB(A)`, `VALID AUDIO %`, `AUDIO ERRORS`, `MIC OVERLOADS`, `MIC SIGNAL`, runtime, start count, and restart reason. `Measurements` also expands with `MICROPHONE`, `MIC RANGE AVG`, `MIC RAW MIN`, `MIC RAW MAX`, and `MIC OVERLOADS`. Nothing is deleted: Diagnostics can restore the canonical raw `log`, internal analytics, health tables, dated archives, and all original fields required for troubleshooting and AppSheet sources.
 
 ## Remote Diagnostic Journal
 
@@ -876,7 +876,7 @@ Each measurement also shows its own `BUILD`. The repeated device and full firmwa
 
 4. Switch to `Technical mode` only when diagnosing a suspicious result.
 
-Use the compact `MIC` field first, then `AVG P2P`, `RAW MIN`, `RAW MAX`, `DBA CLIPS`, raw `SIG IN`, and `QUALITY` when deeper diagnosis is needed.
+Use `MICROPHONE` first, then `MIC RANGE AVG`, `MIC RAW MIN`, `MIC RAW MAX`, and `MIC OVERLOADS`. Open `Technical Log` for audio validity, errors, signal, runtime, and restart context. Restore the canonical raw/internal sheets through Diagnostics only for a deeper investigation.
 
 ## Terms That May Become Less Important Later
 
