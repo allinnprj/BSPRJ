@@ -67,7 +67,7 @@ const sheetDefinitions = [
   ['Summary', ['BUILD', 'DATE', 'PART', 'DBA LEQ EST', 'MAIN LEVEL']],
   ['Measurements', ['BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'DBA LEQ EST', 'LEVEL', 'DATA QUALITY', 'TEMP C', 'HUM %', 'MICROPHONE', 'MIC RANGE AVG', 'MIC RAW MIN', 'MIC RAW MAX', 'MIC OVERLOADS']],
   ['Charts', ['NOISE OVERVIEW']],
-  ['Technical Log', ['BUILD', 'DATE', 'START', 'END', 'PERIOD', 'AVG SOUND DB(A)', 'SOUND LEVEL', 'MEASURED MIN', 'VALID AUDIO %', 'AUDIO ERRORS', 'MIC OVERLOADS', 'MIC SIGNAL', 'RUN TIME', 'START COUNT', 'RESTART REASON']],
+  ['Technical Log', ['BUILD', 'DATE', 'START', 'END', 'PERIOD', 'AVG SOUND DB(A)', 'SOUND LEVEL', 'MEASURED MIN', 'VALID AUDIO %', 'AUDIO ERRORS', 'MIC OVERLOADS', 'MIC SIGNAL', 'RUN TIME', 'BOOT NUMBER', 'BOOT REASON']],
   ['notes', ['NOTE']]
 ];
 const sheets = sheetDefinitions.map(([name, headers]) => createSheet(name, headers));
@@ -380,7 +380,7 @@ assert.match(state.toasts.at(-1), /diagnostic columns MIXED, archive sheets MIXE
 
 assert.deepStrictEqual(
   Array.from(sandbox.__technicalLogHeaders),
-  ['BUILD', 'DATE', 'START', 'END', 'PERIOD', 'AVG SOUND DB(A)', 'SOUND LEVEL', 'MEASURED MIN', 'VALID AUDIO %', 'AUDIO ERRORS', 'MIC OVERLOADS', 'MIC SIGNAL', 'RUN TIME', 'START COUNT', 'RESTART REASON']
+  ['BUILD', 'DATE', 'START', 'END', 'PERIOD', 'AVG SOUND DB(A)', 'SOUND LEVEL', 'MEASURED MIN', 'VALID AUDIO %', 'AUDIO ERRORS', 'MIC OVERLOADS', 'MIC SIGNAL', 'RUN TIME', 'BOOT NUMBER', 'BOOT REASON']
 );
 const technicalRows = sandbox.__buildTechnicalLogRows([
   {

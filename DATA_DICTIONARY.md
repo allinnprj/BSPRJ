@@ -28,7 +28,7 @@ meter. Starting with local candidate build `157`, `LEVEL` uses dB(A), while
 - `Measurements`: newest-first ten-minute dB(A), level, quality, temperature, and humidity.
 - `Charts`: dB(A)-based day-part overview, level mix, coverage, and daily verdict history.
 
-`Technical mode` keeps the same three views and adds a compact `Technical Log`. Its clear headings include `AVG SOUND DB(A)`, `VALID AUDIO %`, `AUDIO ERRORS`, `MIC OVERLOADS`, `MIC SIGNAL`, runtime, start count, and restart reason. `Measurements` also expands with `MICROPHONE`, `MIC RANGE AVG`, `MIC RAW MIN`, `MIC RAW MAX`, and `MIC OVERLOADS`. Nothing is deleted: Diagnostics can restore the canonical raw `log`, internal analytics, health tables, dated archives, and all original fields required for troubleshooting and AppSheet sources.
+`Technical mode` keeps the same three views and adds a compact `Technical Log`. Its clear headings include `AVG SOUND DB(A)`, `VALID AUDIO %`, `AUDIO ERRORS`, `MIC OVERLOADS`, `MIC SIGNAL`, runtime, boot number, and boot reason. The boot fields describe the current boot session and therefore repeat across its ten-minute rows. `Measurements` also expands with `MICROPHONE`, `MIC RANGE AVG`, `MIC RAW MIN`, `MIC RAW MAX`, and `MIC OVERLOADS`. Nothing is deleted: Diagnostics can restore the canonical raw `log`, internal analytics, health tables, dated archives, and all original fields required for troubleshooting and AppSheet sources.
 
 ## Remote Diagnostic Journal
 
