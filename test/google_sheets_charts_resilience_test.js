@@ -28,21 +28,27 @@ const chartBlocks = sandbox.__buildChartSourceBlocks([
   {
     dateText: '2026-08-12',
     partText: 'DAY',
-    avgPeakToPeak: 400,
+    dbaLeqEstimate: 60,
+    dbaValidPct: 100,
+    windowMinutes: 10,
     levelText: 'NORMAL',
     isValid: true
   },
   {
     dateText: '2026-08-12',
     partText: 'DAWN',
-    avgPeakToPeak: 999,
+    dbaLeqEstimate: 70,
+    dbaValidPct: 100,
+    windowMinutes: 10,
     levelText: 'PEAK',
     isValid: true
   },
   {
     dateText: '2026-08-12',
     partText: 'NGT',
-    avgPeakToPeak: 200,
+    dbaLeqEstimate: 50,
+    dbaValidPct: 100,
+    windowMinutes: 10,
     levelText: 'SILENT',
     isValid: true
   }
@@ -52,12 +58,13 @@ assert.strictEqual(chartBlocks.latestDate, '2026-08-12');
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(chartBlocks.dayPartRows)),
   [
-    ['DAY', 400],
+    ['DAY', 60],
     ['EVE', ''],
-    ['NGT', 200]
+    ['NGT', 50]
   ]
 );
-assert.strictEqual(chartBlocks.coverageRows[0][1], 2);
+assert.strictEqual(chartBlocks.coverageRows[0][1], 20);
+assert.strictEqual(chartBlocks.coverageRows[1][1], 1420);
 assert.strictEqual(chartBlocks.coveragePct, 1.4);
 assert.deepStrictEqual(warnings, ['Chart row skipped: unsupported PART "DAWN".']);
 
@@ -92,6 +99,8 @@ assert.match(chartRebuildSource, /sheet\.setRowHeights\(1, dashboardLastRow, 24\
 assert.match(chartRebuildSource, /setValue\('No data yet'\)/);
 assert.match(chartRebuildSource, /sheet\.setColumnWidth\(5, 220\)/);
 assert.match(chartRebuildSource, /sheet\.setColumnWidths\(6, 3, 140\)/);
+assert.doesNotMatch(chartsSource, /AVG P2P/);
+assert.match(chartsSource, /DB\(A\) LEQ/);
 
 assert.doesNotMatch(codeSource, /[А-Яа-яЁё]/);
 assert.doesNotMatch(chartsSource, /[А-Яа-яЁё]/);

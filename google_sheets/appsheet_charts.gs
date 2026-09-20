@@ -31,11 +31,11 @@ function buildChartSourceBlocks_(records) {
 
     const coverage = coverageByDate[record.dateText] || {
       uniqueWindows: 0,
-      validWindows: 0
+      validMinutes: 0
     };
     coverage.uniqueWindows++;
     if (record.isValid) {
-      coverage.validWindows++;
+      coverage.validMinutes += dbaWeightMinutes_(record);
     }
     coverageByDate[record.dateText] = coverage;
 
@@ -45,25 +45,29 @@ function buildChartSourceBlocks_(records) {
 
     const dateKey = record.dateText;
     byDatePart[dateKey] = byDatePart[dateKey] || {
-      DAY: [],
-      EVE: [],
-      NGT: []
+      DAY: { energyMinutes: 0, validMinutes: 0 },
+      EVE: { energyMinutes: 0, validMinutes: 0 },
+      NGT: { energyMinutes: 0, validMinutes: 0 }
     };
-    byDatePart[dateKey][partText].push(record.avgPeakToPeak);
+    const dbaMinutes = dbaWeightMinutes_(record);
+    byDatePart[dateKey][partText].energyMinutes +=
+      Math.pow(10, record.dbaLeqEstimate / 10) * dbaMinutes;
+    byDatePart[dateKey][partText].validMinutes += dbaMinutes;
     levelMix[record.levelText] = (levelMix[record.levelText] || 0) + 1;
 
   });
 
   const sortedDates = Object.keys(byDatePart).sort();
   const latestDate = sortedDates.length > 0 ? sortedDates[sortedDates.length - 1] : '';
-  const latestBucket = latestDate ? byDatePart[latestDate] : { DAY: [], EVE: [], NGT: [] };
+  const emptyPart = () => ({ energyMinutes: 0, validMinutes: 0 });
+  const latestBucket = latestDate
+    ? byDatePart[latestDate]
+    : { DAY: emptyPart(), EVE: emptyPart(), NGT: emptyPart() };
   const dayPartRows = PART_ORDER.map((partText) => {
-    const values = latestBucket[partText] || [];
+    const bucket = latestBucket[partText] || emptyPart();
     return [
       partText,
-      values.length
-        ? roundValue_(values.reduce((sum, value) => sum + value, 0) / values.length, 1)
-        : ''
+      energeticDbaAverage_(bucket.energyMinutes, bucket.validMinutes)
     ];
   });
 
@@ -76,14 +80,19 @@ function buildChartSourceBlocks_(records) {
   ]));
 
   const latestCoverage = latestDate
-    ? (coverageByDate[latestDate] || { uniqueWindows: 0, validWindows: 0 })
-    : { uniqueWindows: '', validWindows: '' };
+    ? (coverageByDate[latestDate] || { uniqueWindows: 0, validMinutes: 0 })
+    : { uniqueWindows: '', validMinutes: '' };
   const coverageRows = [
-    ['VALID WINDOWS', latestCoverage.validWindows],
     [
-      'MISSING WINDOWS',
-      hasDisplayValue_(latestCoverage.uniqueWindows)
-        ? Math.max(144 - toNumber_(latestCoverage.uniqueWindows), 0)
+      'VALID MINUTES',
+      hasDisplayValue_(latestCoverage.validMinutes)
+        ? roundValue_(latestCoverage.validMinutes, 1)
+        : ''
+    ],
+    [
+      'MISSING MINUTES',
+      hasDisplayValue_(latestCoverage.validMinutes)
+        ? roundValue_(Math.max(1440 - toNumber_(latestCoverage.validMinutes), 0), 1)
         : ''
     ]
   ];
@@ -95,8 +104,8 @@ function buildChartSourceBlocks_(records) {
     levelMixRows,
     coverageRows,
     verdictRows,
-    coveragePct: hasDisplayValue_(latestCoverage.validWindows)
-      ? roundValue_(toNumber_(latestCoverage.validWindows) * 100 / 144, 1)
+    coveragePct: hasDisplayValue_(latestCoverage.validMinutes)
+      ? roundValue_(toNumber_(latestCoverage.validMinutes) * 100 / 1440, 1)
       : ''
   };
 }
@@ -144,24 +153,15 @@ function rebuildAnalyticsCharts_(options) {
     : { applyFormatting: options !== false };
   const shouldFormat = opts.applyFormatting === true;
   const silent = opts.silent === true;
-  const cleanSheet = getOrCreateSheet_(CLEAN_SUMMARY_SHEET_NAME);
-  const lastRow = cleanSheet.getLastRow();
-  if (lastRow < 2) {
+  const records = Array.isArray(opts.records)
+    ? opts.records
+    : buildCleanSummaryData_(collectRawRecords_()).uniqueRecords;
+  if (!records.length) {
     if (!silent) {
       SpreadsheetApp.getActiveSpreadsheet().toast('No clean summary data yet. Run Refresh latest data first.', 'BS Noise', 6);
     }
     return;
   }
-
-  const values = cleanSheet.getRange(2, 1, lastRow - 1, CLEAN_SUMMARY_HEADERS.length).getValues();
-  const records = values.map((row) => ({
-    dateText: normalizeDateText_(row[3]),
-    partText: normalizePartText_(row[6]),
-    avgPeakToPeak: toNumber_(row[13]),
-    levelText: String(row[7] || ''),
-    isValid: toNumber_(row[27]) === 1,
-    gapBefore: toNumber_(row[28])
-  }));
 
   const chartBlocks = buildChartSourceBlocks_(records);
   const verdictChartRows = buildDailyVerdictChartRows_(chartBlocks.verdictRows);
@@ -208,7 +208,7 @@ function rebuildAnalyticsCharts_(options) {
   }
 
   sheet.getRange(1, 1, 1, 6).merge();
-  sheet.getRange(1, 1).setValue('DASHBOARD · QUICK VIEW')
+  sheet.getRange(1, 1).setValue('NOISE OVERVIEW')
     .setHorizontalAlignment('left');
   if (shouldFormat) {
     sheet.getRange(1, 1)
@@ -220,8 +220,8 @@ function rebuildAnalyticsCharts_(options) {
   sheet.getRange(2, 1, 1, 6).merge();
   sheet.getRange(2, 1).setValue(
     chartBlocks.latestDate
-      ? `Latest date: ${chartBlocks.latestDate}. Use charts for quick reading and summary_* sheets for exact numbers.`
-      : 'Use charts for quick reading and summary_* sheets for exact numbers.'
+      ? `Latest date: ${chartBlocks.latestDate}. Use Summary and Measurements for exact values.`
+      : 'Use Summary and Measurements for exact values.'
   )
     .setHorizontalAlignment('left');
   if (shouldFormat) {
@@ -232,8 +232,8 @@ function rebuildAnalyticsCharts_(options) {
   }
 
   sheet.getRange(4, 1, 1, 2).setValues([['Current day focus', chartBlocks.latestDate || 'n/a']]);
-  sheet.getRange(4, 3, 1, 2).setValues([['Valid windows', buildChartCellText_(chartBlocks.coverageRows[0][1])]]);
-  sheet.getRange(4, 5, 1, 2).setValues([['Missing windows', buildChartCellText_(chartBlocks.coverageRows[1][1])]]);
+  sheet.getRange(4, 3, 1, 2).setValues([['Valid minutes', buildChartCellText_(chartBlocks.coverageRows[0][1])]]);
+  sheet.getRange(4, 5, 1, 2).setValues([['Missing minutes', buildChartCellText_(chartBlocks.coverageRows[1][1])]]);
   if (shouldFormat) {
     sheet.getRange(4, 1, 1, 6).setBackground('#f3f6fa').setFontWeight('bold');
   }
@@ -245,24 +245,24 @@ function rebuildAnalyticsCharts_(options) {
     sheet.getRange(5, 1, 1, 6).setBackground('#fbfdf8');
   }
 
-  sheet.getRange(7, 1, 1, 3).merge().setValue('DAYPART LEVELS')
+  sheet.getRange(7, 1, 1, 3).merge().setValue('DAYPART SOUND')
     .setHorizontalAlignment('center');
   if (shouldFormat) {
     sheet.getRange(7, 1, 1, 3).setBackground('#eaf4e3').setFontWeight('bold');
     sheet.getRange(8, 1, 1, 3).setBackground('#eff7ea').setFontWeight('bold');
   }
-  sheet.getRange(8, 1, 1, 3).setValues([['PART', 'AVG P2P', 'DIAGRAM']]);
+  sheet.getRange(8, 1, 1, 3).setValues([['PART', 'DB(A) LEQ', 'DIAGRAM']]);
   const dayPartDisplayRows = chartBlocks.dayPartRows.map((row) => [
     row[0],
     buildChartCellText_(row[1]),
-    `${buildTextBar_(row[1], 850, 24)} ${buildChartCellText_(row[1])}`
+    `${buildTextBar_(row[1], 80, 24)} ${buildChartCellText_(row[1], ' dB(A)')}`
   ]);
   sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setValues(dayPartDisplayRows);
   if (shouldFormat) {
     sheet.getRange(9, 1, dayPartDisplayRows.length, 3).setBackgrounds(buildSolidBackgrounds_(dayPartDisplayRows.length, 3, '#fbfdf8'));
   }
 
-  sheet.getRange(14, 1, 1, 3).merge().setValue('NOISE MIX')
+  sheet.getRange(14, 1, 1, 3).merge().setValue('ALL DATA LEVEL MIX')
     .setHorizontalAlignment('left');
   if (shouldFormat) {
     sheet.getRange(14, 1, 1, 3).setBackground('#fff7df').setFontWeight('bold');
@@ -289,7 +289,7 @@ function rebuildAnalyticsCharts_(options) {
   const coverageDisplayRows = chartBlocks.coverageRows.map((row) => [
     row[0],
     buildChartCellText_(row[1]),
-    buildTextBar_(row[1], 144, 24)
+    buildTextBar_(row[1], 1440, 24)
   ]);
   sheet.getRange(24, 1, coverageDisplayRows.length, 3).setValues(coverageDisplayRows);
   if (shouldFormat) {

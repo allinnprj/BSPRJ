@@ -11,6 +11,8 @@ const hooks = `
   this.__getCoverageConfidence = getCoverageConfidence_;
   this.__noiseLevelFromDba = noiseLevelFromDba_;
   this.__buildConclusionSummaryRows = buildConclusionSummaryRows_;
+  this.__buildUserSummaryRows = buildUserSummaryRows_;
+  this.__buildUserMeasurementRows = buildUserMeasurementRows_;
   this.__buildCleanSummaryData = buildCleanSummaryData_;
   this.__buildDayPartSummaryRows = buildDayPartSummaryRows_;
   this.__buildDailyVerdictRows = buildDailyVerdictRows_;
@@ -19,6 +21,8 @@ const hooks = `
     clean: CLEAN_SUMMARY_HEADERS,
     daypart: DAYPART_SUMMARY_HEADERS,
     conclusions: CONCLUSION_SUMMARY_HEADERS,
+    userSummary: USER_SUMMARY_HEADERS,
+    userMeasurements: USER_MEASUREMENTS_HEADERS,
     verdict: DAILY_VERDICT_HEADERS,
     table: DAILY_VERDICT_TABLE_HEADERS
   };
@@ -77,6 +81,14 @@ assert.ok(Math.abs(conclusion[3] - expectedDba) < 0.1,
 assert.strictEqual(conclusion[9], 'PARTIAL');
 assert.strictEqual(conclusion[10], 'MIXED');
 assert.match(conclusion[11], /dB\(A\).*data partial, dominance mixed/);
+const userSummary = sandbox.__buildUserSummaryRows(records)[0];
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(userSummary)),
+  [
+    conclusion[0], conclusion[1], conclusion[2], conclusion[3], conclusion[4],
+    conclusion[5], conclusion[8], conclusion[9], conclusion[11]
+  ]
+);
 
 const verdict = sandbox.__buildDailyVerdictRows(records)[0];
 assert.strictEqual(verdict[3], 'MIXED NORMAL/LOUD');
@@ -112,6 +124,14 @@ assert.strictEqual(clean.uniqueRecords[1].levelText, 'NORMAL');
 assert.strictEqual(clean.uniqueRecords[2].isValid, false);
 assert.strictEqual(clean.uniqueRecords[2].levelText, 'NO DATA');
 assert.strictEqual(clean.cleanRows[2][29], 'NO DATA');
+const userMeasurements = sandbox.__buildUserMeasurementRows(clean.uniqueRecords);
+assert.strictEqual(userMeasurements.length, 3);
+assert.strictEqual(userMeasurements[0][2], '12:20:00');
+assert.strictEqual(userMeasurements[0][5], '');
+assert.strictEqual(userMeasurements[0][6], 'NO DATA');
+assert.strictEqual(userMeasurements[0][7], 'NO DATA');
+assert.strictEqual(userMeasurements[2][5], 50);
+assert.strictEqual(userMeasurements[2][6], 'SILENT');
 const daypart = sandbox.__buildDayPartSummaryRows(clean.uniqueRecords)[0];
 const weightedDba = 10 * Math.log10((5 * Math.pow(10, 50 / 10) +
   10 * Math.pow(10, 60 / 10)) / 15);
@@ -125,6 +145,10 @@ assert.strictEqual(sandbox.__headers.daypart.length,
   sandbox.__styles.summaryDaypart.headerColors.length);
 assert.strictEqual(sandbox.__headers.conclusions.length,
   sandbox.__styles.summaryConclusions.headerColors.length);
+assert.strictEqual(sandbox.__headers.userSummary.length,
+  sandbox.__styles.userSummary.headerColors.length);
+assert.strictEqual(sandbox.__headers.userMeasurements.length,
+  sandbox.__styles.userMeasurements.headerColors.length);
 assert.strictEqual(sandbox.__headers.verdict.length,
   sandbox.__styles.dailyVerdict.headerColors.length);
 assert.strictEqual(sandbox.__headers.table.length,

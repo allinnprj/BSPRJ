@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Final Google Sheets user views - Apps Script candidate - 2026-09-19
+
+1. Replaced the test-heavy ordinary presentation with three compact user views: `Summary`, `Measurements`, and `Charts`. `Summary` shows the newest dB(A) DAY/EVE/NGT conclusions, `Measurements` shows newest-first ten-minute dB(A) windows, and `Charts` shows dB(A)-based overview, daypart sound, level mix, and verdict history.
+2. User mode is now the default ordinary interface and keeps raw `log`, dated archives, internal analytics, `daily_verdict_table`, relative `AVG P2P / Now / H / M`, signal, audio-health, reset/build/heap/uptime, and other technical evidence hidden rather than deleted. Technical mode restores the raw/internal sheets and all diagnostic columns; the AppSheet source remains available as a hidden technical source.
+3. Charts no longer use `AVG P2P` as the user metric. Their dB(A) values use energetic averages weighted by measured valid minutes, and coverage is expressed in valid/missing minutes. An existing lowercase `charts` tab is migrated to `Charts` without replacing its sheet identity.
+4. T9 physically accepts the manually uploaded BS `0.1.103-EXP` build `157` short gate before this presentation-only change: `15` consecutive windows from `13:30` through `15:50`, all with dB(A), `100%` valid audio, zero faults/clips and `GS_DROP=0`; the distribution is `13 NORMAL`, one `LOUD` at `65.7 dB(A)`, and one `PEAK` at `68.7 dB(A)`, with the refreshed summary matching the raw rows.
+5. The focused User/Technical mode, dB semantics, newest-first, chart resilience, daily summary, dB publication, and HTTP diagnostics contracts pass locally, and `git diff --check` is clean. No firmware, C3 source, OTA upload, live Apps Script deployment, workbook data, trigger, or Git publication was changed. Manual deployment of both Apps Script source files plus one `Refresh latest data` and a live visual check of the three tabs remain required.
+
 ## dB-based level and daypart candidate - 0.1.103-EXP build 157 - 2026-09-17
 
 1. Prepared the approved trial `dB(A)` boundaries for displayed and published `LEVEL`: `SILENT <56`, `NORMAL 56..<62`, `LOUD 62..<66`, `PEAK >=66`; unavailable/invalid dB is `NO DATA`. BS now derives the ten-minute Sheets/MQTT level and live `/bssts` level from its calibrated A16 estimate rather than main-loop P2P snapshots. The accepted acoustic offset, I2S processing, C3 link, and HTTP retry policy are unchanged.

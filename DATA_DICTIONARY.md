@@ -20,11 +20,15 @@ relative analytics continue to answer:
 meter. Starting with local candidate build `157`, `LEVEL` uses dB(A), while
 `AVG P2P`, `NOW %`, `H %`, and `M %` remain relative diagnostics for now.
 
-## Raw Table Views
+## Google Sheets Views
 
-`User mode` keeps the everyday reading set visible: `DEV ID`, date/time, `PART`, `LEVEL`, `NOW %`, `H %`, `M %`, `AVG P2P`, `DBA LEQ EST`, `SIG IN`, `TEMP C`, and `HUM %`.
+`User mode` is the default. It shows only three everyday views:
 
-`Technical mode` shows the complete 40-column raw schema. The additional columns are not discarded: they remain available for exported-log analysis, signal and sensor diagnostics, restart and memory checks, and acoustic-revision separation.
+- `Summary`: energetic dB(A) result, main level, coverage, and a short DAY/EVE/NGT conclusion.
+- `Measurements`: newest-first ten-minute dB(A), level, quality, temperature, and humidity.
+- `Charts`: dB(A)-based day-part overview, level mix, coverage, and daily verdict history.
+
+`Technical mode` restores the raw `log`, internal analytics, health tables, and all diagnostic columns. Nothing is deleted: `AVG P2P`, `SIG IN`, dB validity/fault/clip fields, build/reset/heap/uptime evidence, dated archives, and `daily_verdict_table` remain available for troubleshooting and AppSheet sources.
 
 ## Remote Diagnostic Journal
 
@@ -845,23 +849,15 @@ It includes:
 
 ## How To Read One Day
 
-1. Check `summary_health`.
+1. Open `Summary` for the simple DAY/EVE/NGT result.
 
-Look at `COVERAGE %`, `WINDOWS VALID`, and `MISSING WIN`. `LOW SAMPLE WIN` separately diagnoses P2P snapshot counts, not dB validity. Weak coverage weakens conclusions.
+Use `DBA LEQ EST`, `MAIN LEVEL`, `MAIN SHARE %`, `COVERAGE %`, and `DATA CONFIDENCE`.
 
-2. Check `summary_daypart`.
+2. Open `Measurements` when an exact ten-minute value is needed.
 
-Compare energetic `DBA LEQ EST`, `COVERAGE %`, and `MAIN LEVEL` for `DAY`, `EVE`, and `NGT`. Relative `AVG NOW %`, `AVG P2P`, `QUIET %`, and `LOUD %` are technical context.
+3. Open `Charts` for trends, level mix, and current-day coverage.
 
-3. Check `summary_levels`.
-
-Look at the mix: how many windows were `SILENT`, `NORMAL`, `LOUD`, or `PEAK`.
-
-4. Check `summary_conclusions` or `daily_verdict_table`.
-
-Use `MAIN LEVEL`, `MAIN SHARE %`, `DATA CONFIDENCE`, and `LEVEL DOMINANCE` for the simple conclusion.
-
-5. Only then look at raw technical columns.
+4. Switch to `Technical mode` only when diagnosing a suspicious result.
 
 Use `RAW MIN`, `RAW MAX`, `SIG IN`, and `QUALITY` to explain suspicious data, not as the first user-facing answer.
 

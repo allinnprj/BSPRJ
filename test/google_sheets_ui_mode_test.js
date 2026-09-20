@@ -64,7 +64,9 @@ const sheetDefinitions = [
   ['clean_summary_10m', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %']],
   ['summary_health', ['DEV ID', 'DATE', 'HAS LOG ROWS']],
   ['daily_verdict_table', ['DEV ID', 'DATE', 'VERDICT']],
-  ['charts', ['DASHBOARD']],
+  ['Summary', ['DEV ID', 'DATE', 'PART', 'DBA LEQ EST', 'MAIN LEVEL']],
+  ['Measurements', ['DEV ID', 'DATE', 'T FROM', 'T TO', 'PART', 'DBA LEQ EST', 'LEVEL']],
+  ['Charts', ['NOISE OVERVIEW']],
   ['notes', ['NOTE']]
 ];
 const sheets = sheetDefinitions.map(([name, headers]) => createSheet(name, headers));
@@ -92,8 +94,16 @@ const spreadsheet = {
   getSheetByName(name) {
     return sheets.find((sheet) => sheet.name === name) || null;
   },
+  getActiveSheet() {
+    return this.getSheetByName(state.activeSheet) || this.getSheetByName('log');
+  },
   setActiveSheet(sheet) {
     state.activeSheet = sheet.name;
+  },
+  moveActiveSheet(position) {
+    const index = sheets.findIndex((sheet) => sheet.name === state.activeSheet);
+    const [sheet] = sheets.splice(index, 1);
+    sheets.splice(position - 1, 0, sheet);
   },
   toast(message) {
     state.toasts.push(String(message));
@@ -190,10 +200,14 @@ vm.runInNewContext(`${source}\n${hooks}`, sandbox, { filename: codePath });
 
 const userResult = sandbox.__applyUserMode(spreadsheet);
 assert.ok(userResult.hiddenColumns > 0);
-assert.strictEqual(state.activeSheet, 'charts');
-assert.strictEqual(spreadsheet.getSheetByName('log').hidden, false);
-assert.strictEqual(spreadsheet.getSheetByName('daily_verdict_table').hidden, false);
-assert.strictEqual(spreadsheet.getSheetByName('charts').hidden, false);
+assert.strictEqual(userResult.userViewsReady, true);
+assert.strictEqual(state.activeSheet, 'Summary');
+assert.deepStrictEqual(sheets.slice(0, 3).map((sheet) => sheet.name), ['Summary', 'Measurements', 'Charts']);
+assert.strictEqual(spreadsheet.getSheetByName('log').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('daily_verdict_table').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('Summary').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('Measurements').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('Charts').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, true);
@@ -223,6 +237,7 @@ assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('09-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('log').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('log').hiddenColumns.size, 0);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(sandbox.__getDiagnosticsState(spreadsheet))),
