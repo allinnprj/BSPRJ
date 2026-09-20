@@ -65,8 +65,9 @@ const sheetDefinitions = [
   ['summary_health', ['DEV ID', 'DATE', 'HAS LOG ROWS']],
   ['daily_verdict_table', ['DEV ID', 'DATE', 'VERDICT']],
   ['Summary', ['BUILD', 'DATE', 'PART', 'DBA LEQ EST', 'MAIN LEVEL']],
-  ['Measurements', ['BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'DBA LEQ EST', 'LEVEL', 'DATA QUALITY', 'TEMP C', 'HUM %', 'MIC', 'AVG P2P', 'RAW MIN', 'RAW MAX', 'DBA CLIPS']],
+  ['Measurements', ['BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'DBA LEQ EST', 'LEVEL', 'DATA QUALITY', 'TEMP C', 'HUM %', 'MICROPHONE', 'MIC RANGE AVG', 'MIC RAW MIN', 'MIC RAW MAX', 'MIC OVERLOADS']],
   ['Charts', ['NOISE OVERVIEW']],
+  ['Technical Log', ['BUILD', 'DATE', 'START', 'END', 'PERIOD', 'AVG SOUND DB(A)', 'SOUND LEVEL', 'MEASURED MIN', 'VALID AUDIO %', 'AUDIO ERRORS', 'MIC OVERLOADS', 'MIC SIGNAL', 'RUN TIME', 'START COUNT', 'RESTART REASON']],
   ['notes', ['NOTE']]
 ];
 const sheets = sheetDefinitions.map(([name, headers]) => createSheet(name, headers));
@@ -195,6 +196,8 @@ const hooks = `
   this.__headers = HEADERS;
   this.__rawLogUserHeaders = RAW_LOG_USER_HEADERS;
   this.__rawLogTechnicalHeaders = RAW_LOG_TECHNICAL_HEADERS;
+  this.__technicalLogHeaders = TECHNICAL_LOG_HEADERS;
+  this.__buildTechnicalLogRows = buildTechnicalLogRows_;
 `;
 vm.runInNewContext(`${source}\n${hooks}`, sandbox, { filename: codePath });
 
@@ -208,6 +211,7 @@ assert.strictEqual(spreadsheet.getSheetByName('daily_verdict_table').hidden, tru
 assert.strictEqual(spreadsheet.getSheetByName('Summary').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('Measurements').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('Charts').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('Technical Log').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, true);
@@ -219,7 +223,7 @@ const measurementsSheet = spreadsheet.getSheetByName('Measurements');
 ['VER', 'BUILD', 'RAW MIN', 'RAW MAX', 'WIN MIN', 'UPTIME', 'FREE HEAP']
   .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), true, `${header} must be hidden in User mode.`));
 assert.strictEqual(logSheet.hideColumnCalls, 3, 'Contiguous raw technical columns must be hidden in three batched calls.');
-['MIC', 'AVG P2P', 'RAW MIN', 'RAW MAX', 'DBA CLIPS']
+['MICROPHONE', 'MIC RANGE AVG', 'MIC RAW MIN', 'MIC RAW MAX', 'MIC OVERLOADS']
   .forEach((header) => assert.strictEqual(measurementsSheet.hiddenColumns.has(measurementsSheet.headers.indexOf(header) + 1), true, `${header} must be hidden from Measurements in User mode.`));
 assert.deepStrictEqual(
   Array.from(sandbox.__rawLogUserHeaders).concat(Array.from(sandbox.__rawLogTechnicalHeaders)).sort(),
@@ -231,24 +235,26 @@ assert.deepStrictEqual(
   {
     technicalColumns: 'HIDDEN',
     archiveSheets: 'HIDDEN',
-    analyticsSheets: 'MIXED'
+    analyticsSheets: 'HIDDEN'
   }
 );
 
 sandbox.__applyTechnicalMode(spreadsheet);
 assert.strictEqual(spreadsheet.getSheetByName('08-08-2026').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('09-08-2026').hidden, true);
-assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, false);
-assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, false);
-assert.strictEqual(spreadsheet.getSheetByName('log').hidden, false);
+assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('log').hidden, true);
+assert.strictEqual(spreadsheet.getSheetByName('Technical Log').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('log').hiddenColumns.size, 0);
 assert.strictEqual(spreadsheet.getSheetByName('Measurements').hiddenColumns.size, 0);
+assert.deepStrictEqual(sheets.slice(0, 4).map((sheet) => sheet.name), ['Summary', 'Measurements', 'Charts', 'Technical Log']);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(sandbox.__getDiagnosticsState(spreadsheet))),
   {
     technicalColumns: 'SHOWN',
     archiveSheets: 'HIDDEN',
-    analyticsSheets: 'SHOWN'
+    analyticsSheets: 'HIDDEN'
   }
 );
 
@@ -291,12 +297,12 @@ let diagnosticsMenu = state.renderedMenu.entries
 assert.deepStrictEqual(
   diagnosticsMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
   [
-    '● Technical columns: SHOWN',
+    '● Diagnostic columns: SHOWN',
     'Hide technical columns',
     '● Archive sheets: HIDDEN',
     'Show archive sheets',
-    '● Analytics sheets: SHOWN',
-    'Hide analytics sheets',
+    '● Internal sheets: HIDDEN',
+    'Show internal sheets',
     'Refresh status indicators'
   ]
 );
@@ -334,7 +340,7 @@ assert.match(state.toasts.at(-1), /analytics refresh ON, archive hiding OFF, dai
 
 spreadsheet.getSheetByName('log').hideColumns(2);
 spreadsheet.getSheetByName('08-08-2026').showSheet();
-spreadsheet.getSheetByName('clean_summary_10m').hideSheet();
+spreadsheet.getSheetByName('log').showSheet();
 sandbox.__refreshBsMenuStatus();
 assert.ok(state.rangeReadCount > 0, 'Explicit status refresh must scan actual sheet state.');
 sandbox.__onOpen();
@@ -343,15 +349,15 @@ diagnosticsMenu = state.renderedMenu.entries
 assert.deepStrictEqual(
   diagnosticsMenu.entries.filter((entry) => entry.type === 'item').map((entry) => entry.label),
   [
-    '● Technical columns: MIXED',
+    '● Diagnostic columns: MIXED',
     'Hide technical columns',
     'Show all columns',
     '● Archive sheets: MIXED',
     'Hide archive sheets',
     'Show archive sheets',
-    '● Analytics sheets: MIXED',
-    'Hide analytics sheets',
-    'Show analytics sheets',
+    '● Internal sheets: MIXED',
+    'Hide internal sheets',
+    'Show internal sheets',
     'Refresh status indicators'
   ]
 );
@@ -370,7 +376,33 @@ assert.deepStrictEqual(
   })),
   visibilityBeforeStatusClick
 );
-assert.match(state.toasts.at(-1), /technical columns MIXED, archive sheets MIXED, analytics sheets MIXED/);
+assert.match(state.toasts.at(-1), /technical columns MIXED, archive sheets MIXED, internal sheets MIXED/);
+
+assert.deepStrictEqual(
+  Array.from(sandbox.__technicalLogHeaders),
+  ['BUILD', 'DATE', 'START', 'END', 'PERIOD', 'AVG SOUND DB(A)', 'SOUND LEVEL', 'MEASURED MIN', 'VALID AUDIO %', 'AUDIO ERRORS', 'MIC OVERLOADS', 'MIC SIGNAL', 'RUN TIME', 'START COUNT', 'RESTART REASON']
+);
+const technicalRows = sandbox.__buildTechnicalLogRows([
+  {
+    buildText: '157', dateText: '2026-09-20', timeFromText: '12:00:00', timeToText: '12:09:59',
+    partText: 'DAY', isValid: true, dbaLeqEstimate: 59.3, levelText: 'NORMAL', windowMinutes: 10,
+    dbaValidPct: 100, dbaFaults: 0, dbaClips: 0, signalText: 'OK', uptimeText: '6 d 0 h',
+    bootSequence: 7, resetReason: 'SOFT'
+  },
+  {
+    buildText: '157', dateText: '2026-09-20', timeFromText: '12:10:00', timeToText: '12:19:59',
+    partText: 'DAY', isValid: false, dbaLeqEstimate: 60.1, levelText: 'NO DATA', windowMinutes: 10,
+    dbaValidPct: 90, dbaFaults: 2, dbaClips: 1, signalText: 'CHECK', uptimeText: '6 d 0 h',
+    bootSequence: 7, resetReason: 'SOFT'
+  }
+]);
+assert.deepStrictEqual(
+  JSON.parse(JSON.stringify(technicalRows)),
+  [
+    ['157', '2026-09-20', '12:10:00', '12:19:59', 'DAY', '', 'NO DATA', 10, 90, 2, 1, 'CHECK', '6 d 0 h', 7, 'SOFT'],
+    ['157', '2026-09-20', '12:00:00', '12:09:59', 'DAY', 59.3, 'NORMAL', 10, 100, 0, 0, 'OK', '6 d 0 h', 7, 'SOFT']
+  ]
+);
 
 state.throwScriptProperties = true;
 sandbox.__onOpen();

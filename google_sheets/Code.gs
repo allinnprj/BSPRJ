@@ -90,11 +90,13 @@ const DAILY_VERDICT_TABLE_SHEET_NAME = 'daily_verdict_table';
 const USER_SUMMARY_SHEET_NAME = 'Summary';
 const USER_MEASUREMENTS_SHEET_NAME = 'Measurements';
 const CHARTS_SHEET_NAME = 'Charts';
+const TECHNICAL_LOG_SHEET_NAME = 'Technical Log';
 const TELEGRAM_STATS_URL = 'https://docs.google.com/spreadsheets/d/1DoGf95IYo3rvIdwAnyHVe2r0lP1txKe3gYVbe3XIMUQ/edit?pli=1&gid=1674242943#gid=1674242943';
 const TELEGRAM_LOCAL_LOG_URL = 'http://192.168.11.124/';
 const ANALYTICS_SHEET_NAMES = [
   USER_SUMMARY_SHEET_NAME,
   USER_MEASUREMENTS_SHEET_NAME,
+  TECHNICAL_LOG_SHEET_NAME,
   CLEAN_SUMMARY_SHEET_NAME,
   TIMELINE_SUMMARY_SHEET_NAME,
   DAYPART_SUMMARY_SHEET_NAME,
@@ -109,6 +111,12 @@ const USER_MODE_VISIBLE_SHEET_NAMES = [
   USER_SUMMARY_SHEET_NAME,
   USER_MEASUREMENTS_SHEET_NAME,
   CHARTS_SHEET_NAME
+];
+const TECHNICAL_MODE_VISIBLE_SHEET_NAMES = [
+  USER_SUMMARY_SHEET_NAME,
+  USER_MEASUREMENTS_SHEET_NAME,
+  CHARTS_SHEET_NAME,
+  TECHNICAL_LOG_SHEET_NAME
 ];
 const TELEGRAM_ENABLED_PROPERTY = 'BS_TELEGRAM_ENABLED';
 const TELEGRAM_BOT_TOKEN_PROPERTY = 'BS_TELEGRAM_BOT_TOKEN';
@@ -280,11 +288,28 @@ const USER_MEASUREMENTS_HEADERS = [
   'DATA QUALITY',
   'TEMP C',
   'HUM %',
-  'MIC',
-  'AVG P2P',
-  'RAW MIN',
-  'RAW MAX',
-  'DBA CLIPS'
+  'MICROPHONE',
+  'MIC RANGE AVG',
+  'MIC RAW MIN',
+  'MIC RAW MAX',
+  'MIC OVERLOADS'
+];
+const TECHNICAL_LOG_HEADERS = [
+  'BUILD',
+  'DATE',
+  'START',
+  'END',
+  'PERIOD',
+  'AVG SOUND DB(A)',
+  'SOUND LEVEL',
+  'MEASURED MIN',
+  'VALID AUDIO %',
+  'AUDIO ERRORS',
+  'MIC OVERLOADS',
+  'MIC SIGNAL',
+  'RUN TIME',
+  'START COUNT',
+  'RESTART REASON'
 ];
 const DAILY_VERDICT_HEADERS = [
   'DEV ID',
@@ -351,6 +376,23 @@ const SHEET_STYLE_PROFILES = {
     bodyOdd: '#f8fbfe',
     bodyEven: '#f1f7fb',
     accentCols: [5, 6, 7, 8],
+    accentColor: '#e7f1f8',
+    freezeCols: 2
+  },
+  technicalLog: {
+    title: 'TECHNICAL LOG',
+    titleColor: '#dce6f1',
+    titleTextColor: '#2f3b52',
+    headerColor: '#e9eff6',
+    headerTextColor: '#334155',
+    headerColors: [
+      '#d9ead3', '#cfe2f3', '#cfe2f3', '#cfe2f3', '#d9d2e9',
+      '#ffe599', '#ffe599', '#d0e0e3', '#d0e0e3', '#f9cb9c',
+      '#f9cb9c', '#d9b8f0', '#d9d9d9', '#d9d9d9', '#d9d9d9'
+    ],
+    bodyOdd: '#f8fbfe',
+    bodyEven: '#f1f7fb',
+    accentCols: [5, 6, 7, 8, 9, 10, 11, 12],
     accentColor: '#e7f1f8',
     freezeCols: 2
   },
@@ -559,6 +601,23 @@ const HEADER_WIDTH_OVERRIDES = {
   'DATA': 125,
   'DATA QUALITY': 105,
   'MIC': 190,
+  'MICROPHONE': 190,
+  'MIC RANGE AVG': 115,
+  'MIC RAW MIN': 105,
+  'MIC RAW MAX': 105,
+  'MIC OVERLOADS': 115,
+  'START': 85,
+  'END': 85,
+  'PERIOD': 80,
+  'AVG SOUND DB(A)': 125,
+  'SOUND LEVEL': 105,
+  'MEASURED MIN': 110,
+  'VALID AUDIO %': 115,
+  'AUDIO ERRORS': 105,
+  'MIC SIGNAL': 95,
+  'RUN TIME': 105,
+  'START COUNT': 105,
+  'RESTART REASON': 125,
   'LEVEL DOMINANCE': 130,
   'READING': 260,
   'WINDOWS TOTAL': 105,
@@ -1178,7 +1237,7 @@ function getDiagnosticsState_(spreadsheet) {
     archiveSheets: getSheetVisibilityState_(targetSpreadsheet, (sheetName) =>
       sheetName !== ACTIVE_LOG_SHEET_NAME && isRawDaySheetName_(sheetName)),
     analyticsSheets: getSheetVisibilityState_(targetSpreadsheet, (sheetName) =>
-      isAnalyticsSheetName_(sheetName))
+      isInternalSheetName_(sheetName))
   };
 }
 
@@ -1260,7 +1319,7 @@ function showDiagnosticsStatus_() {
   onOpen();
   spreadsheet.toast(
     `Diagnostics status: technical columns ${state.technicalColumns}, ` +
-      `archive sheets ${state.archiveSheets}, analytics sheets ${state.analyticsSheets}.`,
+      `archive sheets ${state.archiveSheets}, internal sheets ${state.analyticsSheets}.`,
     'BS Noise',
     8
   );
@@ -1297,7 +1356,7 @@ function addBsMenuToUi_() {
 
     addVisibilityToggle_(
       diagnosticsMenu,
-      'Technical columns',
+      'Diagnostic columns',
       diagnosticsState.technicalColumns,
       'Hide technical columns',
       'hideTechnicalColumns_',
@@ -1315,11 +1374,11 @@ function addBsMenuToUi_() {
     ).addSeparator();
     addVisibilityToggle_(
       diagnosticsMenu,
-      'Analytics sheets',
+      'Internal sheets',
       diagnosticsState.analyticsSheets,
-      'Hide analytics sheets',
+      'Hide internal sheets',
       'hideAnalyticsSheetsFromMenu_',
-      'Show analytics sheets',
+      'Show internal sheets',
       'showAnalyticsSheetsFromMenu_'
     ).addSeparator();
     diagnosticsMenu.addItem('Refresh status indicators', 'refreshBsMenuStatus_');
@@ -1581,6 +1640,11 @@ function isAnalyticsSheetName_(name) {
   return ANALYTICS_SHEET_NAMES.includes(name);
 }
 
+function isInternalSheetName_(name) {
+  return name === ACTIVE_LOG_SHEET_NAME ||
+    (isAnalyticsSheetName_(name) && !TECHNICAL_MODE_VISIBLE_SHEET_NAMES.includes(name));
+}
+
 function refreshRawSheetsFormatting_(spreadsheet) {
   listRawDataSheets_(spreadsheet).forEach((sheet) => {
     ensureHeaderFormatting_(sheet);
@@ -1671,6 +1735,7 @@ function refreshAllSheetFormatting_() {
 
   refreshExistingTableSheetFormatting_(USER_SUMMARY_SHEET_NAME, USER_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(USER_MEASUREMENTS_SHEET_NAME, USER_MEASUREMENTS_HEADERS);
+  refreshExistingTableSheetFormatting_(TECHNICAL_LOG_SHEET_NAME, TECHNICAL_LOG_HEADERS);
   refreshExistingTableSheetFormatting_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS);
   refreshExistingTableSheetFormatting_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS);
@@ -1728,7 +1793,7 @@ function showArchiveSheetsFromMenu_() {
 function hideAnalyticsSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
-    if (isAnalyticsSheetName_(sheet.getName()) && !sheet.isSheetHidden()) {
+    if (isInternalSheetName_(sheet.getName()) && !sheet.isSheetHidden()) {
       sheet.hideSheet();
     }
   });
@@ -1737,7 +1802,7 @@ function hideAnalyticsSheets_() {
 function showAnalyticsSheets_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
   spreadsheet.getSheets().forEach((sheet) => {
-    if (isAnalyticsSheetName_(sheet.getName()) && sheet.isSheetHidden()) {
+    if (isInternalSheetName_(sheet.getName()) && sheet.isSheetHidden()) {
       sheet.showSheet();
     }
   });
@@ -1747,19 +1812,32 @@ function hideAnalyticsSheetsFromMenu_() {
   hideAnalyticsSheets_();
   refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
   onOpen();
-  SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets hidden.', 'BS Noise', 5);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Internal sheets hidden.', 'BS Noise', 5);
 }
 
 function showAnalyticsSheetsFromMenu_() {
   showAnalyticsSheets_();
   refreshDiagnosticsStateCache_(SpreadsheetApp.getActiveSpreadsheet());
   onOpen();
-  SpreadsheetApp.getActiveSpreadsheet().toast('Analytics sheets shown.', 'BS Noise', 5);
+  SpreadsheetApp.getActiveSpreadsheet().toast('Internal sheets shown.', 'BS Noise', 5);
 }
 
 function orderUserViewSheets_(spreadsheet) {
   const previousActiveSheet = spreadsheet.getActiveSheet();
   USER_MODE_VISIBLE_SHEET_NAMES.forEach((sheetName, index) => {
+    const sheet = spreadsheet.getSheetByName(sheetName);
+    if (!sheet) {
+      return;
+    }
+    spreadsheet.setActiveSheet(sheet);
+    spreadsheet.moveActiveSheet(index + 1);
+  });
+  return previousActiveSheet;
+}
+
+function orderTechnicalViewSheets_(spreadsheet) {
+  const previousActiveSheet = spreadsheet.getActiveSheet();
+  TECHNICAL_MODE_VISIBLE_SHEET_NAMES.forEach((sheetName, index) => {
     const sheet = spreadsheet.getSheetByName(sheetName);
     if (!sheet) {
       return;
@@ -1820,28 +1898,32 @@ function applyUserMode_(spreadsheet, options) {
 function applyTechnicalMode_(spreadsheet, options) {
   const targetSpreadsheet = spreadsheet || SpreadsheetApp.getActiveSpreadsheet();
   const opts = options || {};
-  let shownAnalyticsSheets = 0;
+  let shownTechnicalSheets = 0;
+  let hiddenInternalSheets = 0;
   let hiddenArchiveSheets = 0;
 
-  const activeLogSheet = targetSpreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
-  if (activeLogSheet && activeLogSheet.isSheetHidden()) {
-    activeLogSheet.showSheet();
-  }
-
-  targetSpreadsheet.getSheets().forEach((sheet) => {
-    if (isAnalyticsSheetName_(sheet.getName())) {
+  TECHNICAL_MODE_VISIBLE_SHEET_NAMES.forEach((sheetName) => {
+    const sheet = targetSpreadsheet.getSheetByName(sheetName);
+    if (sheet) {
       if (sheet.isSheetHidden()) {
         sheet.showSheet();
-        shownAnalyticsSheets++;
       }
+      shownTechnicalSheets++;
     }
   });
 
+  const technicalViewsReady = shownTechnicalSheets === TECHNICAL_MODE_VISIBLE_SHEET_NAMES.length;
+  const previousActiveSheet = technicalViewsReady ? orderTechnicalViewSheets_(targetSpreadsheet) : null;
+
   const preferredSheet = targetSpreadsheet.getSheetByName(USER_SUMMARY_SHEET_NAME) ||
     targetSpreadsheet.getSheetByName(CHARTS_SHEET_NAME) ||
-    targetSpreadsheet.getSheetByName(DAILY_VERDICT_TABLE_SHEET_NAME) ||
+    targetSpreadsheet.getSheetByName(TECHNICAL_LOG_SHEET_NAME) ||
     targetSpreadsheet.getSheetByName(ACTIVE_LOG_SHEET_NAME);
-  if (preferredSheet && !opts.preserveActiveSheet) {
+  const canPreserveActiveSheet = opts.preserveActiveSheet && previousActiveSheet &&
+    TECHNICAL_MODE_VISIBLE_SHEET_NAMES.includes(previousActiveSheet.getName());
+  if (canPreserveActiveSheet) {
+    targetSpreadsheet.setActiveSheet(previousActiveSheet);
+  } else if (preferredSheet) {
     targetSpreadsheet.setActiveSheet(preferredSheet);
   }
 
@@ -1851,10 +1933,18 @@ function applyTechnicalMode_(spreadsheet, options) {
     if (isArchive && !sheet.isSheetHidden()) {
       sheet.hideSheet();
       hiddenArchiveSheets++;
+    } else if (isInternalSheetName_(sheetName) && !sheet.isSheetHidden()) {
+      sheet.hideSheet();
+      hiddenInternalSheets++;
     }
   });
   showAllColumnsCore_(targetSpreadsheet);
-  return { shownAnalyticsSheets, hiddenArchiveSheets };
+  return {
+    shownTechnicalSheets,
+    hiddenInternalSheets,
+    hiddenArchiveSheets,
+    technicalViewsReady
+  };
 }
 
 function enableUserMode_() {
@@ -1874,12 +1964,14 @@ function enableUserMode_() {
 
 function enableTechnicalMode_() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  applyTechnicalMode_(spreadsheet);
+  const result = applyTechnicalMode_(spreadsheet);
   setUserInterfaceMode_(USER_INTERFACE_MODE_TECHNICAL);
   refreshDiagnosticsStateCache_(spreadsheet);
   onOpen();
   spreadsheet.toast(
-    'TECHNICAL MODE ENABLED: analytics and all columns shown; archives remain hidden.',
+    result.technicalViewsReady
+      ? 'TECHNICAL MODE ENABLED: four clear views shown; raw/internal sheets hidden.'
+      : 'TECHNICAL MODE SELECTED: run Refresh latest data once to create Technical Log.',
     'BS Noise',
     8
   );
@@ -1888,7 +1980,7 @@ function enableTechnicalMode_() {
 const TECHNICAL_COLUMNS_BY_SHEET_NAME = {};
 TECHNICAL_COLUMNS_BY_SHEET_NAME[ACTIVE_LOG_SHEET_NAME] = RAW_LOG_TECHNICAL_HEADERS;
 TECHNICAL_COLUMNS_BY_SHEET_NAME[USER_MEASUREMENTS_SHEET_NAME] = [
-  'MIC', 'AVG P2P', 'RAW MIN', 'RAW MAX', 'DBA CLIPS'
+  'MICROPHONE', 'MIC RANGE AVG', 'MIC RAW MIN', 'MIC RAW MAX', 'MIC OVERLOADS'
 ];
 TECHNICAL_COLUMNS_BY_SHEET_NAME[CLEAN_SUMMARY_SHEET_NAME] = [
   'VER', 'BUILD', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX',
@@ -2038,6 +2130,7 @@ function clearChartsSheetForCleanRun_(spreadsheet) {
 function clearAnalyticsForCleanRun_(spreadsheet) {
   writeTableToSheet_(USER_SUMMARY_SHEET_NAME, USER_SUMMARY_HEADERS, [], { applyFormatting: true });
   writeTableToSheet_(USER_MEASUREMENTS_SHEET_NAME, USER_MEASUREMENTS_HEADERS, [], { applyFormatting: true });
+  writeTableToSheet_(TECHNICAL_LOG_SHEET_NAME, TECHNICAL_LOG_HEADERS, [], { applyFormatting: true });
   writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, [], { applyFormatting: true });
   writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, [], { applyFormatting: true });
   writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, [], { applyFormatting: true });
@@ -3262,6 +3355,29 @@ function buildUserMeasurementRows_(records) {
   return rows;
 }
 
+function buildTechnicalLogRows_(records) {
+  const rows = records.map((record) => ([
+    record.buildText,
+    record.dateText,
+    record.timeFromText,
+    record.timeToText,
+    record.partText,
+    record.isValid ? record.dbaLeqEstimate : '',
+    record.levelText,
+    record.windowMinutes,
+    record.dbaValidPct,
+    record.dbaFaults,
+    record.dbaClips,
+    record.signalText,
+    record.uptimeText,
+    record.bootSequence,
+    record.resetReason
+  ]));
+
+  sortRowsNewestFirst_(rows, 1, 2, 4, 0);
+  return rows;
+}
+
 function buildDailyVerdictRows_(records) {
   const conclusionRows = buildConclusionSummaryRows_(records);
   return conclusionRows.map((row) => {
@@ -3553,6 +3669,9 @@ function getSheetStyleProfile_(sheetName) {
   if (sheetName === USER_MEASUREMENTS_SHEET_NAME) {
     return SHEET_STYLE_PROFILES.userMeasurements;
   }
+  if (sheetName === TECHNICAL_LOG_SHEET_NAME) {
+    return SHEET_STYLE_PROFILES.technicalLog;
+  }
   if (sheetName === CLEAN_SUMMARY_SHEET_NAME) {
     return SHEET_STYLE_PROFILES.clean;
   }
@@ -3699,6 +3818,12 @@ function writeTableToSheet_(sheetName, headers, rows, options) {
       const toCol = headers.indexOf('T TO') + 1;
       sheet.getRange(2, toCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
     }
+    if (headers.indexOf('START') >= 0) {
+      const startCol = headers.indexOf('START') + 1;
+      const endCol = headers.indexOf('END') + 1;
+      sheet.getRange(2, startCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
+      sheet.getRange(2, endCol, Math.max(output.length - 1, 1), 1).setNumberFormat('hh:mm:ss');
+    }
     if (headers.indexOf('FIRST TIME') >= 0) {
       const firstCol = headers.indexOf('FIRST TIME') + 1;
       const lastCol = headers.indexOf('LAST TIME') + 1;
@@ -3720,6 +3845,7 @@ function rebuildAnalyticsCore_(options) {
 
   writeTableToSheet_(USER_SUMMARY_SHEET_NAME, USER_SUMMARY_HEADERS, buildUserSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(USER_MEASUREMENTS_SHEET_NAME, USER_MEASUREMENTS_HEADERS, buildUserMeasurementRows_(cleanData.uniqueRecords), tableWriteOptions);
+  writeTableToSheet_(TECHNICAL_LOG_SHEET_NAME, TECHNICAL_LOG_HEADERS, buildTechnicalLogRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(CLEAN_SUMMARY_SHEET_NAME, CLEAN_SUMMARY_HEADERS, cleanRowsNewestFirst, tableWriteOptions);
   writeTableToSheet_(TIMELINE_SUMMARY_SHEET_NAME, TIMELINE_SUMMARY_HEADERS, buildTimelineSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
   writeTableToSheet_(DAYPART_SUMMARY_SHEET_NAME, DAYPART_SUMMARY_HEADERS, buildDayPartSummaryRows_(cleanData.uniqueRecords), tableWriteOptions);
