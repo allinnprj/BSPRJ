@@ -60,6 +60,7 @@ const records = [];
 for (let index = 0; index < 11; index++) {
   records.push({
     deviceId: 'bs-esp32-01', dateText: '2026-08-30', partText: 'DAY',
+    buildText: '157', timeFromText: '10:00:00', timeToText: '10:09:59',
     isValid: true, dbaLeqEstimate: 59, dbaValidPct: 100,
     windowMinutes: 10, levelText: 'NORMAL'
   });
@@ -67,6 +68,7 @@ for (let index = 0; index < 11; index++) {
 for (let index = 0; index < 9; index++) {
   records.push({
     deviceId: 'bs-esp32-01', dateText: '2026-08-30', partText: 'DAY',
+    buildText: '157', timeFromText: '11:00:00', timeToText: '11:09:59',
     isValid: true, dbaLeqEstimate: 63, dbaValidPct: 100,
     windowMinutes: 10, levelText: 'LOUD'
   });
@@ -85,8 +87,8 @@ const userSummary = sandbox.__buildUserSummaryRows(records)[0];
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(userSummary)),
   [
-    conclusion[0], conclusion[1], conclusion[2], conclusion[3], conclusion[4],
-    conclusion[5], conclusion[8], conclusion[9], conclusion[11]
+    '157', conclusion[1], conclusion[2], conclusion[3], conclusion[4],
+    conclusion[5], 'PARTIAL · 30.3%', conclusion[11]
   ]
 );
 
@@ -106,11 +108,13 @@ assert.strictEqual(dailyTable.length, 15);
 
 const makeWindow = (key, timeFrom, dba, minutes) => ({
   deviceId: 'bs-esp32-01', dateText: '2026-08-31', partText: 'DAY',
+  buildText: '157',
   timeFromText: timeFrom, recordKey: key, duplicateCount: 1,
   acousticRevision: 2, dbaLeqEstimate: dba, dbaValidPct: 100,
   windowMinutes: minutes, samples: 10, signalText: 'LOW',
   temperatureC: '', humidityPct: '', nowPct: 0, hourPct: 0,
-  totalPct: 0, avgPeakToPeak: 0, quietCount: 0, loudCount: 0
+  totalPct: 0, avgPeakToPeak: 321, rawMin: -123, rawMax: 456,
+  dbaClips: 0, quietCount: 0, loudCount: 0
 });
 const clean = sandbox.__buildCleanSummaryData([
   makeWindow('first', '12:00:00', 50, 5),
@@ -126,10 +130,16 @@ assert.strictEqual(clean.uniqueRecords[2].levelText, 'NO DATA');
 assert.strictEqual(clean.cleanRows[2][29], 'NO DATA');
 const userMeasurements = sandbox.__buildUserMeasurementRows(clean.uniqueRecords);
 assert.strictEqual(userMeasurements.length, 3);
+assert.strictEqual(userMeasurements[0][0], '157');
 assert.strictEqual(userMeasurements[0][2], '12:20:00');
 assert.strictEqual(userMeasurements[0][5], '');
 assert.strictEqual(userMeasurements[0][6], 'NO DATA');
 assert.strictEqual(userMeasurements[0][7], 'NO DATA');
+assert.strictEqual(userMeasurements[0][10], 'INMP441 · REV 2 · LOW');
+assert.strictEqual(userMeasurements[0][11], 321);
+assert.strictEqual(userMeasurements[0][12], -123);
+assert.strictEqual(userMeasurements[0][13], 456);
+assert.strictEqual(userMeasurements[0][14], 0);
 assert.strictEqual(userMeasurements[2][5], 50);
 assert.strictEqual(userMeasurements[2][6], 'SILENT');
 const daypart = sandbox.__buildDayPartSummaryRows(clean.uniqueRecords)[0];

@@ -64,8 +64,8 @@ const sheetDefinitions = [
   ['clean_summary_10m', ['DEV ID', 'VER', 'BUILD', 'DATE', 'NOW %']],
   ['summary_health', ['DEV ID', 'DATE', 'HAS LOG ROWS']],
   ['daily_verdict_table', ['DEV ID', 'DATE', 'VERDICT']],
-  ['Summary', ['DEV ID', 'DATE', 'PART', 'DBA LEQ EST', 'MAIN LEVEL']],
-  ['Measurements', ['DEV ID', 'DATE', 'T FROM', 'T TO', 'PART', 'DBA LEQ EST', 'LEVEL']],
+  ['Summary', ['BUILD', 'DATE', 'PART', 'DBA LEQ EST', 'MAIN LEVEL']],
+  ['Measurements', ['BUILD', 'DATE', 'T FROM', 'T TO', 'PART', 'DBA LEQ EST', 'LEVEL', 'DATA QUALITY', 'TEMP C', 'HUM %', 'MIC', 'AVG P2P', 'RAW MIN', 'RAW MAX', 'DBA CLIPS']],
   ['Charts', ['NOISE OVERVIEW']],
   ['notes', ['NOTE']]
 ];
@@ -213,11 +213,14 @@ assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, true)
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, true);
 assert.strictEqual(spreadsheet.getSheetByName('notes').hidden, false);
 const logSheet = spreadsheet.getSheetByName('log');
+const measurementsSheet = spreadsheet.getSheetByName('Measurements');
 ['DEV ID', 'DATE', 'T FROM', 'T TO', 'PART', 'LEVEL', 'NOW %', 'H %', 'M %', 'AVG P2P', 'DBA LEQ EST', 'SIG IN', 'TEMP C', 'HUM %']
   .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), false, `${header} must stay visible in User mode.`));
 ['VER', 'BUILD', 'RAW MIN', 'RAW MAX', 'WIN MIN', 'UPTIME', 'FREE HEAP']
   .forEach((header) => assert.strictEqual(logSheet.hiddenColumns.has(logSheet.headers.indexOf(header) + 1), true, `${header} must be hidden in User mode.`));
 assert.strictEqual(logSheet.hideColumnCalls, 3, 'Contiguous raw technical columns must be hidden in three batched calls.');
+['MIC', 'AVG P2P', 'RAW MIN', 'RAW MAX', 'DBA CLIPS']
+  .forEach((header) => assert.strictEqual(measurementsSheet.hiddenColumns.has(measurementsSheet.headers.indexOf(header) + 1), true, `${header} must be hidden from Measurements in User mode.`));
 assert.deepStrictEqual(
   Array.from(sandbox.__rawLogUserHeaders).concat(Array.from(sandbox.__rawLogTechnicalHeaders)).sort(),
   Array.from(sandbox.__headers).sort()
@@ -239,6 +242,7 @@ assert.strictEqual(spreadsheet.getSheetByName('clean_summary_10m').hidden, false
 assert.strictEqual(spreadsheet.getSheetByName('summary_health').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('log').hidden, false);
 assert.strictEqual(spreadsheet.getSheetByName('log').hiddenColumns.size, 0);
+assert.strictEqual(spreadsheet.getSheetByName('Measurements').hiddenColumns.size, 0);
 assert.deepStrictEqual(
   JSON.parse(JSON.stringify(sandbox.__getDiagnosticsState(spreadsheet))),
   {

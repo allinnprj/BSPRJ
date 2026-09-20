@@ -28,7 +28,7 @@ meter. Starting with local candidate build `157`, `LEVEL` uses dB(A), while
 - `Measurements`: newest-first ten-minute dB(A), level, quality, temperature, and humidity.
 - `Charts`: dB(A)-based day-part overview, level mix, coverage, and daily verdict history.
 
-`Technical mode` restores the raw `log`, internal analytics, health tables, and all diagnostic columns. Nothing is deleted: `AVG P2P`, `SIG IN`, dB validity/fault/clip fields, build/reset/heap/uptime evidence, dated archives, and `daily_verdict_table` remain available for troubleshooting and AppSheet sources.
+`Technical mode` restores the raw `log`, internal analytics, health tables, and all diagnostic columns. `Measurements` also expands with `MIC`, `AVG P2P`, `RAW MIN`, `RAW MAX`, and `DBA CLIPS`. Nothing is deleted: the raw `SIG IN`, dB validity/fault/clip fields, build/reset/heap/uptime evidence, dated archives, and `daily_verdict_table` remain available for troubleshooting and AppSheet sources.
 
 ## Remote Diagnostic Journal
 
@@ -255,6 +255,14 @@ If usable dB is unavailable, the level is `NO DATA`; P2P is not substituted.
 The upper boundaries remain trial values because T7 had no windows above `62 dB(A)`.
 
 ## Signal Quality Terms
+
+### `MIC`
+
+Compact Technical-mode microphone identity and health, for example
+`INMP441 · REV 2 · OK`. It combines the fixed microphone model, the acoustic
+construction revision, and the raw signal-health state. It does not rename or
+convert P2P to dB. The detailed `AVG P2P`, `RAW MIN`, `RAW MAX`, and
+`DBA CLIPS` values remain separate technical evidence.
 
 ### `SIG IN`
 
@@ -718,6 +726,13 @@ Current values:
 
 Important: `DATA CONFIDENCE` does not mean "the microphone is correct." It means "we have enough windows to trust this summary."
 
+### `DATA`
+
+Compact User-mode combination of the trust label and coverage percentage.
+Examples: `OK · 92.9%`, `PARTIAL · 25%`, `NO DATA · 0%`. The underlying numeric
+`COVERAGE %` and derived `DATA CONFIDENCE` remain separate in Technical mode and
+internal analytics so charts and checks keep numeric inputs.
+
 ### `LEVEL DOMINANCE`
 
 How clearly one level leads the other levels, independently of data coverage.
@@ -851,15 +866,17 @@ It includes:
 
 1. Open `Summary` for the simple DAY/EVE/NGT result.
 
-Use `DBA LEQ EST`, `MAIN LEVEL`, `MAIN SHARE %`, `COVERAGE %`, and `DATA CONFIDENCE`.
+The first column is `BUILD`, the exact BS firmware build behind that day-part result. Use `DBA LEQ EST`, `MAIN LEVEL`, `MAIN SHARE %`, and the combined `DATA` value.
 
 2. Open `Measurements` when an exact ten-minute value is needed.
+
+Each measurement also shows its own `BUILD`. The repeated device and full firmware-version fields stay in Technical mode.
 
 3. Open `Charts` for trends, level mix, and current-day coverage.
 
 4. Switch to `Technical mode` only when diagnosing a suspicious result.
 
-Use `RAW MIN`, `RAW MAX`, `SIG IN`, and `QUALITY` to explain suspicious data, not as the first user-facing answer.
+Use the compact `MIC` field first, then `AVG P2P`, `RAW MIN`, `RAW MAX`, `DBA CLIPS`, raw `SIG IN`, and `QUALITY` when deeper diagnosis is needed.
 
 ## Terms That May Become Less Important Later
 

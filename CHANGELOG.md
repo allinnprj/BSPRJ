@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## Compact DATA and microphone diagnostics - Apps Script candidate - 2026-09-20
+
+1. Combined the user-facing `COVERAGE %` and `DATA CONFIDENCE` columns into one compact `DATA` value such as `OK · 92.9%`. The numeric coverage and derived confidence remain separate in internal analytics for charts, checks, and compatibility.
+2. Added a Technical-mode-only `MIC` field to `Measurements`, formatted as `INMP441 · REV 2 · OK`, followed by `AVG P2P`, `RAW MIN`, `RAW MAX`, and `DBA CLIPS`. User mode hides all five technical fields; switching to Technical mode restores them.
+3. Kept the raw 40-column ingestion/archive schema, firmware payload, AppSheet sources, dB(A) calculations, thresholds, triggers, and firmware unchanged. Seven focused Apps Script/dB regressions pass locally; live deployment and visual confirmation remain manual.
+
+## User-view BUILD identity - Apps Script candidate - 2026-09-20
+
+1. Replaced the repeated `DEV ID` column with `BUILD` in the user-facing `Summary` and `Measurements` views. Each measurement shows its own exact build; each day-part summary shows the build from the latest window in that device/date/part bucket.
+2. Kept the raw Technical-mode `DEV ID / VER / BUILD` fields and all underlying schemas unchanged for diagnostics, archives, filtering, AppSheet compatibility, and future multi-device use. A separate later task records the requested review of their technical presentation.
+3. The focused User/Technical mode and dB semantics regressions pass locally. No firmware, C3 source, raw data, trigger, live Apps Script deployment, workbook refresh, or Git publication was changed.
+
 ## Final Google Sheets user views - Apps Script candidate - 2026-09-19
 
 1. Replaced the test-heavy ordinary presentation with three compact user views: `Summary`, `Measurements`, and `Charts`. `Summary` shows the newest dB(A) DAY/EVE/NGT conclusions, `Measurements` shows newest-first ten-minute dB(A) windows, and `Charts` shows dB(A)-based overview, daypart sound, level mix, and verdict history.

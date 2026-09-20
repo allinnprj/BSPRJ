@@ -123,6 +123,7 @@ const AUTO_DAILY_LOCK_WAIT_MILLISECONDS = 300000;
 const USER_INTERFACE_MODE_PROPERTY = 'BS_USER_INTERFACE_MODE';
 const USER_INTERFACE_MODE_USER = 'USER';
 const USER_INTERFACE_MODE_TECHNICAL = 'TECHNICAL';
+const MICROPHONE_MODEL = 'INMP441';
 const DIAGNOSTICS_STATE_CACHE_PROPERTY = 'BS_DIAGNOSTICS_STATE_CACHE';
 const DIAGNOSTICS_STATE_UNKNOWN = 'CHECK';
 const MIN_VALID_SAMPLES = 100;
@@ -259,18 +260,17 @@ const CONCLUSION_SUMMARY_HEADERS = [
   'READING'
 ];
 const USER_SUMMARY_HEADERS = [
-  'DEV ID',
+  'BUILD',
   'DATE',
   'PART',
   'DBA LEQ EST',
   'MAIN LEVEL',
   'MAIN SHARE %',
-  'COVERAGE %',
-  'DATA CONFIDENCE',
+  'DATA',
   'READING'
 ];
 const USER_MEASUREMENTS_HEADERS = [
-  'DEV ID',
+  'BUILD',
   'DATE',
   'T FROM',
   'T TO',
@@ -279,7 +279,12 @@ const USER_MEASUREMENTS_HEADERS = [
   'LEVEL',
   'DATA QUALITY',
   'TEMP C',
-  'HUM %'
+  'HUM %',
+  'MIC',
+  'AVG P2P',
+  'RAW MIN',
+  'RAW MAX',
+  'DBA CLIPS'
 ];
 const DAILY_VERDICT_HEADERS = [
   'DEV ID',
@@ -324,11 +329,11 @@ const SHEET_STYLE_PROFILES = {
     headerColors: [
       '#d9ead3', '#cfe2f3', '#cfe2f3',
       '#ffe599', '#ffe599', '#fff2cc',
-      '#d9d2e9', '#d0e0e3', '#fce5cd'
+      '#d0e0e3', '#fce5cd'
     ],
     bodyOdd: '#fbfdf8',
     bodyEven: '#f4f9ef',
-    accentCols: [3, 4, 5, 6, 7, 8, 9],
+    accentCols: [3, 4, 5, 6, 7, 8],
     accentColor: '#fff7d6',
     freezeCols: 3
   },
@@ -340,7 +345,8 @@ const SHEET_STYLE_PROFILES = {
     headerTextColor: '#134f5c',
     headerColors: [
       '#d9ead3', '#cfe2f3', '#cfe2f3', '#cfe2f3', '#d9d2e9',
-      '#ffe599', '#ffe599', '#d0e0e3', '#b7ead7', '#b7ead7'
+      '#ffe599', '#ffe599', '#d0e0e3', '#b7ead7', '#b7ead7',
+      '#d9b8f0', '#f9cb9c', '#f9cb9c', '#f9cb9c', '#d9d9d9'
     ],
     bodyOdd: '#f8fbfe',
     bodyEven: '#f1f7fb',
@@ -550,7 +556,9 @@ const HEADER_WIDTH_OVERRIDES = {
   'EXPECTED WINDOWS': 120,
   'COVERAGE %': 115,
   'DATA CONFIDENCE': 125,
+  'DATA': 125,
   'DATA QUALITY': 105,
+  'MIC': 190,
   'LEVEL DOMINANCE': 130,
   'READING': 260,
   'WINDOWS TOTAL': 105,
@@ -1879,6 +1887,9 @@ function enableTechnicalMode_() {
 
 const TECHNICAL_COLUMNS_BY_SHEET_NAME = {};
 TECHNICAL_COLUMNS_BY_SHEET_NAME[ACTIVE_LOG_SHEET_NAME] = RAW_LOG_TECHNICAL_HEADERS;
+TECHNICAL_COLUMNS_BY_SHEET_NAME[USER_MEASUREMENTS_SHEET_NAME] = [
+  'MIC', 'AVG P2P', 'RAW MIN', 'RAW MAX', 'DBA CLIPS'
+];
 TECHNICAL_COLUMNS_BY_SHEET_NAME[CLEAN_SUMMARY_SHEET_NAME] = [
   'VER', 'BUILD', 'NOW %', 'H %', 'M %', 'RAW MIN', 'RAW MAX',
   'WIN MIN', 'QUIET', 'LOUD', 'SAMPLES', 'SOURCE SHEET', 'DAY STATE',
@@ -3103,6 +3114,20 @@ function getCoverageConfidence_(coveragePct) {
   return 'NO DATA';
 }
 
+function buildUserDataText_(coveragePct, dataConfidence) {
+  const coverage = roundValue_(Math.min(100, Math.max(0, toNumber_(coveragePct))), 1);
+  const status = String(dataConfidence || getCoverageConfidence_(coverage)).trim().toUpperCase();
+  const coverageText = Number.isInteger(coverage) ? String(coverage) : coverage.toFixed(1);
+  return `${status || 'NO DATA'} · ${coverageText}%`;
+}
+
+function buildMicrophoneText_(acousticRevision, signalText) {
+  const revision = toNumber_(acousticRevision);
+  const revisionText = revision > 0 ? `REV ${revision}` : 'REV ?';
+  const signal = String(signalText || 'CHECK').trim().toUpperCase() || 'CHECK';
+  return `${MICROPHONE_MODEL} · ${revisionText} · ${signal}`;
+}
+
 function levelToVerdictScore_(levelText) {
   if (String(levelText || '').toUpperCase() === 'MIXED NORMAL/LOUD') {
     return 2.5;
@@ -3188,22 +3213,34 @@ function buildConclusionSummaryRows_(records) {
 }
 
 function buildUserSummaryRows_(records) {
+  const latestBuildByKey = {};
+  records.forEach((record) => {
+    const key = `${record.deviceId}|${record.dateText}|${record.partText}`;
+    const timeText = normalizeTimeText_(record.timeToText || record.timeFromText);
+    const current = latestBuildByKey[key];
+    if (!current || timeText >= current.timeText) {
+      latestBuildByKey[key] = {
+        buildText: record.buildText,
+        timeText
+      };
+    }
+  });
+
   return buildConclusionSummaryRows_(records).map((row) => ([
-    row[0],
+    (latestBuildByKey[`${row[0]}|${row[1]}|${row[2]}`] || {}).buildText || '',
     row[1],
     row[2],
     row[3],
     row[4],
     row[5],
-    row[8],
-    row[9],
+    buildUserDataText_(row[8], row[9]),
     row[11]
   ]));
 }
 
 function buildUserMeasurementRows_(records) {
   const rows = records.map((record) => ([
-    record.deviceId,
+    record.buildText,
     record.dateText,
     record.timeFromText,
     record.timeToText,
@@ -3212,7 +3249,12 @@ function buildUserMeasurementRows_(records) {
     record.levelText,
     record.qualityText,
     record.temperatureC,
-    record.humidityPct
+    record.humidityPct,
+    buildMicrophoneText_(record.acousticRevision, record.signalText),
+    record.avgPeakToPeak === undefined || record.avgPeakToPeak === null ? '' : record.avgPeakToPeak,
+    record.rawMin === undefined || record.rawMin === null ? '' : record.rawMin,
+    record.rawMax === undefined || record.rawMax === null ? '' : record.rawMax,
+    record.dbaClips === undefined || record.dbaClips === null ? '' : record.dbaClips
   ]));
 
   sortRowsNewestFirst_(rows, 1, 2, 4, 0);
