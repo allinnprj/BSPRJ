@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Compact Sheets presentation - live acceptance - 2026-09-20
+
+1. Live User-mode screenshots confirm `BUILD`, combined `DATA = confidence · coverage`, newest-first dB(A) measurements, hidden microphone diagnostics, and Charts still using numeric valid-minute coverage.
+2. A live Technical-mode screenshot confirms `MIC = INMP441 · REV 2 · OK` followed by `AVG P2P`, `RAW MIN`, `RAW MAX`, and zero `DBA CLIPS` for the visible windows; raw/internal sheets are restored as designed.
+3. Task `107` is closed. No further source, firmware, trigger, raw-schema, AppSheet, or workbook-data change was required for this acceptance.
+
 ## Compact DATA and microphone diagnostics - Apps Script candidate - 2026-09-20
 
 1. Combined the user-facing `COVERAGE %` and `DATA CONFIDENCE` columns into one compact locale-friendly `DATA` value such as `OK · 92,9%`. The numeric coverage and derived confidence remain separate in internal analytics for charts, checks, and compatibility.
