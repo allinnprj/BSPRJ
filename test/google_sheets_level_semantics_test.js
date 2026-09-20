@@ -88,7 +88,7 @@ assert.deepStrictEqual(
   JSON.parse(JSON.stringify(userSummary)),
   [
     '157', conclusion[1], conclusion[2], conclusion[3], conclusion[4],
-    conclusion[5], 'PARTIAL · 30.3%', conclusion[11]
+    conclusion[5], 'PARTIAL · 30,3%', conclusion[11]
   ]
 );
 

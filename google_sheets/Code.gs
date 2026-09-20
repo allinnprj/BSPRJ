@@ -3117,7 +3117,8 @@ function getCoverageConfidence_(coveragePct) {
 function buildUserDataText_(coveragePct, dataConfidence) {
   const coverage = roundValue_(Math.min(100, Math.max(0, toNumber_(coveragePct))), 1);
   const status = String(dataConfidence || getCoverageConfidence_(coverage)).trim().toUpperCase();
-  const coverageText = Number.isInteger(coverage) ? String(coverage) : coverage.toFixed(1);
+  const coverageText = (Number.isInteger(coverage) ? String(coverage) : coverage.toFixed(1))
+    .replace('.', ',');
   return `${status || 'NO DATA'} · ${coverageText}%`;
 }
 
