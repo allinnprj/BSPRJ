@@ -258,8 +258,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.103-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 157\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.104-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 158\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,

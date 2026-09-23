@@ -14,6 +14,9 @@ const telegramHeader = read('include/telegram_alert_service.h');
 const telegram = read('src/telegram_alert_service.cpp');
 const display = read('src/display_view.cpp');
 const codeGs = read('google_sheets/Code.gs');
+const mqttHeader = read('include/mqtt_service.h');
+const mqtt = read('src/mqtt_service.cpp');
+const appsheet = read('APPSHEET_SETUP.md');
 
 assert.match(samplerHeader, /float currentDbaEstimate = 0\.0f/);
 assert.match(samplerHeader, /bool dbaAvailable = false/);
@@ -42,6 +45,25 @@ assert.match(main, /record\.levelText = dbaLevelText\(record\.dbaLeqEstimate, re
 assert.match(main, /sampleDelta\) \/ \(AcousticEnergy::kSampleRate \* 60\.0f\)/,
   'Measured window duration must follow raw I2S samples, not the main-loop snapshot count.');
 assert.match(main, /dbaLevelText\(latestSnapshot\.currentDbaEstimate, latestSnapshot\.dbaAvailable\)/);
+assert.match(mqttHeader, /const char \*soundLevelText = "NO DATA"/);
+assert.match(mqttHeader, /const char \*micSignalText = "LOW"/);
+assert.match(main, /state\.soundLevelText = dbaLevelText\(snapshot\.currentDbaEstimate, snapshot\.dbaAvailable\)/);
+assert.match(main, /state\.micSignalText = signalStateText\(snapshot\.signalState\)/);
+assert.match(mqtt, /"sound\/dba_est"[\s\S]*state\.snapshot\.currentDbaEstimate/);
+assert.match(mqtt, /"sound\/level", state\.soundLevelText/);
+assert.match(mqtt, /"sound\/mic_signal", state\.micSignalText/);
+assert.match(mqtt, /kFieldSoundDbaEstimate\[\] = "SOUND_DBA_EST"/);
+assert.match(mqtt, /kFieldSoundLevel\[\] = "SOUND_LEVEL"/);
+assert.match(mqtt, /kFieldMicSignal\[\] = "MIC_SIGNAL"/);
+assert.match(mqtt, /kFieldSignalState,[\s\S]*state\.soundLevelText/,
+  'The legacy Datacake level alias must remain compatible during migration.');
+assert.match(mqtt, /kFieldMicSignal,[\s\S]*state\.micSignalText/,
+  'Microphone health must not be populated from the dB(A) level.');
+for (const legacyField of ['sound/now_pct', 'sound/hour_pct', 'sound/mean_pct']) {
+  assert.ok(mqtt.includes(legacyField), `Missing legacy MQTT compatibility field ${legacyField}`);
+}
+assert.match(appsheet, /`DBA LEQ EST`/);
+assert.match(appsheet, /Regenerate structure/);
 
 assert.match(log, /dba_leq_est,dba_valid_pct,dba_faults,dba_clips/);
 assert.match(log, /record\.dbaAvailable[\s\S]*file\.print\(record\.dbaLeqEstimate, 1\)/);

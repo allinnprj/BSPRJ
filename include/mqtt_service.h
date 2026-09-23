@@ -7,7 +7,8 @@
 
 struct MqttRuntimeState {
   AudioSnapshot snapshot;
-  const char *signalText = "SILENT";
+  const char *soundLevelText = "NO DATA";
+  const char *micSignalText = "LOW";
   bool timeSynced = false;
   const char *currentPeriod = "unknown";
   uint32_t currentPeriodPercent = 0;

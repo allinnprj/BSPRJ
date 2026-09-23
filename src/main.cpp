@@ -738,7 +738,8 @@ void updateDayPartStats(const AudioSnapshot &snapshot, const TimeService &timeSe
 void updateMqttState(const AudioSnapshot &snapshot) {
   MqttRuntimeState state{};
   state.snapshot = snapshot;
-  state.signalText = dbaLevelText(snapshot.currentDbaEstimate, snapshot.dbaAvailable);
+  state.soundLevelText = dbaLevelText(snapshot.currentDbaEstimate, snapshot.dbaAvailable);
+  state.micSignalText = signalStateText(snapshot.signalState);
   state.timeSynced = timeService.isSynced();
   state.wifiStatus = wifiService.statusTextCStr();
   state.wifiSignalPercent = wifiService.signalPercent();

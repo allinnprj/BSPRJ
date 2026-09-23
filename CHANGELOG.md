@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Explicit external dB outputs - 0.1.104-EXP build 158 - 2026-09-23
+
+1. MQTT now publishes the current calibrated estimate as `sound/dba_est`, the human sound band as `sound/level`, and microphone health as `sound/mic_signal`. Datacake receives the matching `SOUND_DBA_EST`, `SOUND_LEVEL`, and `MIC_SIGNAL` fields.
+2. Existing relative percentage topics/fields and the legacy `sound/signal` / `SIGNAL_STATE` level aliases remain unchanged for dashboard compatibility. Environmental loudness and microphone health are now also available under separate unambiguous names.
+3. Updated the AppSheet guide to use `DBA LEQ EST` as the main numeric sound field and hide old relative `AVG NOW/H/M/P2P` values from ordinary views. The data dictionaries record the required Datacake field creation and AppSheet structure regeneration.
+4. All ten local Node contract suites and `git diff --check` pass. One `pio run -e esp32dev` succeeds: RAM `66,692 / 327,680` (20.4%), linked Flash `1,404,011 / 1,572,864` (89.3%), OTA reserve `168,853` bytes, binary `1,404,416` bytes, SHA-256 `AC388FCEAD6E952BA03719B9248BD768DD8E6E22F49993CBE376029A647CFC6A`.
+5. This is a local candidate only: no firmware upload, Datacake change, AppSheet regeneration, live MQTT check, Apps Script deployment, or Git publication was performed. Before manual upload, create the three new Datacake fields; then verify the first live publish, regenerate AppSheet columns, and keep task `106` open until those external outputs are physically accepted. Readiness remains `60%`.
+
 ## Clear Technical Log - live acceptance - 2026-09-20
 
 1. Live confirmation proves Technical mode presents exactly `Summary`, `Measurements`, `Charts`, and `Technical Log`, while User mode returns to the three ordinary views.

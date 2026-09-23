@@ -19,8 +19,8 @@ function functionBody(text, signature, nextSignature) {
   return text.slice(start, end);
 }
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.103-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 157\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.104-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 158\b/);
 assert.match(logSource, /kDbCalibrationDurationMs = 20UL \* 60UL \* 1000UL/);
 assert.match(logSource, /kDbCalibrationBucketMs = 1000UL/);
 assert.match(logSource, /kDbCalibrationPath\[\] = "\/dbcal\.csv"/);

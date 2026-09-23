@@ -20,6 +20,24 @@ relative analytics continue to answer:
 meter. Starting with local candidate build `157`, `LEVEL` uses dB(A), while
 `AVG P2P`, `NOW %`, `H %`, and `M %` remain relative diagnostics for now.
 
+Starting with candidate build `158`, the external live outputs use explicit
+names: MQTT publishes `sound/dba_est`, `sound/level`, and `sound/mic_signal`;
+Datacake publishes `SOUND_DBA_EST`, `SOUND_LEVEL`, and `MIC_SIGNAL`. The older
+percentage fields and legacy `sound/signal` / `SIGNAL_STATE` level aliases stay
+temporarily for compatibility. Use `SOUND LEVEL` for environmental loudness and
+`MIC SIGNAL` for microphone health; they are different meanings.
+
+Before manually uploading build `158`, create these Datacake fields on the
+existing device:
+
+- `SOUND_DBA_EST` as a numeric/float field
+- `SOUND_LEVEL` as a text/string field
+- `MIC_SIGNAL` as a text/string field
+
+MQTT does not need a schema migration; subscribe to the three new topics when
+checking the live result. Keep the legacy percentage fields during this
+transition so existing dashboards continue to work.
+
 ## Google Sheets Views
 
 `User mode` is the default. It shows only three everyday views:
@@ -118,9 +136,9 @@ How to read it:
 - higher value: louder window
 - not real `dB`
 
-Why useful: this is the easiest number to show on OLED, MQTT, Datacake, Telegram, and dashboards.
-
-After physical acceptance of build `157`, the main user view can be simplified to dB(A) and `LEVEL`.
+Why useful: this remains a compatibility and technical diagnostic value. New
+MQTT, Datacake, Telegram, and ordinary Sheets views should use dB(A) and
+`LEVEL` for the sound conclusion.
 
 ### `H %`
 

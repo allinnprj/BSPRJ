@@ -29,6 +29,9 @@ constexpr char kFieldNightPct[] = "NIGHT_PCT";
 constexpr char kFieldOnline[] = "ONLINE";
 constexpr char kFieldWifiPct[] = "WIFI_PCT";
 constexpr char kFieldSignalState[] = "SIGNAL_STATE";
+constexpr char kFieldSoundDbaEstimate[] = "SOUND_DBA_EST";
+constexpr char kFieldSoundLevel[] = "SOUND_LEVEL";
+constexpr char kFieldMicSignal[] = "MIC_SIGNAL";
 constexpr char kFieldTemperatureC[] = "TEMPERATURE_C";
 constexpr char kFieldHumidityPct[] = "HUMIDITY_PCT";
 
@@ -305,7 +308,12 @@ void MqttService::publishWqttLiveMetrics(const MqttRuntimeState &state) {
   publishWqttNumber("sound/now_pct", state.snapshot.currentPercent, true);
   publishWqttNumber("sound/hour_pct", state.snapshot.hourPercent, true);
   publishWqttNumber("sound/mean_pct", state.snapshot.totalPercent, true);
-  publishWqttText("sound/signal", state.signalText, true);
+  if (state.snapshot.dbaAvailable) {
+    publishWqttDecimal("sound/dba_est", state.snapshot.currentDbaEstimate, 1, true);
+  }
+  publishWqttText("sound/level", state.soundLevelText, true);
+  publishWqttText("sound/mic_signal", state.micSignalText, true);
+  publishWqttText("sound/signal", state.soundLevelText, true);
   publishWqttText("period/current", state.currentPeriod, true);
   publishWqttNumber("period/current_pct", state.currentPeriodPercent, true);
   if (state.environmentAvailable) {
@@ -339,6 +347,12 @@ void MqttService::publishDatacakeFastMetrics(const MqttRuntimeState &state) {
   appendDatacakeRecord(body, firstRecord, kFieldNowPct, String(state.snapshot.currentPercent));
   appendDatacakeRecord(body, firstRecord, kFieldHourPct, String(state.snapshot.hourPercent));
   appendDatacakeRecord(body, firstRecord, kFieldMeanPct, String(state.snapshot.totalPercent));
+  if (state.snapshot.dbaAvailable) {
+    appendDatacakeRecord(
+        body, firstRecord, kFieldSoundDbaEstimate,
+        String(static_cast<double>(state.snapshot.currentDbaEstimate),
+               static_cast<unsigned int>(1)));
+  }
   if (state.environmentAvailable) {
     appendDatacakeRecord(
         body, firstRecord, kFieldTemperatureC,
@@ -365,7 +379,12 @@ void MqttService::publishDatacakeSlowMetrics(const MqttRuntimeState &state) {
 void MqttService::publishDatacakeTextMetrics(const MqttRuntimeState &state) {
   String body = "[";
   bool firstRecord = true;
-  appendDatacakeRecord(body, firstRecord, kFieldSignalState, "\"" + String(state.signalText) + "\"");
+  appendDatacakeRecord(body, firstRecord, kFieldSignalState,
+                       "\"" + String(state.soundLevelText) + "\"");
+  appendDatacakeRecord(body, firstRecord, kFieldSoundLevel,
+                       "\"" + String(state.soundLevelText) + "\"");
+  appendDatacakeRecord(body, firstRecord, kFieldMicSignal,
+                       "\"" + String(state.micSignalText) + "\"");
   body += ']';
   publishDatacakePayload(body, F("batch text"));
 }

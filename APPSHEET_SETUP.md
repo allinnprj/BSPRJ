@@ -221,7 +221,7 @@ If `Noise` only shows decorative charts without improving understanding, it shou
 
 - `DATE`
 - `PART`
-- `AVG NOW %`
+- `DBA LEQ EST`
 - `MAIN LEVEL`
 - `MAIN SHARE %`
 - `COVERAGE %`
@@ -246,14 +246,13 @@ If `Noise` only shows decorative charts without improving understanding, it shou
 - `WINDOWS VALID`
 - `EXPECTED WINDOWS`
 - `COVERAGE %`
-- `AVG NOW %`
-- `AVG H %`
-- `AVG M %`
+- `DBA LEQ EST`
 - `AVG TEMP C`
 - `AVG HUM %`
-- `QUIET %`
-- `LOUD %`
 - `MISSING WIN`
+
+`AVG NOW %`, `AVG H %`, `AVG M %`, `AVG P2P`, `QUIET %` и `LOUD %`
+оставить скрытыми как переходную относительную диагностику.
 
 ### `summary_levels`
 
@@ -384,7 +383,7 @@ If `Noise` only shows decorative charts without improving understanding, it shou
 - `DEV ID` -> `Text`
 - `DATE` -> `Date`
 - `PART` -> `Text`
-- `AVG NOW %` -> `Percent` или `Number`
+- `DBA LEQ EST` -> `Decimal`
 - `MAIN LEVEL` -> `Text`
 - `MAIN SHARE %` -> `Percent` или `Number`
 - `VALID WINDOWS` -> `Number`
@@ -411,6 +410,7 @@ If `Noise` only shows decorative charts without improving understanding, it shou
 - `WINDOWS VALID` -> `Number`
 - `EXPECTED WINDOWS` -> `Number`
 - `COVERAGE %` -> `Percent` или `Number`
+- `DBA LEQ EST` -> `Decimal`
 - `AVG NOW %` -> `Percent` или `Number`
 - `AVG H %` -> `Percent` или `Number`
 - `AVG M %` -> `Percent` или `Number`
@@ -573,17 +573,20 @@ What to leave visible first:
 - `PART`
 - `DATE`
 - `COVERAGE %`
-- `AVG NOW %`
-- `QUIET %`
-- `LOUD %`
+- `DBA LEQ EST`
+- `AVG TEMP C`
+- `AVG HUM %`
 
 What to hide at first:
 
 - `DEV ID`
 - `WINDOWS TOTAL`
+- `AVG NOW %`
+- `AVG H %`
+- `AVG M %`
 - `AVG P2P`
-- `AVG TEMP C`
-- `AVG HUM %`
+- `QUIET %`
+- `LOUD %`
 - `SILENT WIN`
 - `NORMAL WIN`
 - `LOUD WIN`
@@ -719,6 +722,10 @@ This order matches the intended reading flow:
 5. В остальных трёх сделать обычные `Table`
 6. Добавить `PART_ORDER` как virtual column там, где есть `PART`
 7. Повесить format rules на `MAIN LEVEL`, `DATA CONFIDENCE`, `LEVEL DOMINANCE`, `MISSING WIN`, `LOW SAMPLE WIN`
+
+После обновления структуры листов выполнить в AppSheet `Data -> Columns -> Regenerate structure`
+и проверить, что главным числовым полем стал `DBA LEQ EST`, а относительные
+`AVG NOW/H/M/P2P` не возвращены в пользовательские экраны.
 
 Такой порядок даст уже полезное мобильное приложение без вмешательства в текущую Google Sheets запись.
 
