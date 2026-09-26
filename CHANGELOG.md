@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Task 112 live external check, partial acceptance - 2026-09-26
+
+1. Read-only MQTT verification received all three new topics as fresh non-retained messages: `54.8 dB(A)`, `SILENT`, and microphone `OK`. This accepts live broker delivery and separate loudness/health semantics; a same-time Telegram comparison is still pending.
+2. Read-only Datacake GraphQL confirms the configured product has only the 12 legacy measurement fields; `SOUND_DBA_EST`, `SOUND_LEVEL`, and `MIC_SIGNAL` are absent. Their creation requires separate approval; no field, dashboard or cloud data was changed. Existing values were about 25 minutes old, which is within the firmware's hourly publication cadence.
+3. AppSheet is not accepted: browser access failed with the Windows sandbox deny-read ACL error. Task `112` remains open, as do task `106` and the task `108` cleanup gate. Firmware remains `0.1.105-EXP` build `159`; readiness remains `60%`. No upload, deployment, commit, or push occurred.
+
 ## Build 159 live acceptance and next gates - 2026-09-26
 
 1. User confirms manual BS OTA while C3 was sleeping; the post-OTA build-159 status screenshot retains `C3 link: SLP`. Power-session uptime intentionally survives software restarts, so the earlier instruction to expect uptime near zero was incorrect.
