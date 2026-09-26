@@ -136,6 +136,7 @@ const DIAGNOSTICS_STATE_CACHE_PROPERTY = 'BS_DIAGNOSTICS_STATE_CACHE';
 const DIAGNOSTICS_STATE_UNKNOWN = 'CHECK';
 const MIN_VALID_SAMPLES = 100;
 const DBA_MIN_VALID_COVERAGE_PERCENT = 95;
+const COMPLETE_WINDOW_MINUTES = 9;
 const DBA_LEVEL_SILENT_MAX = 56;
 const DBA_LEVEL_NORMAL_MAX = 62;
 const DBA_LEVEL_LOUD_MAX = 66;
@@ -2211,7 +2212,8 @@ function timeToMinutes_(timeText) {
 }
 
 function buildQualityText_(record, isValid, gapBefore) {
-  return isValid ? 'OK' : 'NO DATA';
+  if (!isValid) return 'NO DATA';
+  return toNumber_(record.windowMinutes) < COMPLETE_WINDOW_MINUTES ? 'PARTIAL' : 'OK';
 }
 
 // === Telegram reports ===

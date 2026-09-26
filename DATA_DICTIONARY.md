@@ -511,8 +511,14 @@ Useful for detecting power loss, Wi-Fi upload gaps, or device downtime.
 
 ### `QUALITY`
 
-Simple dB quality label: `OK` for a usable measurement, otherwise `NO DATA`.
-Duplicates, gaps, low snapshot counts, and input issues remain separate
+Per-window dB quality label:
+
+- `OK`: usable measurement covering at least `9` minutes
+- `PARTIAL`: usable measurement shorter than `9` minutes
+- `NO DATA`: no usable dB measurement
+
+A `PARTIAL` value is still included with its actual valid measured-minute
+weight. Duplicates, gaps, low snapshot counts, and input issues remain separate
 technical columns and in `summary_health`.
 
 ## Day-Part Summary Terms

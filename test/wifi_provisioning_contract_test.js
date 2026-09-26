@@ -25,8 +25,8 @@ function functionBody(text, signature, nextSignature) {
   return text.slice(start, end);
 }
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.104-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 158\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.105-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 159\b/);
 assert.match(buttonHeader, /kWifiSetupCountdownStartMs = 2000UL/);
 assert.match(buttonHeader, /kWifiSetupHoldMs = 5000UL/);
 assert.match(wifiHeader, /kSetupWindowMs = 600000UL/);

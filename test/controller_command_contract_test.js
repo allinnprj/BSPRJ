@@ -201,6 +201,18 @@ assert.match(source, /gpsLatitudeMicrodegrees < -90000000/);
 assert.match(source, /gpsLongitudeMicrodegrees > 180000000/);
 
 assert.match(main, /setCommandEventHandler\(recordControllerCommandEvent\)/);
+const restartCheckpointBody = functionBody(
+  main,
+  'void saveSoftwareRestartCheckpoint(',
+  'void beginOta('
+);
+assert.match(restartCheckpointBody, /savePowerUptimeCheckpoint\(\)/);
+assert.match(restartCheckpointBody, /sleepRemainingSeconds\(nowMs\)/);
+assert.match(restartCheckpointBody, /rtcControllerSleepMagic = CONTROLLER_SLEEP_RTC_MAGIC/);
+assert.strictEqual((main.match(/saveSoftwareRestartCheckpoint\(/g) || []).length, 3,
+  'The shared checkpoint must be defined once and used by OTA plus scheduled restart.');
+assert.match(main, /\.onStart\(\[\]\(\) \{[\s\S]*saveSoftwareRestartCheckpoint\(millis\(\)\)/);
+assert.match(main, /scheduledRestartStarted = true;[\s\S]*saveSoftwareRestartCheckpoint\(nowMs\)/);
 assert.match(main, /appendControllerDiagnosticRecord\(F\("C3_GPS"\)/);
 assert.doesNotMatch(main, /queueStatusCommand\s*\(/,
   'STATUS must only be triggered by the authorized Telegram command path.');
@@ -258,8 +270,8 @@ assert.doesNotMatch(source, /CommandKind::Restart/,
 assert.doesNotMatch(source, /queueOtaOnCommand|CommandKind::OtaOn|OTA_ON=/);
 assert.strictEqual((source.match(/OTA_ON/g) || []).length, 1,
   'OTA_ON may remain only as the retired-code migration reference.');
-assert.match(version, /#define PROJECT_VERSION "0\.1\.104-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 158\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.105-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 159\b/);
 assert.doesNotMatch(
   cleanupSurface,
   /isPressed\(\) const|toggleEnabled\(|clearCurrentLog\(|webServerStarted\(|archivePathFromMillis\(|publishDatacakeOnlineStatus\(|publishDatacakeNumberField\(|publishDatacakeDecimalField\(|dateTimeString\(|timestampKey_|mqttWifiClient|datacakeClientId_|datacakeWillTopic_|wqttAnnouncedOffline_|datacakeAnnouncedOffline_|mqttSignalText/,

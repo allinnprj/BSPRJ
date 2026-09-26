@@ -1093,12 +1093,29 @@ void updateSht31Health(const AudioSnapshot &snapshot) {
   }
 }
 
+void saveSoftwareRestartCheckpoint(unsigned long nowMs) {
+  savePowerUptimeCheckpoint();
+  rtcControllerSleepMagic = 0;
+  rtcControllerSleepUntilPowerUptimeMs = 0;
+  rtcControllerSleepBuild = 0;
+
+  const uint32_t controllerSleepRemainingSeconds =
+      controllerLinkService.sleepRemainingSeconds(nowMs);
+  if (controllerSleepRemainingSeconds > 0 && controllerLinkService.remoteBuild() != 0) {
+    rtcControllerSleepUntilPowerUptimeMs =
+        powerUptimeMs() + static_cast<uint64_t>(controllerSleepRemainingSeconds) * 1000ULL;
+    rtcControllerSleepBuild = controllerLinkService.remoteBuild();
+    rtcControllerSleepMagic = CONTROLLER_SLEEP_RTC_MAGIC;
+  }
+}
+
 void beginOta() {
   ArduinoOTA.setHostname(OTA_HOSTNAME);
   ArduinoOTA.setPassword(OTA_PASSWORD);
   ArduinoOTA
       .onStart([]() {
         otaStarted = true;
+        saveSoftwareRestartCheckpoint(millis());
         String type = ArduinoOTA.getCommand() == U_FLASH ? F("sketch") : F("filesystem");
         Serial.print(F("[OTA] start -> "));
         Serial.println(type);
@@ -1573,18 +1590,7 @@ void loop() {
   if (!otaStarted && !scheduledRestartStarted && scheduledRestartDue &&
       completedWindowBoundaryReady && sheetsDeliveryReady) {
     scheduledRestartStarted = true;
-    savePowerUptimeCheckpoint();
-    rtcControllerSleepMagic = 0;
-    rtcControllerSleepUntilPowerUptimeMs = 0;
-    rtcControllerSleepBuild = 0;
-    const uint32_t controllerSleepRemainingSeconds =
-        controllerLinkService.sleepRemainingSeconds(nowMs);
-    if (controllerSleepRemainingSeconds > 0 && controllerLinkService.remoteBuild() != 0) {
-      rtcControllerSleepUntilPowerUptimeMs =
-          powerUptimeMs() + static_cast<uint64_t>(controllerSleepRemainingSeconds) * 1000ULL;
-      rtcControllerSleepBuild = controllerLinkService.remoteBuild();
-      rtcControllerSleepMagic = CONTROLLER_SLEEP_RTC_MAGIC;
-    }
+    saveSoftwareRestartCheckpoint(nowMs);
     logService.appendRuntimeEvent(F("SCHEDULED_RESTART"), currentDateText(), currentTimeText(),
                                   PROJECT_BUILD, currentBootSequence, currentResetReason,
                                   powerUptimeMinutes(), formatCompactUptime(powerUptimeMs()),

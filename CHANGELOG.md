@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## OTA sleep restoration and honest partial windows - 0.1.105-EXP build 159 - 2026-09-26
+
+1. T11 physically confirms build `158` sound and cloud stability: `312/312` build-158 windows contain dB(A), all have `99..100%` valid audio, zero clips, `MIC SIGNAL = OK`, and the local CSV matches Google Sheets without missing or mismatched windows. The scheduled restart during a declared C3 sleep correctly restored `UART_SLP`.
+2. T11 also isolates an OTA-only controller-link defect: both manual OTA restarts performed while C3 was sleeping lost the declared sleep checkpoint and temporarily reported `UART_OFF`. Build `159` now uses one shared RTC software-restart checkpoint for both scheduled restart and ArduinoOTA start, without changing C3 firmware, UART frames, sleep duration, or sound processing.
+3. Google Sheets now labels an otherwise valid measurement shorter than `9` minutes as `PARTIAL`; `9..10` minute windows remain `OK`, and invalid measurements remain `NO DATA`. The dB value stays valid and continues to be weighted by its actual valid measured minutes.
+4. All ten local Node contract suites and `git diff --check` pass. One `pio run -e esp32dev` succeeds: RAM `66,692 / 327,680` (20.4%), linked Flash `1,404,063 / 1,572,864` (89.3%), OTA reserve `168,801` bytes, binary `1,404,464` bytes, SHA-256 `ECBE4F886113F69F040A3FBABD3368C76B8A5BA9E5EE723E4C520A699662F7AD`.
+5. This is a local candidate only: no firmware upload, Apps Script deployment, Datacake/AppSheet change, commit, or push was performed. Physical acceptance requires manual BS OTA while C3 is in declared sleep and a post-restart `UART_SLP` check; the `PARTIAL` presentation requires manual `Code.gs` deployment and refresh.
+
 ## Explicit external dB outputs - 0.1.104-EXP build 158 - 2026-09-23
 
 1. MQTT now publishes the current calibrated estimate as `sound/dba_est`, the human sound band as `sound/level`, and microphone health as `sound/mic_signal`. Datacake receives the matching `SOUND_DBA_EST`, `SOUND_LEVEL`, and `MIC_SIGNAL` fields.

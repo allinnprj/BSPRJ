@@ -9,6 +9,7 @@ const sandbox = {};
 const hooks = `
   this.__getMainLevelStats = getMainLevelStats_;
   this.__getCoverageConfidence = getCoverageConfidence_;
+  this.__buildQualityText = buildQualityText_;
   this.__noiseLevelFromDba = noiseLevelFromDba_;
   this.__buildConclusionSummaryRows = buildConclusionSummaryRows_;
   this.__buildUserSummaryRows = buildUserSummaryRows_;
@@ -124,9 +125,17 @@ const clean = sandbox.__buildCleanSummaryData([
 assert.strictEqual(clean.uniqueRecords[0].isValid, true,
   'Low main-loop SAMPLES and relative LOW must not invalidate sound dB.');
 assert.strictEqual(clean.uniqueRecords[0].levelText, 'SILENT');
+assert.strictEqual(clean.uniqueRecords[0].qualityText, 'PARTIAL');
 assert.strictEqual(clean.uniqueRecords[1].levelText, 'NORMAL');
+assert.strictEqual(clean.uniqueRecords[1].qualityText, 'OK');
 assert.strictEqual(clean.uniqueRecords[2].isValid, false);
 assert.strictEqual(clean.uniqueRecords[2].levelText, 'NO DATA');
+assert.strictEqual(clean.uniqueRecords[2].qualityText, 'NO DATA');
+assert.strictEqual(sandbox.__buildQualityText({ windowMinutes: 9 }, true, 0), 'OK');
+assert.strictEqual(sandbox.__buildQualityText({ windowMinutes: 8.99 }, true, 0), 'PARTIAL');
+assert.strictEqual(sandbox.__buildQualityText({ windowMinutes: 10 }, false, 0), 'NO DATA');
+assert.strictEqual(clean.cleanRows[0][29], 'PARTIAL');
+assert.strictEqual(clean.cleanRows[1][29], 'OK');
 assert.strictEqual(clean.cleanRows[2][29], 'NO DATA');
 const userMeasurements = sandbox.__buildUserMeasurementRows(clean.uniqueRecords);
 assert.strictEqual(userMeasurements.length, 3);
