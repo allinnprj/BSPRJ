@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## Build 159 live acceptance and next gates - 2026-09-26
+
+1. User confirms manual BS OTA while C3 was sleeping; the post-OTA build-159 status screenshot retains `C3 link: SLP`. Power-session uptime intentionally survives software restarts, so the earlier instruction to expect uptime near zero was incorrect.
+2. Deployed Measurements shows `PARTIAL` for the `14:00` and `14:30` OTA-affected windows and `OK` for `14:10` and `14:20`. dB(A) remains populated, microphone status is `OK`, and visible overload counts are zero. Task `111` is accepted on this user confirmation and screenshot evidence.
+3. Added task `112` (Important) as the deferred live MQTT/Datacake/AppSheet checklist for task `106`. Continue dependency-audit preparation and the overnight power gate; removal in task `108` waits for external acceptance.
+4. This step changes project records only; firmware version remains `0.1.105-EXP` build `159` and readiness remains `60%`.
+5. A read-only cleanup-preparation audit finds calibration and relative metrics still connected to runtime/UI, persistence, CSV/POST and external publication. Task `108` now records the dependency boundaries and incremental removal order; no firmware, schema or data deletion was performed.
+
 ## OTA sleep restoration and honest partial windows - 0.1.105-EXP build 159 - 2026-09-26
 
 1. T11 physically confirms build `158` sound and cloud stability: `312/312` build-158 windows contain dB(A), all have `99..100%` valid audio, zero clips, `MIC SIGNAL = OK`, and the local CSV matches Google Sheets without missing or mismatched windows. The scheduled restart during a declared C3 sleep correctly restored `UART_SLP`.

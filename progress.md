@@ -40,6 +40,7 @@ The percentage is not a reward for activity. It is a cautious expert estimate of
 ## Current Baseline
 
 - Current whole-project readiness estimate: `60%`.
+- 2026-09-26 live follow-up: task `111` is accepted on user confirmation plus screenshots: BS build `159` retains `SLP` after manual OTA during C3 sleep, and deployed Measurements correctly distinguishes short `PARTIAL` windows from full `OK` windows while preserving dB(A). The deferred MQTT/Datacake/AppSheet gate is now task `112` under `106`. Next active work is dependency-audit preparation and the overnight power gate. Existing local-candidate wording below describes the earlier build stage; no repeat OTA or Code.gs deployment is required for task `111`. Percentages remain unchanged pending broader external/power evidence.
 - Live task `110` evidence accepts the final User/Technical Sheets layout. T11 physically validates uploaded build `158` across `312` dB(A) windows with exact local-to-Sheets equality and proves scheduled restart during C3 `SLP`. It also exposes an OTA-only loss of that sleep checkpoint and an overnight full-power interruption. Local build `159` fixes the OTA checkpoint and adds honest `PARTIAL` labels for valid windows shorter than `9 min`; upload, Apps Script deployment, external-field checks, and the power gate remain manual. The cautious readiness estimate therefore stays unchanged.
 
 ## Russian Report Block
