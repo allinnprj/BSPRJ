@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## Task 112 approved Datacake addition, API permission blocker - build 159 - 2026-09-26
+
+1. User approved adding only `SOUND_DBA_EST`, `SOUND_LEVEL`, and `MIC_SIGNAL`. The official GraphQL creation request for the first field returned `ok: false`; an independent read-back confirms all 12 original fields remain and all three new fields are absent. No data or field was deleted or altered.
+2. The device's product matches local configuration. A scoped `myPermissions(workspace: ...)` query shows only `record_measurements` for the firmware API token. Its permissions were not expanded, and no credential was changed. Safe handoff: create the three measurement fields in the logged-in Datacake Configuration -> Fields page, then validate actual delivery through the existing token.
+3. This step changes project records only. Firmware stays `0.1.105-EXP` build `159`; no firmware/Code.gs change, upload, deployment, commit or push. Task `112/106` and AppSheet acceptance remain open; readiness stays `60%`.
+
 ## Task 112 live external check, partial acceptance - 2026-09-26
 
 1. Read-only MQTT verification received all three new topics as fresh non-retained messages: `54.8 dB(A)`, `SILENT`, and microphone `OK`. This accepts live broker delivery and separate loudness/health semantics; a same-time Telegram comparison is still pending.
