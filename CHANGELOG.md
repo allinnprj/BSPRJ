@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## User-requested AP credential - local 0.1.107-EXP build 161 - 2026-09-27
+
+1. Replace only the local AP credential with the user-selected 12-character value, kept exclusively in ignored `include/secrets.h`. Router credentials, AP timing/recovery logic, sound pipeline, Apps Script and C3 are unchanged. Synchronize version-pinned regression assertions to build 161.
+2. The user reports normal AP operation, not a complete timed-outage/rollback gate. Task `113` remains open. Build/tests pending at this edit checkpoint; no upload, deployment, commit or push.
+3. Validation completed: all eleven Node suites, `git diff --check` and `pio run -e esp32dev` pass. RAM `66,820 / 327,680` (20.4%), linked Flash `1,409,123 / 1,572,864` (89.6%), OTA reserve `163,741` bytes. Binary `1,409,520` bytes; SHA-256 `6C9202E3FEC125445AFC81EAB93C43D85934DEA184375037C97BB8513A6D4C40`. Verified that non-AP local configuration is unchanged. No upload or live credential acceptance; readiness stays `60%`.
+
+## Wi-Fi configuration confirmation - local 0.1.106-EXP build 160 - 2026-09-27
+
+1. The user confirmed their local Wi-Fi change. Preserve current local network definitions; the credential-clarification gate is closed without restoring old credentials.
+2. The existing firmware binary was produced after the local settings modification; its recorded SHA-256 is unchanged. Documentation-only handoff: no firmware edit, rebuild, upload, external deployment, commit or push. Task `113` physical acceptance remains open; readiness stays `60%`.
+
 ## Automatic Wi-Fi setup recovery - local 0.1.106-EXP build 160 - 2026-09-27 14:03
 
 1. Added automatic protected AP activation after 60 seconds without Wi-Fi or 180 seconds of repeated failed independent Internet checks. Google HTTP 204 and Microsoft's exact connect-test response are checked in a low-priority FreeRTOS worker; either success is sufficient, redirects/captive responses do not count, and no credential/telemetry payload is sent to probe providers. The main sound/control loop does not wait for probes. Late results from prior connection generations are ignored; active profile testing/saving is not interrupted.
