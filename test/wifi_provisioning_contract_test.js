@@ -25,8 +25,8 @@ function functionBody(text, signature, nextSignature) {
   return text.slice(start, end);
 }
 
-assert.match(version, /#define PROJECT_VERSION "0\.1\.105-EXP"/);
-assert.match(version, /#define PROJECT_BUILD 159\b/);
+assert.match(version, /#define PROJECT_VERSION "0\.1\.106-EXP"/);
+assert.match(version, /#define PROJECT_BUILD 160\b/);
 assert.match(buttonHeader, /kWifiSetupCountdownStartMs = 2000UL/);
 assert.match(buttonHeader, /kWifiSetupHoldMs = 5000UL/);
 assert.match(wifiHeader, /kSetupWindowMs = 600000UL/);
@@ -82,6 +82,10 @@ assert.match(logSource, /logServer\.on\("\/wifi-setup", HTTP_POST, handleWifiSet
 assert.doesNotMatch(logSource, /logServer\.on\("\/wifi-setup", HTTP_GET/);
 assert.match(logSource, /type=\\\"password\\\"/);
 assert.match(logSource, /!wifiSetupService->isSetupActive\(\)[\s\S]*send\(404/);
+assert.match(logSource, /logServer\.client\(\)\.localIP\(\) != WiFi\.softAPIP\(\)/,
+  'The Wi-Fi POST must be restricted to the protected AP interface.');
+assert.match(logSource, /isSetupActive\(\) &&[\s\S]*localIP\(\) == WiFi\.softAPIP\(\)/,
+  'Normal LAN access must retain the log page while the AP is open.');
 assert.doesNotMatch(logSource, /Serial\.(?:print|println)\s*\(\s*(?:password|candidatePassword_|activePassword_)/i);
 assert.doesNotMatch(wifiSource, /Serial\.(?:print|println)\s*\(\s*(?:password|candidatePassword_|activePassword_)/i);
 assert.doesNotMatch(platformio, /WiFiManager|AsyncWebServer|ESPAsyncWebServer/i,

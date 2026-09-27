@@ -116,7 +116,23 @@ pio run
 3. At `5 s`, connect to the protected `BS-Setup-XXXX` AP shown on the OLED and open `http://192.168.4.1/`.
 4. Enter the new SSID/password and select `Test and save`.
 
-The AP exists for at most `10 min`; the OLED shows its SSID, address, and remaining time or connection-test status. New credentials are stored only after a successful connection test. A failed test keeps the previous profile, and the compile-time `WIFI_SSID` / `WIFI_PASSWORD` profile remains the boot recovery path. The setup page is unavailable from the normal LAN web server.
+The AP exists for at most `10 min`; the OLED shows its SSID, address, and remaining time or connection-test status. New credentials are stored only after a successful connection test. A failed test keeps the previous profile, and the compile-time `WIFI_SSID` / `WIFI_PASSWORD` profile remains the boot recovery path. The setup page and credential POST are restricted to the protected AP interface; normal LAN access keeps the log page.
+
+Build `160` also opens the same AP automatically after `60 s` continuously
+without Wi-Fi, or after `180 s` of repeated failed Internet checks while Wi-Fi
+is connected. A low-priority worker tries Google's HTTP 204 endpoint and
+Microsoft's exact connect-test response; either provider succeeding is enough.
+An individual MQTT, Sheets, Telegram or Datacake failure does not trigger setup.
+Checks run at most once per `30 s` and do not block the sound/control main loop.
+Automatic setup keeps trying the existing network and closes on confirmed Internet
+recovery. There is one automatic ten-minute window per outage to avoid permanent
+AP/OLED battery drain; confirmed Internet recovery rearms it, and the button can
+always reopen setup. DNS/probe blocking can make Internet unavailable to this
+test even when a particular cloud service is reachable.
+
+The AP password is local `WIFI_SETUP_AP_PASSWORD` in `include/secrets.h`
+(separate from the target network password). Build `160` rejects an invalid
+length at compile time instead of producing firmware with an unusable AP.
 
 ## Monitor
 

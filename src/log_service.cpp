@@ -2,6 +2,7 @@
 
 #include <LittleFS.h>
 #include <WebServer.h>
+#include <WiFi.h>
 #include <time.h>
 
 #include "project_version.h"
@@ -421,7 +422,8 @@ void handleWifiSetupRoot() {
 }
 
 void handleRoot() {
-  if (wifiSetupService != nullptr && wifiSetupService->isSetupActive()) {
+  if (wifiSetupService != nullptr && wifiSetupService->isSetupActive() &&
+      logServer.client().localIP() == WiFi.softAPIP()) {
     handleWifiSetupRoot();
     return;
   }
@@ -488,7 +490,8 @@ void handleRoot() {
 }
 
 void handleWifiSetupPost() {
-  if (wifiSetupService == nullptr || !wifiSetupService->isSetupActive()) {
+  if (wifiSetupService == nullptr || !wifiSetupService->isSetupActive() ||
+      logServer.client().localIP() != WiFi.softAPIP()) {
     logServer.send(404, "text/plain", "not found\n");
     return;
   }

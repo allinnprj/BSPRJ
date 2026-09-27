@@ -2,6 +2,9 @@
 
 #include <Arduino.h>
 #include <Preferences.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/queue.h>
+#include <freertos/task.h>
 
 enum class WifiSetupState : uint8_t {
   Inactive,
@@ -39,6 +42,12 @@ class WifiService {
   static constexpr unsigned long kSetupWindowMs = 600000UL;
   static constexpr unsigned long kSetupConnectionTimeoutMs = 30000UL;
   static constexpr unsigned long kSetupRestartDelayMs = 4000UL;
+  static constexpr unsigned long kInternetProbeIntervalMs = 30000UL;
+
+  struct InternetProbeResult {
+    uint32_t generation = 0;
+    bool reachable = false;
+  };
 
   bool configured_ = false;
   bool preferencesReady_ = false;
@@ -61,6 +70,17 @@ class WifiService {
   String candidateSsid_;
   String candidatePassword_;
   String setupApSsid_;
+  bool setupAutomatic_ = false;
+  bool automaticSetupAttempted_ = false;
+  bool stationWasConnected_ = false;
+  unsigned long wifiDisconnectedSince_ = 0;
+  unsigned long lastInternetProbeAt_ = 0;
+  unsigned long internetFailureSince_ = 0;
+  uint8_t internetFailureCount_ = 0;
+  bool internetProbePending_ = false;
+  uint32_t internetProbeGeneration_ = 0;
+  QueueHandle_t internetProbeResults_ = nullptr;
+  TaskHandle_t internetProbeTask_ = nullptr;
 
   bool loadSavedProfile();
   bool saveCandidateProfile();
@@ -69,4 +89,7 @@ class WifiService {
   void stopSetupAccessPoint();
   void rollbackCandidate();
   void refreshSignalCache(bool connected, bool force);
+  void resetInternetMonitoring(unsigned long nowMs);
+  void updateAutomaticRecovery(unsigned long nowMs, bool connected);
+  static void runInternetProbeTask(void *context);
 };

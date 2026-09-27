@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## Automatic Wi-Fi setup recovery - local 0.1.106-EXP build 160 - 2026-09-27 14:03
+
+1. Added automatic protected AP activation after 60 seconds without Wi-Fi or 180 seconds of repeated failed independent Internet checks. Google HTTP 204 and Microsoft's exact connect-test response are checked in a low-priority FreeRTOS worker; either success is sufficient, redirects/captive responses do not count, and no credential/telemetry payload is sent to probe providers. The main sound/control loop does not wait for probes. Late results from prior connection generations are ignored; active profile testing/saving is not interrupted.
+2. Existing network reconnect attempts continue in automatic setup. Preserve the ten-minute window, allow one automatic window per uninterrupted outage to limit AP/OLED battery use, rearm after verified Internet recovery, and retain manual GPIO27 setup. A recovered automatic AP closes without reconnecting an already-connected station; manual AP remains user-controlled/bounded.
+3. Restricted the setup page and credentials POST to the AP destination interface, preserving ordinary LAN log access while AP is open. The OLED restores its prior state after automatic setup, including a coincident manual countdown. No CSV/POST schema, dB capture/classification/calibration, Apps Script, C3 protocol or C3 code changed.
+4. Fixed the invalid local AP password; it stays only in ignored `include/secrets.h`. Compile-time length validation now prevents shipping an unusable 8..63-character AP configuration. A verified private pre-change copy of 15 touched files is saved at `backup/wifi_before_build160_20260927_135049`. Comparison found additional `WIFI_SSID/WIFI_PASSWORD` drift against that backup; those fields were not patched by this work, and confirmation is pending before any upload.
+5. All 11 Node regression suites and the final `pio run -e esp32dev` pass. RAM `66,820 / 327,680` (20.4%), linked Flash `1,409,123 / 1,572,864` (89.6%), OTA reserve `163,741` bytes; worker stack additionally allocates 4 KB at runtime plus a one-element result queue. Binary `1,409,520` bytes, SHA-256 `B83635A9FC1BF130D6A82A676337FA88D4673A54EF6941691509F2D511519BAD`.
+6. Local candidate only: no upload, external deployment, commit or push. Task `113` records physical acceptance and the network-credential clarification gate. Probe/DNS blocking may produce a recovery AP even when an individual cloud service is reachable; real Internet availability is inferred, not proven for every service. Readiness remains `60%`.
+
 ## Task 112 approved Datacake addition, API permission blocker - build 159 - 2026-09-26
 
 1. User approved adding only `SOUND_DBA_EST`, `SOUND_LEVEL`, and `MIC_SIGNAL`. The official GraphQL creation request for the first field returned `ok: false`; an independent read-back confirms all 12 original fields remain and all three new fields are absent. No data or field was deleted or altered.

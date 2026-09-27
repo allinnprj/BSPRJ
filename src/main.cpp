@@ -1358,6 +1358,15 @@ void loop() {
 
   wifiService.update();
   const bool wifiSetupActive = wifiService.isSetupActive();
+  if (!wifiSetupActiveBeforeUpdate && wifiSetupActive &&
+      buttonEvent != ButtonEvent::WifiSetupRequested) {
+    if (!wifiSetupCountdownVisible) {
+      wifiSetupPreviousDisplayEnabled = displayView.isEnabled();
+    }
+    wifiSetupCountdownVisible = false;
+    lastDisplayInteractionAt = nowMs;
+    lastDisplayAt = 0;
+  }
   if (wifiSetupWasActive && !wifiSetupActive) {
     displayView.setEnabled(wifiSetupPreviousDisplayEnabled || displayPinnedOn);
     lastDisplayInteractionAt = nowMs;
