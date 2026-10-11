@@ -1,0 +1,3 @@
+# Preserve vendor artwork and the original schematic as supplied.
+presentation_work/build/telegram-original/*.ai binary
+presentation_work/build/solar-az.svg -whitespace

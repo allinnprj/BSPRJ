@@ -1,0 +1,22 @@
+import fs from 'node:fs/promises';
+import {createRequire} from 'node:module';
+import {pathToFileURL} from 'node:url';
+const runtime='C:/Users/INN/.cache/codex-runtimes/codex-primary-runtime/dependencies';
+process.env.RUNTIME_NODE_MODULES=runtime+'/node/node_modules';
+const req=createRequire(runtime+'/node/node_modules/runtime.cjs');
+const {PresentationFile,FileBlob}=await import(pathToFileURL(req.resolve('@oai/artifact-tool')).href);
+const skill='C:/Users/INN/.codex/plugins/cache/openai-primary-runtime/presentations/26.1009.11318/skills/presentations';
+const {finalizePresentation}=await import(pathToFileURL(skill+'/container_tools/artifact_tool_utils.mjs').href);
+const root='D:/DEV/BSPRJ/presentation_work',b=root+'/build';
+const p=await PresentationFile.importPptx(await FileBlob.load(b+'/before-crescent.pptx'));
+const slide=p.slides.items[14], image=slide.images.items[0];
+if(slide.images.items.length!==1) throw Error('Unexpected hospital image count');
+const props={};
+for(const k of ['frame','crop','geometry','borderRadius','rotation','flipHorizontal','flipVertical','lockAspectRatio']) props[k]=image[k];
+image.replace({blob:await fs.readFile(root+'/output/concepts/hospital-crescent.png'),contentType:'image/png',alt:'Hospital concept with red crescent medical symbols',fit:image.fit});
+for(const [k,v] of Object.entries(props)) image[k]=v;
+await (await PresentationFile.exportPptx(p)).save(b+'/crescent-draft.pptx');
+const result=await finalizePresentation({workspaceDir:root,candidatePath:b+'/crescent-portable.pptx',finalPath:root+'/output/BSPRJ_Akustik_Monitorinq_AZ_Color_Crescent.pptx',pythonExecutable:runtime+'/python/python.exe',integrityValidatorPath:skill+'/container_tools/inspect_presentation_package_integrity.py',layoutValidatorPath:skill+'/container_tools/inspect_presentation_layout_geometry.py',layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit'],explicitTotalSlideCount:18,requiredNativeChartOwnerSlides:[10],materializeLiteralChartWorkbooks:true,fontPolicy:{basis:'design',families:['Arial']},verifyArtifactToolImport:true,receiptPath:b+'/crescent-final-validation.json'});
+const final=await PresentationFile.importPptx(await FileBlob.load(result.finalPath));
+for(let i=0;i<18;i++){const blob=await final.export({slide:final.slides.items[i],format:'png',scale:1});await fs.writeFile(b+`/crescent-${i+1}.png`,new Uint8Array(await blob.arrayBuffer()));}
+console.log('Finalized and rendered 18 slides');

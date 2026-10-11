@@ -1,0 +1,296 @@
+<?xml version='1.0' encoding='utf-8'?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:ns1="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd" xmlns:ns2="http://www.inkscape.org/namespaces/inkscape" width="1920" height="1080" viewBox="0 0 1920 1080" role="img" aria-labelledby="title desc" version="1.1" id="svg123" ns1:docname="INA3221_ACTUAL_WIRING_RESTORED.svg" ns2:version="1.4.2 (f4327f4, 2025-05-13)" ns2:export-filename="INA3221_ACTUAL_WIRING_RESTORED.png" ns2:export-xdpi="96" ns2:export-ydpi="96">
+  <ns1:namedview id="namedview123" pagecolor="#ffffff" bordercolor="#374151" borderopacity="0.25" ns2:showpageshadow="2" ns2:pageopacity="0.0" ns2:pagecheckerboard="0" ns2:deskcolor="#d1d1d1" showgrid="true" ns2:zoom="0.99999999" ns2:cx="715.00001" ns2:cy="554" ns2:window-width="1920" ns2:window-height="1008" ns2:window-x="1912" ns2:window-y="-8" ns2:window-maximized="1" ns2:current-layer="MB102" showguides="true">
+    <ns2:grid id="grid1" units="px" originx="0" originy="0" spacingx="1" spacingy="1" empcolor="#0099e5" empopacity="0.30196078" color="#0099e5" opacity="0.14902" empspacing="5" enabled="true" visible="true" />
+  </ns1:namedview>
+  <title id="title">INA3221-C3: enerji sisteminin sxemi</title>
+  <desc id="desc">Точная топология по INA3221_ACTUAL_WIRING.net. Корпуса и положение выводов показаны условно.</desc>
+  <defs id="defs3">
+    <style id="style1">
+      .bg { fill:#f7f9fc; }
+      .panel { fill:#ffffff; stroke:#263548; stroke-width:3; }
+      .board { fill:#eaf7ef; stroke:#24513a; stroke-width:3; }
+      .board-blue { fill:#eaf4fb; stroke:#215b78; stroke-width:3; }
+      .board-dark { fill:#263548; stroke:#111827; stroke-width:3; }
+      .module-title { font:700 24px 'Segoe UI',Arial,sans-serif; fill:#172033; }
+      .module-sub { font:600 16px 'Segoe UI',Arial,sans-serif; fill:#445064; }
+      .module-title-light { font:700 24px 'Segoe UI',Arial,sans-serif; fill:#ffffff; }
+      .module-sub-light { font:600 16px 'Segoe UI',Arial,sans-serif; fill:#d8e7f0; }
+      .pin-label { font:700 15px 'Segoe UI',Arial,sans-serif; }
+      .net-label { font:700 16px 'Segoe UI',Arial,sans-serif; paint-order:stroke; stroke:#f7f9fc; stroke-width:6px; stroke-linejoin:round; }
+      .small { font:500 14px 'Segoe UI',Arial,sans-serif; fill:#526071; }
+      .tiny { font:600 12px 'Segoe UI',Arial,sans-serif; fill:#526071; }
+      .tiny-light { font:600 12px 'Segoe UI',Arial,sans-serif; fill:#d8e7f0; }
+      .title { font:700 34px 'Segoe UI',Arial,sans-serif; fill:#132238; }
+      .subtitle { font:500 18px 'Segoe UI',Arial,sans-serif; fill:#526071; }
+      .warning { font:700 16px 'Segoe UI',Arial,sans-serif; fill:#7c3e00; }
+      .power { fill:none; stroke-width:8; stroke-linecap:round; stroke-linejoin:round; }
+      .signal { fill:none; stroke-width:5; stroke-linecap:round; stroke-linejoin:round; }
+      .internal { fill:none; stroke-width:6; stroke-linecap:round; stroke-linejoin:round; }
+      .junction { stroke:#fff; stroke-width:2; }
+      .pin { fill:#fff; stroke-width:4; }
+      .nc { fill:#fff; stroke:#6b7280; stroke-width:3; }
+      .approx { stroke:#d97706; stroke-width:2; stroke-dasharray:10 8; fill:none; }
+      .gnd-symbol { fill:none; stroke:#374151; stroke-width:4; stroke-linecap:round; }
+    </style>
+    <marker id="arrow-orange" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 z" fill="#f25c05" id="path1" />
+    </marker>
+    <marker id="arrow-gold" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L12,6 L0,12 z" fill="#c99700" id="path2" />
+    </marker>
+    <marker id="arrow-blue-left" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto" markerUnits="strokeWidth">
+      <path d="M12,0 L0,6 L12,12 z" fill="#0077b6" id="path3" />
+    </marker>
+  </defs>
+  <g ns2:groupmode="layer" ns2:label="01 — Фон и рамки" id="layer-background">
+    <rect class="bg" width="1920" height="1080" id="rect3" />
+    <rect x="-1.0042768" y="86.676964" width="1918.0085" height="990.32727" rx="24.748499" fill="#ffffff" stroke="#d8e0ea" stroke-width="1.99144" id="rect4" />
+    <rect x="47.218864" y="6.2188654" width="740.56226" height="80.243515" rx="16.588594" fill="#fff4df" stroke="#d97706" stroke-width="2.43773" id="rect5" />
+    
+    <text x="70" y="40" class="title" id="text4" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:34px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">INA3221-C3: enerji sisteminin sxemi</text>
+    <text x="70" y="66" class="subtitle" id="text5" style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:18px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">Layihənin INA3221_ACTUAL_WIRING.net bağlantıları</text>
+    <rect x="308.21597" y="109.89366" width="1588.8678" height="944.33203" rx="37.830189" class="approx" id="rect7" style="fill:#e5ffd5;stroke:#56ff00;stroke-opacity:0.5" />
+    <rect x="881.81799" y="119" width="322.78174" height="28" rx="10.539812" fill="#fff8ea" id="rect8" style="fill:#55ff00;fill-opacity:0.5;stroke-width:1.14782" />
+    <text x="886" y="137" class="small" fill="#9a5800" id="text8" style="font-style:normal;font-variant:normal;font-weight:500;font-stretch:normal;font-size:14px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;-inkscape-font-specification:'Segoe UI, Arial, sans-serif Bold';fill:#000000;fill-opacity:1">GÜNƏŞ ENERJİSİ NƏZARƏTÇİSİ</text>
+  </g>
+  
+  <g ns2:groupmode="layer" ns2:label="02 — Модули" id="layer-modules">
+    <g id="PV1" ns2:label="PV1" transform="translate(-18.384776,-1.4142136)">
+      <rect x="65" y="145" width="190" height="150" rx="16" class="board-blue" id="rect9" />
+      <text x="162" y="177" text-anchor="middle" class="module-title" id="text9" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">PV1</text>
+      <text x="164" y="201" text-anchor="middle" class="module-sub" id="text10" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">SOLAR PANEL</text>
+      <rect x="88.187569" y="215.18758" width="149.10135" height="54.624855" rx="7.1000643" fill="#2d6b91" stroke="#17455f" stroke-width="2.37514" id="rect10" />
+      <path d="m 110.163,215.18758 -0.39312,54.62485 m 52.96836,-54.62485 v 54.62486 M 88.187569,242.50001 H 237.28891 m -100.53869,-27.31243 -0.39312,54.62485 m 49.74202,-54.62485 0.19656,54.62485 m 27.63882,0 0.15131,-54.62485" stroke="#a9d5ef" stroke-width="2" id="path10" ns1:nodetypes="cccccccccccc" />
+      <circle cx="255" cy="180" r="8" class="pin" stroke="#e0a000" id="circle10" />
+      <circle cx="160" cy="295" r="8" class="pin" stroke="#374151" id="circle11" style="stroke:#000000;stroke-opacity:1" />
+    </g>
+    <rect style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.405158;stroke-opacity:1" id="rect1-1" width="25.094843" height="4.3270764" x="129.70259" y="276.70258" rx="1.1949924" />
+    
+    <g id="SW1" ns2:label="SW1">
+      <rect x="345" y="145" width="220" height="150" rx="16" class="board" id="rect12" />
+      <text x="455" y="177" text-anchor="middle" class="module-title" id="text13">SW1</text>
+      <text x="455" y="201" text-anchor="middle" class="module-sub" id="text14">GPIO3 HIGH-SIDE</text>
+      <path d="m 421,226 h 26 m 22,0 h 26 m -48,10 22,-20" stroke="#24513a" stroke-width="5" stroke-linecap="round" id="path14" />
+      <text x="455" y="256" text-anchor="middle" class="tiny" id="text15" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">active-high • şərti görünüş</text>
+      <circle cx="345" cy="180" r="8" class="pin" stroke="#e0a000" id="circle15" />
+      <text x="362" y="185" class="pin-label" fill="#e0a000" id="text16" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN</text>
+      <circle cx="565" cy="180" r="8" class="pin" stroke="#ff8c00" id="circle16" />
+      <text x="580" y="172" class="pin-label" fill="#ff8c00" id="text17" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif"><tspan id="tspan123" style="font-size:12px">POWER_OUT</tspan></text>
+      <circle cx="400" cy="295" r="8" class="pin" stroke="#374151" id="circle17" style="stroke:#000000;stroke-opacity:1" />
+      <text x="416" y="280" text-anchor="end" class="pin-label" fill="#374151" id="text18" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#000000;fill-opacity:1">GND</text>
+      <circle cx="515" cy="295" r="8" class="pin" stroke="#15803d" id="circle18" />
+      <text x="515" y="280" text-anchor="middle" class="pin-label" fill="#15803d" id="text19" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">CTRL</text>
+    </g>
+    
+    <g id="BT1" ns2:label="BT1" transform="translate(-35.355339,-7.6568543)">
+      <rect x="71" y="385" width="215" height="165" rx="18" class="panel" id="rect19" />
+      <text x="180" y="420" text-anchor="middle" class="module-title" id="text20" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">BT1</text>
+      <text x="178" y="446" text-anchor="middle" class="module-sub" id="text21" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">12 V AGM</text>
+      <rect x="104" y="470" width="148" height="55" rx="8" fill="#e8edf3" stroke="#536174" stroke-width="3" id="rect21" />
+      <rect x="119" y="459" width="28" height="10" rx="3" fill="#d62828" id="rect22" style="fill:#fe0000;fill-opacity:1" />
+      <rect x="203" y="459" width="28" height="10" rx="3" fill="#374151" id="rect23" style="fill:#000000;fill-opacity:1" />
+      <rect style="fill:#fe0000;fill-opacity:1;stroke:none;stroke-width:0.579698;stroke-opacity:1" id="rect1-9" width="24.920303" height="8.9203033" x="118.28986" y="490.78986" rx="1.186681" />
+      <rect style="fill:#fe0000;fill-opacity:1;stroke:none;stroke-width:0.567227;stroke-opacity:1" id="rect1-8" width="23.859644" height="8.9203033" x="483.78986" y="-135.21016" rx="1.1361734" transform="rotate(90)" />
+      <rect style="fill:#e0a000;fill-opacity:1;stroke:none;stroke-width:0.32643;stroke-opacity:1" id="rect1-9-4" width="18.00609" height="3.9146304" x="240.5" y="184.47194" rx="0.85743278" />
+      <rect style="fill:#e0a000;fill-opacity:1;stroke:none;stroke-width:0.350676;stroke-opacity:1" id="rect1-8-5" width="18.273857" height="4.4515605" x="177.06065" y="-251.68593" rx="0.87018359" transform="rotate(90)" />
+      <circle cx="286" cy="446" r="8" class="pin" stroke="#d62828" id="circle24" style="stroke:#fe0000;stroke-opacity:1" />
+      <circle cx="172" cy="550" r="8" class="pin" stroke="#374151" id="circle25" style="stroke:#000000;stroke-opacity:1" />
+      <rect style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:0.579698;stroke-opacity:1" id="rect1" width="24.920303" height="8.9203033" x="204.78987" y="490.28983" rx="1.186681" />
+    </g>
+    
+    <g id="F1" ns2:label="F1" transform="matrix(1.0102041,0,0,1,-2.0510204,8)">
+      <rect x="434.69696" y="397" width="150.30304" height="66" rx="14" class="panel" id="rect25" />
+      <text x="508.85858" y="451" text-anchor="middle" class="module-sub" id="text25" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">F1 • 1 A</text>
+      <circle cx="434.69696" cy="432" r="8" class="pin" stroke="#d62828" id="circle26" style="stroke:#fe0000;stroke-opacity:1" />
+      <circle cx="585" cy="432" r="8" class="pin" stroke="#b5171e" id="circle27" style="stroke:#ff0000;stroke-opacity:1" />
+      <path d="m 449.79798,432 h 19.06061 l 12,-13 h 56 l 12,13 h 21.0404" fill="none" stroke="#b5171e" stroke-width="5" id="path27" ns1:nodetypes="cccccc" style="stroke:#ff0000;stroke-opacity:1" />
+    </g>
+    
+    <g id="U1" ns2:label="U1 • INA3221" transform="translate(124,0)">
+      <rect id="u1-body" x="760" y="185" width="365" height="480" rx="22" class="board-blue" />
+      <text id="u1-title" x="942" y="222" text-anchor="middle" class="module-title">U1 • INA3221</text>
+      <text id="u1-subtitle" x="942" y="248" text-anchor="middle" class="module-sub">3 × HIGH-SIDE CURRENT MONITOR</text>
+      <text id="u1-note" x="942" y="271" text-anchor="middle" class="tiny">şərti terminal mövqeyi • Rshunt = 0,1 Ω</text>
+      <rect id="u1-ch2-panel" x="792" y="294" width="300" height="82" rx="14" fill="#fff" stroke="#d6dee8" stroke-width="2" />
+      <text id="u1-ch2-title" x="942" y="318" text-anchor="middle" class="module-sub">CH2 • SOLAR</text>
+      <circle id="u1-ch2-in-plus" cx="760" cy="342" r="9" class="pin" stroke="#ff8c00" />
+      <text id="u1-ch2-in-plus-label" x="799" y="337" class="pin-label" fill="#ff8c00" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN+</text>
+      <text id="u1-ch2-in-minus-label" x="1084" y="337" text-anchor="end" class="pin-label" fill="#c99700" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN−</text>
+      <path id="u1-ch2-left" d="m 800,342 h 94" class="internal" stroke="#ff8c00" ns1:nodetypes="cc" />
+      <path id="u1-ch2-shunt" d="m 900,342 12,-13 15,26 15,-26 15,26 15,-26 12,13" fill="none" stroke="#6b7280" stroke-width="4" />
+      <path id="u1-ch2-right" d="m 990,342 h 94" class="internal" stroke="#c99700" ns1:nodetypes="cc" />
+      <rect id="u1-ch1-panel" x="792" y="394" width="300" height="82" rx="14" fill="#fff" stroke="#d6dee8" stroke-width="2" />
+      <text id="u1-ch1-title" x="942" y="418" text-anchor="middle" class="module-sub">CH1 • BATTERY</text>
+      <circle id="u1-ch1-in-plus" cx="760" cy="440" r="9" class="pin" stroke="#ff0000" />
+      <text id="u1-ch1-in-plus-label" x="799" y="437" class="pin-label" fill="#ff0000" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN+</text>
+      <circle id="u1-ch1-in-minus" cx="1125" cy="442" r="9" class="pin" stroke="#f25c05" />
+      <text id="u1-ch1-in-minus-label" x="1084" y="437" text-anchor="end" class="pin-label" fill="#f25c05" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN−</text>
+      <path id="u1-ch1-left" d="m 800,442 h 94" class="internal" stroke="#ff0000" ns1:nodetypes="cc" />
+      <path id="u1-ch1-shunt" d="m 900,442 12,-13 15,26 15,-26 15,26 15,-26 12,13" fill="none" stroke="#6b7280" stroke-width="4" />
+      <path id="u1-ch1-right" d="m 990,442 h 94" class="internal" stroke="#f25c05" ns1:nodetypes="cc" />
+      <rect id="u1-ch3-panel" x="792" y="494" width="300" height="82" rx="14" fill="#fff" stroke="#d6dee8" stroke-width="2" />
+      <text id="u1-ch3-title" x="942" y="518" text-anchor="middle" class="module-sub">CH3 • LOAD</text>
+      <text id="u1-ch3-in-plus-label" x="1084" y="537" text-anchor="end" class="pin-label" fill="#0077b6" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN+</text>
+      <circle id="u1-ch3-in-minus" cx="760" cy="542" r="9" class="pin" stroke="#00a6c8" />
+      <text id="u1-ch3-in-minus-label" x="799" y="537" class="pin-label" fill="#00a6c8" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN−</text>
+      <path id="u1-ch3-right" d="M 1084,542 H 984" class="internal" stroke="#0077b6" ns1:nodetypes="cc" />
+      <path id="u1-ch3-shunt" d="m 980,542 -12,-13 -15,26 -15,-26 -15,26 -15,-26 -12,13" fill="none" stroke="#6b7280" stroke-width="4" />
+      <path id="u1-ch3-left" d="M 890,542 H 800" class="internal" stroke="#00a6c8" ns1:nodetypes="cc" />
+      <circle id="u1-vs" cx="810" cy="665" r="8" class="pin" stroke="#7b2cbf" />
+      <circle id="u1-vpu" cx="870" cy="665" r="8" class="pin" stroke="#7b2cbf" />
+      <circle id="u1-gnd" cx="942" cy="665" r="8" class="pin" stroke="#374151" style="stroke:#000000;stroke-opacity:1" />
+      <circle id="u1-sda" cx="1010" cy="665" r="8" class="pin" stroke="#ffed19" />
+      <circle id="u1-scl" cx="1080" cy="665" r="8" class="pin" stroke="#54ff00" />
+      <text id="u1-vs-label" x="810" y="648" text-anchor="middle" class="pin-label" fill="#7b2cbf">VS</text>
+      <text id="u1-vpu-label" x="870" y="648" text-anchor="middle" class="pin-label" fill="#7b2cbf">VPU</text>
+      <text id="u1-gnd-label" x="942" y="648" text-anchor="middle" class="pin-label" fill="#374151" style="fill:#000000;fill-opacity:1">GND</text>
+      <text id="u1-sda-label" x="1010" y="648" text-anchor="middle" class="pin-label" fill="#ffed19">SDA</text>
+      <path d="M 1459,542 H 1259" class="power" stroke="#0077b6" id="path90" ns1:nodetypes="cc" transform="translate(-124)" />
+      <circle id="u1-ch3-in-plus" cx="1125" cy="542" r="9" class="pin" stroke="#0077b6" />
+      <text id="u1-scl-label" x="1080" y="648" text-anchor="middle" class="pin-label" fill="#54ff00">SCL</text>
+    </g>
+    
+    <g id="D1" ns2:label="D1 • DUAL SS56" transform="translate(226,56)">
+      <rect x="1265" y="185" width="220" height="150" rx="18" class="board" id="rect50" />
+      <text x="1375" y="218" text-anchor="middle" class="module-title" id="text51" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">D1 • DUAL SS56</text>
+      <text x="1375" y="243" text-anchor="middle" class="module-sub" id="text52" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">ANTI-BACKFLOW</text>
+      <path d="m 1320,282 h 40" stroke="#c99700" stroke-width="7" id="path52" />
+      <path d="m 1360,260 38,22 -38,22 z" fill="#c99700" id="path53" />
+      <path d="m 1400,260 v 44" stroke="#c99700" stroke-width="6" id="path54" />
+      <text x="1280" y="274" class="pin-label" fill="#c99700" id="text56" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">TAIL / IN</text>
+      <text x="1448" y="325" text-anchor="end" class="pin-label" fill="#f25c05" id="text57" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">OUT • ARROW HEAD</text>
+      <path style="fill:#c99700;fill-opacity:1;stroke-width:0.786241" d="m 1400.3391,282.26044 v -3.14496 h 19.656 19.656 v 3.14496 3.14497 h -19.656 -19.656 z" id="path123" />
+    </g>
+    
+    <g id="BUCK1" ns2:label="BUCK1" transform="translate(194,-46)">
+      <rect x="1275" y="510" width="235" height="165" rx="18" class="board" id="rect57" />
+      <text x="1392" y="544" text-anchor="middle" class="module-title" id="text58" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">BUCK1</text>
+      <text x="1392" y="568" text-anchor="middle" class="module-sub" id="text59" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">12 V → 7 V</text>
+      <path d="m 1340,613 h 105" stroke="#215b78" stroke-width="5" id="path59" />
+      <path d="m 1350,600 v 26 m 22,-38 v 50 m 22,-38 v 26 m 22,-38 v 50 m 22,-38 v 26" stroke="#215b78" stroke-width="4" id="path60" />
+      <text x="1497" y="594" text-anchor="end" class="pin-label" fill="#f25c05" id="text60" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN+</text>
+      <circle cx="1275" cy="588" r="8" class="pin" stroke="#0077b6" id="circle61" />
+      <text x="1288" y="594" class="pin-label" fill="#0077b6" id="text61" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">OUT 7V+</text>
+      <circle cx="1435" cy="675" r="8" class="pin" stroke="#374151" id="circle62" style="stroke:#000000;stroke-opacity:1" />
+      <text x="1435" y="657" text-anchor="middle" class="pin-label" fill="#374151" id="text62" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#000000;fill-opacity:1">GND</text>
+      <circle cx="1325" cy="675" r="8" class="nc" id="circle63" />
+      <path d="m 1318,668 14,14 m 0,-14 -14,14" stroke="#6b7280" stroke-width="3" id="path63" />
+      <text x="1325" y="657" text-anchor="middle" class="pin-label" fill="#6b7280" id="text63" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">EN • NC</text>
+    </g>
+    
+    <g id="MB102" ns2:label="MB102 BLACK" transform="translate(0,36)">
+      <rect x="360" y="715" width="330" height="210" rx="20" class="board-dark" id="rect63" />
+      <text x="525" y="750" text-anchor="middle" class="module-title-light" id="text64" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">MB102 BLACK</text>
+      <text x="525" y="776" text-anchor="middle" class="module-sub-light" id="text65" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">7 V → 5 V / 3,3 V</text>
+      <rect x="390" y="802" width="55" height="75" rx="7" fill="#c8d0da" stroke="#6b7280" stroke-width="2" id="rect65" />
+      <text x="417" y="895" text-anchor="middle" class="tiny-light" id="text66" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">USB-A • NC</text>
+      <path d="m 400,814 35,51 m 0,-51 -35,51" stroke="#6b7280" stroke-width="4" id="path66" />
+      <rect x="475" y="815" width="55" height="35" rx="5" fill="#d9a441" id="rect66" style="fill:#d0006f;fill-opacity:1" />
+      <rect x="555" y="815" width="55" height="35" rx="5" fill="#d9a441" id="rect67" style="fill:#7b2cbf;fill-opacity:1" />
+      <text x="502" y="837" text-anchor="middle" class="tiny" fill="#172033" id="text67" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#ffffff;fill-opacity:1">5V</text>
+      <text x="582" y="837" text-anchor="middle" class="tiny" fill="#172033" id="text68" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#ffffff;fill-opacity:1">3V3</text>
+      <circle cx="690" cy="780" r="8" class="pin" stroke="#00a6c8" id="circle68" />
+      <text x="674" y="774" text-anchor="end" class="pin-label" fill="#00a6c8" id="text69" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">IN 7V+</text>
+      <circle cx="690" cy="821" r="8" class="pin" stroke="#d0006f" id="circle69" />
+      <text x="674" y="829" text-anchor="end" class="pin-label" fill="#d0006f" id="text70" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">OUT 5V</text>
+      <circle cx="690" cy="885" r="8" class="pin" stroke="#7b2cbf" id="circle70" />
+      <text x="674" y="879" text-anchor="end" class="pin-label" fill="#7b2cbf" id="text71" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">OUT 3V3</text>
+      <circle cx="525" cy="925" r="8" class="pin" stroke="#374151" id="circle71" style="stroke:#000000;stroke-opacity:1" />
+      <text x="525" y="908" text-anchor="middle" class="pin-label" fill="#d1d5db" id="text72" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">GND</text>
+    </g>
+    
+    <g id="MCU1" ns2:label="MCU1 • ESP32-C3" transform="translate(124)">
+      <rect x="850" y="760" width="350" height="200" rx="24" class="board-dark" id="rect72" />
+      <text x="1010" y="782" text-anchor="middle" class="tiny-light" id="text73" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">GPIO0</text>
+      <text x="1080" y="782" text-anchor="middle" class="tiny-light" id="text74" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">GPIO1</text>
+      <text x="1025" y="812" text-anchor="middle" class="module-title-light" id="text75" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:24px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">MCU1 • ESP32-C3</text>
+      <text x="1025" y="838" text-anchor="middle" class="module-sub-light" id="text76" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">SUPERMINI • şərti görünüş</text>
+      <rect x="978" y="858" width="95" height="64" rx="8" fill="#d5dbe3" stroke="#7a8797" stroke-width="2" id="rect76" />
+      <path d="m 993,873 h 65 m -65,14 h 65 m -65,14 h 65" stroke="#8b96a5" stroke-width="3" id="path76" />
+      <rect x="850" y="835" width="34" height="52" rx="7" fill="#b9c2ce" id="rect77" />
+      <text x="865" y="866" text-anchor="middle" class="tiny-light" id="text77" style="font-style:normal;font-variant:normal;font-weight:600;font-stretch:normal;font-size:12px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#010101;fill-opacity:1">USB</text>
+      <circle cx="850" cy="820" r="8" class="pin" stroke="#d0006f" id="circle77" />
+      <text x="868.68774" y="825.07129" class="pin-label" fill="#d0006f" id="text78" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke-width:1.06461" transform="scale(0.99913298,1.0008678)">5V</text>
+      <circle cx="850" cy="920" r="8" class="pin" stroke="#15803d" id="circle78" />
+      <text x="868" y="925" class="pin-label" fill="#4ade80" id="text79" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#17824d;fill-opacity:1">GPIO3</text>
+      <circle cx="1010" cy="760" r="8" class="pin" stroke="#0891b2" id="circle79" style="stroke:#ffec1a;stroke-opacity:1" />
+      <circle cx="1080" cy="760" r="8" class="pin" stroke="#5b21b6" id="circle80" style="stroke:#55ff00;stroke-opacity:1" />
+      <circle cx="1025" cy="960" r="8" class="pin" stroke="#374151" id="circle81" style="stroke:#000000;stroke-opacity:1" />
+      <text x="1025" y="944" text-anchor="middle" class="pin-label" fill="#d1d5db" id="text81" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:15px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif">GND</text>
+    </g>
+  </g>
+  
+  <g ns2:groupmode="layer" ns2:label="03 — Силовые NET" id="layer-power-nets">
+    
+    <path d="m 247,180 h 88" class="power" stroke="#e0a000" id="path81" ns1:nodetypes="cc" />
+    <text x="296.80411" y="168.89215" text-anchor="middle" class="net-label" fill="#e0a000" id="text82" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:0;font-family:'Segoe UI', Arial, sans-serif;fill:#e0a000;fill-opacity:1;stroke:none;stroke-opacity:0" transform="scale(0.9943808,1.005651)"><tspan style="font-size:12.4886px;line-height:0;text-align:center;text-anchor:middle;fill:#e0a000;fill-opacity:1;stroke:none;stroke-width:9.36647px;stroke-opacity:0" id="tspan124">SOLAR RAW +</tspan></text>
+    
+    <path d="m 575,180 h 85 v 162 h 212" class="power" stroke="#ff8c00" id="path82" ns1:nodetypes="cccc" />
+    <text x="760.63165" y="328.89062" text-anchor="middle" class="net-label" fill="#ff8c00" id="text83" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none;fill:#ff8c00;fill-opacity:1">SOLAR SWITCHED +</text>
+    
+    <path d="M 1259,336 H 1423.25 1491" class="power" stroke="#c99700" id="path83" ns1:nodetypes="ccc" style="display:inline;mix-blend-mode:normal;stroke-width:13.1248;stroke-linejoin:round;stroke-dasharray:none" />
+    <text x="1448.1771" y="298.77164" text-anchor="middle" class="net-label" fill="#c99700" id="text84" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none" transform="scale(0.94515502,1.0580275)">SOLAR MEASURED +</text>
+    
+    <path d="m 1711,338 h 59 v 205" class="power" stroke="#f25c05" id="path84" ns1:nodetypes="ccc" />
+    <path d="m 1261,442 h 509" class="power" stroke="#f25c05" id="path85" ns1:nodetypes="cc" />
+    <circle cx="1711" cy="338" r="9" fill="#f25c05" class="junction" id="circle85" />
+    <circle cx="1770" cy="441" r="9" fill="#f25c05" class="junction" id="circle86" />
+    <circle id="u1-ch2-in-minus" cx="1125" cy="336" r="9" class="pin" stroke="#c99700" transform="translate(124)" />
+    <text x="1288.5739" y="438.87817" class="net-label" fill="#f25c05" transform="rotate(-0.61360922)" id="text87" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none">NET_BATTERY_SYSTEM_BUS</text>
+    
+    <path d="M 262,440 H 427" class="power" stroke="#d62828" id="path87" ns1:nodetypes="cc" style="stroke:#fe0000;stroke-opacity:1" />
+    <text x="450.81583" y="396.5" class="net-label" fill="#d62828" id="text88" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#fe0000;fill-opacity:1;stroke:none;stroke-opacity:1">BATTERY RAW +</text>
+    
+    <path d="M 600,440 H 872" class="power" stroke="#b5171e" id="path88" ns1:nodetypes="cc" style="stroke:#ff0000;stroke-opacity:1" />
+    <text x="684.31201" y="424.80469" class="net-label" fill="#b5171e" id="text89" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#ff0000;fill-opacity:1;stroke:none;stroke-opacity:1">BATTERY FUSED +</text>
+    
+    <path d="m 1770,543 h -66" class="power" stroke="#f25c05" id="path89" ns1:nodetypes="cc" />
+    
+    <circle cx="1704" cy="543" r="9" fill="#f25c05" class="junction" id="circle85-5" style="stroke:#ffffff;stroke-width:2" />
+    <circle cx="1265" cy="280" r="8" class="pin" stroke="#c99700" id="circle55" transform="translate(226,56)" />
+    <text x="1362" y="526" text-anchor="middle" class="net-label" fill="#0077b6" id="text90" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none">LOAD 7V RAW</text>
+    
+    <path d="M 872,542 H 749 v 274 h -49" class="power" stroke="#00a6c8" id="path91" ns1:nodetypes="cccc" />
+    <text x="735.47449" y="-682.2066" text-anchor="end" class="net-label" fill="#00a6c8" id="text91" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none" transform="matrix(0,0.94176874,-1.0618318,0,0,0)">LOAD 7V MEASURED</text>
+    
+    <path d="m 700,857 h 89 v -37 h 175" class="power" stroke="#d0006f" id="path92" ns1:nodetypes="cccc" />
+    <text x="747.78357" y="847.27045" text-anchor="middle" class="net-label" fill="#d0006f" id="text92" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none">5 V</text>
+    
+    <path d="M 700,921 H 857 V 738 h 77" class="power" stroke="#7b2cbf" id="path93" ns1:nodetypes="cccc" />
+    <path d="m 934,738 h 60 v -63" class="power" stroke="#7b2cbf" id="path94" ns1:nodetypes="ccc" />
+    <circle cx="934" cy="738" r="8" fill="#7b2cbf" class="junction" id="circle94" />
+    <path d="M 934,736 V 675" class="power" stroke="#7b2cbf" id="path94-8" ns1:nodetypes="cc" style="fill:none;stroke-width:8;stroke-linecap:round;stroke-linejoin:round" />
+    <text x="729.48743" y="910.01562" class="net-label" fill="#7b2cbf" id="text94" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none">3,3 V</text>
+  </g>
+  
+  <g ns2:groupmode="layer" ns2:label="04 — Сигналы и GND" id="layer-signals-gnd">
+    <path d="m 515,305 v 54 h 144 v 342 h 245 l -2,219 h 62" class="signal" stroke="#15803d" id="path95" ns1:nodetypes="ccccccc" style="stroke:#17824d;stroke-opacity:1" />
+    <text x="-690" y="647" class="net-label" fill="#15803d" transform="rotate(-90)" id="text95" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;stroke:none">GPIO3 • CHARGE CONTROL</text>
+    <path d="m 1134,675 v 77" class="signal" stroke="#0891b2" id="path96" style="stroke:#ffed19;stroke-opacity:1" ns1:nodetypes="cc" />
+    <path d="m 1204,675 v 77" class="signal" stroke="#5b21b6" id="path97" style="stroke:#54ff00;stroke-opacity:1" ns1:nodetypes="cc" />
+    
+    <path d="M 342.37054,1015 H 1670.4461 1774.2683" class="power" stroke="#374151" id="path98" ns1:nodetypes="ccc" style="stroke:#000000;stroke-opacity:1" />
+    <text x="838" y="998" text-anchor="middle" class="net-label" fill="#374151" id="text99" style="font-style:normal;font-variant:normal;font-weight:700;font-stretch:normal;font-size:16px;line-height:normal;font-family:'Segoe UI', Arial, sans-serif;fill:#000000;fill-opacity:1;stroke:none">NET_GND • ÜMUMİ GND</text>
+    <path d="m 141.61522,305 0.70711,35 H 342" class="power" stroke="#374151" id="path99" ns1:nodetypes="ccc" style="stroke:#000000;stroke-opacity:1" />
+    <path d="m 135.93755,551.63604 -0.7071,26.94975 L 342,580" class="power" stroke="#374151" id="path100" ns1:nodetypes="ccc" style="stroke:#000000;stroke-opacity:1" />
+    <path d="m 400,305 v 35 h -53 -5 v 6 669" class="power" stroke="#374151" id="path101" ns1:nodetypes="cccccc" style="stroke:#000000;stroke-opacity:1" />
+    <path d="m 1066,675 v 25 h 302 v 315" class="power" stroke="#374151" id="path102" ns1:nodetypes="cccc" style="stroke:#000000;stroke-opacity:1" />
+    <path d="m 1629,639 v 376" class="power" stroke="#374151" id="path103" ns1:nodetypes="cc" style="stroke:#000000;stroke-opacity:1" />
+    <path d="m 525,971 v 44" class="power" stroke="#374151" id="path104" ns1:nodetypes="cc" style="stroke:#000000;stroke-opacity:1" />
+    <circle cx="342" cy="340" r="8" fill="#374151" class="junction" id="circle106" style="fill:#000000;fill-opacity:1" />
+    <circle cx="525" cy="1015" r="8" fill="#374151" class="junction" id="circle108" style="fill:#000000;fill-opacity:1" />
+    <circle cx="1148.9066" cy="1015" r="8" fill="#374151" class="junction" id="circle110" style="fill:#000000;fill-opacity:1" />
+    <path d="m 1149,970 v 41" class="power" stroke="#374151" id="path105-9" style="fill:none;stroke:#000000;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" ns1:nodetypes="cc" />
+    <circle cx="1629" cy="1015" r="8" fill="#374151" class="junction" id="circle111" style="fill:#000000;fill-opacity:1" />
+    
+    
+    
+    
+  </g>
+  <g ns2:groupmode="layer" ns2:label="05 — Подписи и предупреждения" id="layer-annotations" />
+  <g ns2:groupmode="layer" ns2:label="05 — Контакты" id="layer-contacts" />
+  <g ns2:groupmode="layer" ns2:label="06 — Подписи" id="layer-labels" />
+  <g ns2:groupmode="layer" ns2:label="07 — Стрелки" id="layer-arrows" />
+  <g ns2:groupmode="layer" ns2:label="08 — Легенда" id="layer-legend" />
+</svg>
