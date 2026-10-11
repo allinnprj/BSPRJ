@@ -1,5 +1,73 @@
 # CHANGELOG
 
+## GitHub materials uploaded - documentation and presentation only, local 0.1.107-EXP build 161 - 2026-10-12
+
+1. Uploaded `14a526a` (trilingual Google Sheets guide and setup link) and `96f2cee` (all presentation decks, sources, prompts, previews, validation reports and intermediate materials) to `origin/devlop`; remote HEAD was confirmed as `96f2cee` before preparing this context commit. Previous presentation versions are retained; the latest approved version is indexed in `presentation_work/README.md`.
+2. All eleven Node regression suites and final presentation verification passed. Publication scan found no configured credential matches or files at/above 100 MiB. Removed extra EOF blank lines from authored text only; Git attributes preserve original vendor artwork and schematic whitespace. Firmware, Code.gs, main and tags unchanged. Build 161 installation unconfirmed; readiness remains 60%.
+
+## GitHub publication preparation - documentation and presentation only, local 0.1.107-EXP build 161 - 2026-10-12
+
+1. Prepared the user-authorized publication of all pending Google Sheets documentation and presentation materials to `devlop`, including earlier decks, authoring assets and intermediate files. Added `presentation_work/README.md` identifying the latest approved 15-slide deck and explaining its contents, dependencies and evidence boundaries.
+2. Re-ran all eleven Node regression suites, the final presentation verification and whitespace checks successfully. No firmware or Apps Script code changes, version increment, device upload or service deployment. Build 161 installation remains unconfirmed; readiness remains 60%. Remote publication completion is reported separately after push verification.
+
+## Distinct technical backgrounds and larger hardware images - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Created `BSPRJ_Akustik_Monitorinq_AZ_15_Technical_Final.pptx` after approval: five different technical backgrounds, larger prototype/PCB portraits, widened original schematics and enlarged manufacturer tester photos. Preserved 15 AZ slides, historical evidence, future-concept labels and 9:25 speaker timing.
+2. Reviewed every final render; package/layout/chart/table checks passed without findings. Six original photo/icon assets remain unchanged. Background assets and exact Imagegen prompts retained in `presentation_work/output/technical_assets/`. Native PowerPoint playback remains unverified. Earlier decks and pending manual edits preserved. Firmware/services/Git unchanged; build 161 installation unconfirmed; readiness 60%.
+
+## Thematic presentation and Android design concept - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Created `BSPRJ_Akustik_Monitorinq_AZ_15_Thematic_Final.pptx` after explicit approval. All main slide backgrounds now use thematic full-slide imagery, smooth dark gradients and contrasting text. Improved the future Android design concept with DAY/EVE/NGT cards, period chart, symbolic map and bottom navigation. The phone UI is a raster illustration; it does not claim a deployed app. Historical evidence, 15 slides and 9:25 notes timing preserved.
+2. Rendered and visually checked every final slide; package, geometry, native chart/table and font checks passed with no findings. Verified six original photographs/icons remain embedded unchanged, 15 timed notes and no encoded text underlining. Imagegen assets/prompts retained in `presentation_work/output/thematic_assets/`. Native PowerPoint playback remains unverified. Previous decks and pending manual changes preserved. Firmware, external services and Git publishing unchanged; build 161 installation unconfirmed; readiness 60%.
+
+## Compact defense presentation completed - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Implemented the approved revision as `BSPRJ_Akustik_Monitorinq_AZ_15_Final.pptx`: 15 AZ slides and 9:25 speaker notes. Quiet housing selection now introduces the purpose. Original diagrams, controller models, tester photos, practical calibration and DAY/EVE/NGT evidence with coverage preserved. Added technical backgrounds, solar terminal concept, Telegram/Android examples, future website and static GPS context; consolidated deployment examples.
+2. All 15 renders reviewed; package, layout, chart/table/font checks passed. Six original photographs/icons embedded unchanged; notes timing confirmed, no text underlining encoded. Native PowerPoint playback not verified. Sources/prompts retained in `presentation_work/output/compact_assets/`. Previous decks/manual edits preserved. Firmware/services/Git unchanged; build 161 installation unconfirmed; readiness 60%.
+
+## Pending presentation plan recorded - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Recorded the user-requested 15-slide revision plan in `presentation_work/PRESENTATION_REVISION_PLAN.md`, including the future project website and the newly supplied web-panel examples. Preserved relative-level and update-age interpretation boundaries. Implementation, image generation and PPTX export await separate «ОК».
+2. Presentation, firmware, external services and Git publishing unchanged. Build 161 installation remains unconfirmed; project readiness stays 60%.
+
+## Approved screenshot corrections - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Created a separate `BSPRJ_Akustik_Monitorinq_AZ_Corrected_Final.pptx` (22 AZ slides, 9:45 speaker timing). Removed the cover BSPRJ label, used real Baku city photographs without generative alteration, and added manufacturer photographs of FDM01 and FNB58. The original GM1351 image was excluded from the FDM01 slide.
+2. Corrected the future assembly illustration to distinguish the compact C3, simplified questionable microphone/power fittings, and retained the future-concept disclosure. Centered slide headings and image/column captions; adjusted diagram layout, enclosure labels and duplicate photographic footers. Original schemes and quantitative content were preserved.
+3. All final slides rendered and reviewed. Package, chart, table, font and geometry checks passed with no layout warnings. Four sourced photographs are embedded unchanged; text has no encoded underlining. Native PowerPoint/slideshow verification was unavailable because there was no connected document session. Sources and generation prompts are retained in `presentation_work/output/authentic_assets/`. Prior decks and pending manual edits preserved. No firmware, deployment, service change, commit or push; build 161 installation unconfirmed; readiness remains 60%.
+
+## Defense presentation refinement - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Created `BSPRJ_Akustik_Monitorinq_AZ_Defense_Final.pptx`: 22 Azerbaijani slides with speaker timings totaling 9 minutes 45 seconds. Fixed text contrast on light backgrounds, including calibration results; brightened the traffic image and combined the original UART and solar diagrams on one slide.
+2. Added a visually retouched prototype photo, a clearly labeled future soldered-PCB concept and three enclosure design choices. Deployment scenes use continuous photos with smooth fades; hospital imagery uses an AI interpretation of the user's TABIB emblem reference. These images are not evidence of manufactured hardware or actual installations. Assets and prompts are retained in `presentation_work/output/revision_assets/`.
+3. Final package, chart, table, font and geometry checks passed. All 22 slides rendered and were visually reviewed; four footer-frame overlap warnings were checked visually. Native PowerPoint opening was not performed. Previous decks and existing documentation edits are preserved. Firmware, deployment, external services and Git publishing are unchanged; build 161 installation remains unconfirmed and readiness stays 60%.
+
+## Online presentation and image backgrounds - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Created a separate 21-slide Azerbaijani presentation with Telegram status commands/daily summaries and a web-panel overview. Selected values from the user's attached examples are native editable tables, with relative `Now` distinguished from estimated dB(A), partial noise coverage preserved, and solar/battery/load samples identified by their times.
+2. Added acoustic and solar image backgrounds, varied photographic layouts and full-slide compact deployment concepts. Retained own electrical diagrams, controller/tester models and red crescents. Speaker timings total about 9.1 minutes. No firmware, deployment, external-service change or Git publishing; build 161 installation remains unconfirmed and readiness stays 60%.
+3. Final package/layout/font checks passed, including one native chart and three native tables. All 21 final slides rendered; visual review corrected photographic text contrast. Native PowerPoint opening was not performed. Prior presentations and the pending Google Sheets manual edits are preserved.
+
+## Hospital concept correction - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Replaced hospital facade and ambulance medical symbols with red crescents according to the user's reference. Exported a separate `BSPRJ_Akustik_Monitorinq_AZ_Color_Crescent.pptx`; prior deck retained. No firmware or external service change; readiness remains 60%.
+
+## Colorful defense deck - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Added a separate 18-slide Azerbaijani alternative with original controller/UART and solar-power diagrams, identified controller and test-instrument models, practical benefits and speaker notes for about 10 minutes.
+2. Added four compact-device placement illustrations: school, railway station, hospital and elderly care home. Clearly marked as future concepts; image assets and prompts are retained under `presentation_work/output/concepts`. Charge regulation and autonomous acceptance remain open.
+3. Final package, geometry, fonts, chart and slide count checks passed; all 18 slides were rendered. Native PowerPoint opening was not performed. Original presentation and earlier documentation edits are preserved. No firmware, upload, service deployment, commit or push. Build 161 installation remains unconfirmed; readiness stays 60%.
+
+## Azerbaijani scientific defense deck - documentation only, local 0.1.107-EXP build 161 - 2026-10-11
+
+1. Created a separate 13-slide Azerbaijani PPTX for a 7–10 minute defense with speaker notes, original prototype photos, calibration evidence and limits, T11 quality evidence, an editable 2026-10-06 DAY/EVE/NGT chart and the future mapping stage. Chart values come from the supplied deck's embedded Summary screenshot, not a new raw-log calculation.
+2. Validated final package, geometry, fonts, slide count and chart data; rendered and inspected all slides. Native PowerPoint opening was not performed. Original files and earlier uncommitted documentation changes are preserved. No firmware, Code.gs, live service, upload, commit or push changed. Build 161 installation remains unconfirmed; readiness stays 60%.
+
+## Trilingual Google Sheets tab manual - documentation only - 2026-10-10
+
+1. Added `GOOGLE_SHEETS_MANUAL.md` with English, Russian, and Azerbaijani descriptions of all current workbook tab roles, visibility modes, data path, and dB(A)/quality distinctions; linked it from `GOOGLE_SHEETS_SETUP.md`.
+2. Based the guide on local `google_sheets/Code.gs` tab constants and rebuild path. No firmware, Apps Script, live workbook, data, deployment, commit, or push changed. Readiness remains `60%`.
+
 ## User-requested AP credential - local 0.1.107-EXP build 161 - 2026-09-27
 
 1. Replace only the local AP credential with the user-selected 12-character value, kept exclusively in ignored `include/secrets.h`. Router credentials, AP timing/recovery logic, sound pipeline, Apps Script and C3 are unchanged. Synchronize version-pinned regression assertions to build 161.
