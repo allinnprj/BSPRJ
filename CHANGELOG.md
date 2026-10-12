@@ -1,5 +1,10 @@
 # CHANGELOG
 
+## Hardware image dialogue recorded - documentation only, local 0.1.107-EXP build 161 - 2026-10-12
+
+1. Recorded the user's complete two-variant hardware illustration requirements and their dialogue sequence in `presentation_work/HARDWARE_VISUAL_PLAN.md`: accessible controller USB ports, labeled solar/battery/GPS connections, 10,000 mAh battery for variant 1, proposed 12 V pole-mounted S3/S3-Zero variant, rubber USB caps, replaceable modules and optional engineer-installation scene. Proposed six numbered main images plus one optional montage scene; no slides requested.
+2. Updated continuation memory. Image generation, PCB design and presentation changes still await separate approval. No firmware, device, service or Git publication change; build 161 installation unconfirmed; readiness 60%.
+
 ## GitHub materials uploaded - documentation and presentation only, local 0.1.107-EXP build 161 - 2026-10-12
 
 1. Uploaded `14a526a` (trilingual Google Sheets guide and setup link) and `96f2cee` (all presentation decks, sources, prompts, previews, validation reports and intermediate materials) to `origin/devlop`; remote HEAD was confirmed as `96f2cee` before preparing this context commit. Previous presentation versions are retained; the latest approved version is indexed in `presentation_work/README.md`.
