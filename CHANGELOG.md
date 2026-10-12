@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## Hardware materials GitHub sync - local 0.1.107-EXP build 161 - 2026-10-13
+
+1. Published V1 ten-view hardware gallery, real component references, exact prompts, constraints, drafts and earlier concept archives to `origin/devlop` as `024fe9c`; preserved and published the two existing local commits. Safe `git pull --ff-only` required no updates. Corrected two outdated gallery image links. Commit `c26a400` removes the temporary editor lock file and adds a narrow ignore rule.
+2. All eleven Node regression suites, ten selected image hashes, gallery links, three archive integrity checks, publication size limits, configured credential scan and staged whitespace checks passed. Firmware, PPTX, external services and main unchanged. Build 161 installation remains unconfirmed; readiness remains 60%.
+
+
+## V1 experimental product: ten views - images/docs only, local 0.1.107-EXP build 161 - 2026-10-13
+
+1. Completed the separately approved ten-view V1 series under `presentation_work/output/V1_experimental_10/`, retaining the user's open metal chassis instead of the earlier polymer mockup. Added actual component appearance references and a component/constraint table, WROOM-32U external-antenna connection, round INMP441 with removable foam, purple SHT3X and the current OLED arrangement with explicit example data. USB/cable and rubber caps have separate close-ups; battery remains 10,000 mAh with 5 V output.
+2. Reviewed all ten selected images and corrected misleading callouts, C3 USB mouth, extra foam head, SS56 close-up packaging and microphone inset. Service view uses an unlit display and a power-off-service caption. Final geometry/PCB markings and electrical details remain illustrative. Charge hardware and the old 12 V controller's battery/SoC assumptions still require separate engineering adaptation. Original photos/schematics and earlier outputs preserved; V2 is recorded and deferred. No slide, firmware, device upload, service or Git publication change; readiness60%, build161 installation unconfirmed.
+
+## Battery output clarified - images/docs only, local 0.1.107-EXP build 161 - 2026-10-12
+
+1. Applied the user's late "5 volts" clarification to variant 1: created sibling images 01/02 labeled "10 000 mAh / Выход 5 V" with built-in Imagegen. Updated gallery, requirements, engineering notes and continuation memory, distinguishing output voltage from unknown cell specifications. Earlier assets/archive retained; current bundle is `presentation_work/output/hardware_variants_5v.zip`.
+2. Visually checked the two changed images. Other five numbered images unchanged; no PPTX, firmware, external service or Git publishing change. Build 161 installation unconfirmed, readiness 60%.
+
+## Numbered hardware concepts - documentation and images only, local 0.1.107-EXP build 161 - 2026-10-12
+
+1. After separate approval, created six numbered WROOM/C3 and outdoor S3/S3-Zero preliminary assembly/service views plus installation image 07. Saved project-bound Imagegen outputs, source board references, exact prompts, gallery and engineering notes under `presentation_work/output/hardware_variants_v1/`; no PPTX modifications.
+2. Reviewed all seven selected images, corrected concept module size, six INA3221 terminal screws, USB/service descriptions and mic mounting, and preserved the original schematics. Exact hardware dimensions, port geometry, charge regulation and acoustic/weather protection still require engineering validation. No firmware, device upload, cloud service or Git publication change; build 161 installation remains unconfirmed, readiness 60%.
+
 ## Hardware image dialogue recorded - documentation only, local 0.1.107-EXP build 161 - 2026-10-12
 
 1. Recorded the user's complete two-variant hardware illustration requirements and their dialogue sequence in `presentation_work/HARDWARE_VISUAL_PLAN.md`: accessible controller USB ports, labeled solar/battery/GPS connections, 10,000 mAh battery for variant 1, proposed 12 V pole-mounted S3/S3-Zero variant, rubber USB caps, replaceable modules and optional engineer-installation scene. Proposed six numbered main images plus one optional montage scene; no slides requested.
