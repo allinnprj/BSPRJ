@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-13",
+  "timezone": "Asia/Baku",
+  "mode": "built-in Imagegen",
+  "selected_image_count": 10,
+  "claim_boundary": "Preliminary mechanical concepts; no fabrication, circuit, IP or installed-build proof",
+  "visual_review": "All ten selected outputs reviewed; small module markings and dimensional accuracy remain illustrative",
+  "gallery_links": "pass",
+  "unchanged_local_board_refs": 2,
+  "assets": [
+    {
+      "file": "01-overview.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "72d4efeb479880453c01c8033afc579b7038072252f91a2dadc3cd3484d59156"
+    },
+    {
+      "file": "02-internal.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "89f1144a6abe964d499b614a442667ce19ba1ce9cfdf9bf11bd497e1a5f9ab23"
+    },
+    {
+      "file": "03-angle.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "3c71e24717fe8926d8aa19b11c120e856838e22a1251cca3866c79e6cf950c82"
+    },
+    {
+      "file": "04-usb.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "859ca9c64bf1518cd263df4010f9b2d44f8a872681e138f5ee20515fff62edd6"
+    },
+    {
+      "file": "05-power.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "119453f10aa1d055f92ecdbfd983c0079f0e1f1836489fb2df66bfd15edc1608"
+    },
+    {
+      "file": "06-battery.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "2006afd75f7c636f490fbf1bcf9e546352d695bcb2f5c79947c88f4e4ed9b2fc"
+    },
+    {
+      "file": "07-microphone.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "996112caf0d69bb0ceefe7b2144b7aae0259bca08725b254800e59480fe8c1d3"
+    },
+    {
+      "file": "08-sensors-display.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "75678cff61c34a7aed414337e5deaba92dfabccc85553163e80aac15b57a4860"
+    },
+    {
+      "file": "09-usb-caps.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "f45179f60484cb8b85a80dafe5ec4e7670a62aaaf2714fb46b55585f2d21fdde"
+    },
+    {
+      "file": "10-service.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "9bd3f9d3adc5a3d31321326614245a09c2ea4eafdf0b1d0e0095fe4621dcceae"
+    }
+  ]
+}

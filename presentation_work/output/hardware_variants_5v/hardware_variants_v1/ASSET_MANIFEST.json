@@ -1,0 +1,50 @@
+{
+  "date": "2026-10-12",
+  "mode": "built-in Imagegen",
+  "variant1_output_volts": 5,
+  "status": "preliminary concepts; not fabrication data",
+  "assets": [
+    {
+      "file": "01-variant1-internal-5v.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "1dcd577643878f8d62f55959a76d2aac38f6762d9458f353118a8e451b1f17a2"
+    },
+    {
+      "file": "02-variant1-connectors-5v.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "cf58b622e145d72a9112b76f3c5d5079ea984bb6be27442764797d3cf6c58e69"
+    },
+    {
+      "file": "03-variant1-closed.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "803fc746cf94877baa0a503b23ce8bda9e8d8d989fa9d99d31a1cc0e4862d5d4"
+    },
+    {
+      "file": "04-variant2-pole.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "384c55896de78709db5f2c07dbcaf3b286dad51295f6cfa430e1843b6862b5d9"
+    },
+    {
+      "file": "05-variant2-modular.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "4a50e62278aab50c6331cf47d2146c1f906977f642116c31859ecd67b3f2cf9a"
+    },
+    {
+      "file": "06-variant2-service.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "833d10581771f9bde6ffd2880ba483093c3a34ec5d530ee29db43671db539e6f"
+    },
+    {
+      "file": "07-installation.png",
+      "width": 1536,
+      "height": 1024,
+      "sha256": "ae690316f5357a181c7e456660611ec5261efd7c378ade0b9b43b96ac5ecb981"
+    }
+  ]
+}
