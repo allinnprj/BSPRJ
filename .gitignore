@@ -10,3 +10,5 @@ backup/
 test/*.xlsx
 # Windows Explorer folder metadata
 desktop.ini
+# Presentation editor lock files
+.~lock.*#
