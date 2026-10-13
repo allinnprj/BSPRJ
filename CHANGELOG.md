@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## Azerbaijani V1 GitHub sync - local 0.1.107-EXP build 161 - 2026-10-13
+
+1. Published `1d2ff7a` (`docs(hardware): add Azerbaijani V1 views and modular assembly graphics`) to `origin/devlop`; remote HEAD verified before the continuation-context commit. Included five revised images, gallery, exact prompts, manifest, archive and user-extracted delivery folders.
+2. Safe fast-forward-only pull was already up to date. All eleven Node suites, asset hashes, gallery links, ZIP integrity, publication size/configured credential scan and staged whitespace check passed. Firmware, PPTX, external services and main unchanged. Build161 installation unconfirmed; readiness60%.
+
+## V1 selected views localized and refined - images/docs only, local 0.1.107-EXP build 161 - 2026-10-13
+
+1. Revised selected views 02/03/04/07/10 in `presentation_work/output/V1_AZ_revision/` with Azerbaijani editorial labels, the round INMP441 on an external side bracket (about 50 mm wall-to-foam-edge projection), and a person-free exploded modular-service illustration. Original ten images preserved; V2 remains deferred.
+2. Corrected an extra contact strip, duplicated C3 USB and inset pin orientation during visual review. Module adapters, exact contact/fastener geometry and acoustic protection still need physical validation. Five PNGs, gallery links, archive integrity and unchanged original image hashes verified. Prompts/manifest/gallery/ZIP retained. No firmware, slide, device, service or Git publication change; readiness60%, build161 installation unconfirmed.
+
 ## Hardware materials GitHub sync - local 0.1.107-EXP build 161 - 2026-10-13
 
 1. Published V1 ten-view hardware gallery, real component references, exact prompts, constraints, drafts and earlier concept archives to `origin/devlop` as `024fe9c`; preserved and published the two existing local commits. Safe `git pull --ff-only` required no updates. Corrected two outdated gallery image links. Commit `c26a400` removes the temporary editor lock file and adds a narrow ignore rule.
