@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-13",
+  "tool": "built-in Imagegen",
+  "language": "az",
+  "selected_numbers": [
+    2,
+    3,
+    4,
+    7,
+    10
+  ],
+  "assets": [
+    {
+      "file": "02-internal-az.png",
+      "sha256": "9733b27b41fc18b560765a9fa344b8258a6aa1a653540098226595e459602e52",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "03-angle-az.png",
+      "sha256": "f029ec9fa38526ac00a8c296c325ef88b854350f8355dbd84a3f9087109a0fa0",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "04-usb-az.png",
+      "sha256": "3af3a19dd14b6293e48311b61deaf87a12ec1fb9bfd4163c46660d26513e8d4f",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "07-microphone-az.png",
+      "sha256": "670f7aa27fabbba0feb29756b613b9aa381154e7b3d993b789a3d7b41d0e061e",
+      "width": 1536,
+      "height": 1024
+    },
+    {
+      "file": "10-service-az.png",
+      "sha256": "6809538892432a789a106e3629c10d8cd039898fbfbff1767d65000b792a8985",
+      "width": 1536,
+      "height": 1024
+    }
+  ],
+  "mic_projection": "approx 50mm, outer side wall to outer foam edge; conceptual",
+  "review": "five selected outputs visually reviewed; no humans; editorial labels Azerbaijani; exact dimensions/contact geometry remain illustrative",
+  "limits": "adapter, battery/charger and acoustic protection require physical engineering validation",
+  "original_ten_hashes": "unchanged",
+  "gallery_links": "pass"
+}
